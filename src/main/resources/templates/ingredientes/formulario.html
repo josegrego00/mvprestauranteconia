@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+
+<head th:replace="~{fragments/head :: head('Ingrediente | Sistema')}"></head>
+
+<body>
+
+<!-- NAVBAR -->
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container-fluid">
+    <div class="row">
+
+        <!-- SIDEBAR IZQUIERDO -->
+        <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+
+            <!-- Header con título -->
+            <div class="welcome-section mt-4 mb-4">
+                <h1 class="welcome-title">
+                    <i class="bi bi-basket me-2" th:if="${ingrediente.id == null}"></i>
+                    <i class="bi bi-pencil-square me-2" th:if="${ingrediente.id != null}"></i>
+                    <span th:text="${ingrediente.id == null} ? 'Nuevo Ingrediente' : 'Editar Ingrediente'"></span>
+                </h1>
+                <p class="welcome-subtitle" th:text="${ingrediente.id == null} ? 'Registra un nuevo insumo' : 'Modifica los datos del ingrediente'">
+                    Registra un nuevo insumo
+                </p>
+            </div>
+
+            <!-- Formulario -->
+            <div class="card">
+                <div class="card-body">
+                    <form th:action="@{/ingredientes/guardar}" method="post" class="needs-validation" novalidate>
+                        <input type="hidden" name="id" th:value="${ingrediente.id}">
+
+                        <div class="row">
+                            <!-- Nombre -->
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label text-uppercase small fw-bold">
+                                    <i class="bi bi-tag me-1"></i>
+                                    NOMBRE DEL INGREDIENTE
+                                </label>
+                                <input type="text" class="form-control" name="nombre" 
+                                       th:value="${ingrediente.nombre}" required
+                                       placeholder="Ej: Harina de trigo">
+                                <div class="invalid-feedback">
+                                    El nombre es obligatorio
+                                </div>
+                            </div>
+
+                            <!-- Unidad de Medida -->
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label text-uppercase small fw-bold">
+                                    <i class="bi bi-rulers me-1"></i>
+                                    UNIDAD DE MEDIDA
+                                </label>
+                                <select class="form-select" name="unidadMedida" required>
+                                    <option value="">Selecciona una unidad</option>
+                                    <option th:each="unidad : ${unidades}" 
+                                            th:value="${unidad}"
+                                            th:text="${unidad}"
+                                            th:selected="${unidad == ingrediente.unidadMedida}">
+                                        kg
+                                    </option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Selecciona una unidad de medida
+                                </div>
+                            </div>
+
+                            <!-- Stock Disponible -->
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label text-uppercase small fw-bold">
+                                    <i class="bi bi-box-seam me-1"></i>
+                                    STOCK INICIAL
+                                </label>
+                                <input type="number" step="0.001" class="form-control" name="stockDisponible" 
+                                       th:value="${ingrediente.stockDisponible}" required
+                                       placeholder="0.00">
+                                <div class="invalid-feedback">
+                                    Ingresa el stock disponible
+                                </div>
+                            </div>
+
+                            <!-- Precio de Compra -->
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label text-uppercase small fw-bold">
+                                    <i class="bi bi-currency-dollar me-1"></i>
+                                    PRECIO DE COMPRA
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">$</span>
+                                    <input type="number" step="0.01" class="form-control" name="precioCompra" 
+                                           th:value="${ingrediente.precioCompra}" required
+                                           placeholder="0.00">
+                                </div>
+                                <div class="invalid-feedback">
+                                    Ingresa el precio de compra
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Acciones -->
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary px-5">
+                                <i class="bi bi-check-circle me-2"></i>
+                                Guardar
+                            </button>
+                            <a th:href="@{/ingredientes}" class="btn btn-outline-secondary px-5">
+                                <i class="bi bi-x-circle me-2"></i>
+                                Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- FOOTER -->
+            <div th:replace="~{fragments/footer :: footer}"></div>
+
+        </main>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // Bootstrap validation
+    (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+    })()
+</script>
+
+</body>
+</html>

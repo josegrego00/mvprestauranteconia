@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+
+<!-- CAMBIA ESTO: -->
+
+<head th:replace="~{fragments/head :: head('Dashboard | Sistema')}"></head>
+
+<body>
+
+    <!-- NAVBAR - CAMBIA ESTO -->
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <div class="container-fluid">
+        <div class="row">
+
+            <!-- SIDEBAR - CAMBIA ESTO -->
+            <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+            <!-- CONTENIDO PRINCIPAL -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+
+                <!-- Welcome Section -->
+                <div class="welcome-section mt-4">
+                    <h1 class="welcome-title">
+                        <i class="bi bi-hand-thumbs-up"></i>
+                        ¡Bienvenido!
+                    </h1>
+                    <p class="welcome-subtitle">
+                        Panel de Control
+                    </p>
+                </div>
+
+                <!-- Stats -->
+                <div class="row g-4 mb-4">
+                    <!-- Tus cards originales aquí sin modificarlas -->
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="section-title">
+                    <i class="bi bi-lightning-charge-fill"></i>
+                    Acciones Rápidas
+                </div>
+
+                <div class="row">
+                    <!-- Tus quick actions originales -->
+                </div>
+
+                <!-- FOOTER - CAMBIA ESTO -->
+                <div th:replace="~{fragments/footer :: footer}"></div>
+
+            </main>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>

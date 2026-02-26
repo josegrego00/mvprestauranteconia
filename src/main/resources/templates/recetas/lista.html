@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+
+<head th:replace="~{fragments/head :: head('Recetas | Sistema')}"></head>
+
+<body>
+
+<!-- NAVBAR -->
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container-fluid">
+    <div class="row">
+
+        <!-- SIDEBAR -->
+        <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+
+            <!-- Header con título y botón nuevo -->
+            <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+                <div class="welcome-section">
+                    <h1 class="welcome-title">
+                        <i class="bi bi-journal-bookmark-fill me-2"></i>
+                        Gestión de Recetas
+                    </h1>
+                    <p class="welcome-subtitle">
+                        Administra las recetas de tus productos
+                    </p>
+                </div>
+                <a th:href="@{/recetas/nueva}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Nueva Receta
+                </a>
+            </div>
+
+            <!-- Alertas -->
+            <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <span th:text="${success}">Operación exitosa</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span th:text="${error}">Error en la operación</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Barra de búsqueda -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" th:action="@{/recetas}" class="row g-3">
+                        <div class="col-md-10">
+                            <label class="form-label text-uppercase small fw-bold">BUSCAR RECETA</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" class="form-control border-start-0" 
+                                       name="search" th:value="${search}" 
+                                       placeholder="Buscar por nombre...">
+                            </div>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search me-2"></i>
+                                Buscar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tabla de recetas -->
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">RECETA</th>
+                                    <th>PRODUCTO ASOCIADO</th>
+                                    <th>INGREDIENTES</th>
+                                    <th>COSTO BRUTO</th>
+                                    <th>PRECIO VENTA</th>
+                                    <th>MARGEN</th>
+                                    <th class="text-end pe-4">ACCIONES</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="receta : ${recetas}">
+                                    <td class="ps-4">
+                                        <div class="fw-semibold" th:text="${receta.nombre}">Café Latte</div>
+                                        <small class="text-secondary" th:text="${receta.descripcion}">Receta clásica</small>
+                                    </td>
+                                    <td>
+                                        <span th:if="${receta.producto != null}" 
+                                              th:text="${receta.producto.nombre}" 
+                                              class="fw-semibold">Café Latte</span>
+                                        <span th:unless="${receta.producto != null}" class="text-secondary">Sin producto</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info bg-opacity-10 text-info" 
+                                              th:text="${#lists.size(receta.listaIngredientes)} + ' ingredientes'">
+                                            5 ingredientes
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span th:if="${receta.precioBruto}">$</span>
+                                        <span th:text="${receta.precioBruto}">2.50</span>
+                                    </td>
+                                    <td>
+                                        <span th:if="${receta.precioVenta}">$</span>
+                                        <span th:text="${receta.precioVenta}" class="fw-semibold">5.00</span>
+                                    </td>
+                                    <td>
+                                        <span th:if="${receta.precioBruto != null and receta.precioVenta != null}"
+                                              th:text="${#numbers.formatDecimal((receta.precioVenta - receta.precioBruto) / receta.precioBruto * 100, 1, 2)} + '%'"
+                                              th:class="${(receta.precioVenta - receta.precioBruto) / receta.precioBruto > 0.3} ? 'text-success fw-semibold' : 
+                                                       ((receta.precioVenta - receta.precioBruto) / receta.precioBruto > 0.1) ? 'text-warning fw-semibold' : 'text-danger fw-semibold'">
+                                            100%
+                                        </span>
+                                        <span th:unless="${receta.precioBruto != null and receta.precioVenta != null}" class="text-secondary">-</span>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <div class="action-buttons">
+                                            <a th:href="@{/recetas/ver/{id}(id=${receta.id})}" 
+                                               class="btn btn-sm btn-outline-info" title="Ver detalle">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a th:href="@{/recetas/editar/{id}(id=${receta.id})}" 
+                                               class="btn btn-sm btn-outline-primary" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a th:href="@{/recetas/eliminar/{id}(id=${receta.id})}" 
+                                               class="btn btn-sm btn-outline-danger" 
+                                               title="Eliminar"
+                                               onclick="return confirm('¿Estás seguro de eliminar esta receta?')">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                            <a th:href="@{/recetas/{id}/ingredientes(id=${receta.id})}" 
+                                               class="btn btn-sm btn-outline-success" title="Ver ingredientes">
+                                                <i class="bi bi-list-check"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr th:if="${recetas.empty}">
+                                    <td colspan="7" class="text-center py-5 text-secondary">
+                                        <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                                        No hay recetas para mostrar
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paginación -->
+            <div th:if="${totalPages > 1}" class="d-flex justify-content-between align-items-center mt-4">
+                <div class="text-secondary small">
+                    Mostrando página <span th:text="${currentPage + 1}"></span> de <span th:text="${totalPages}"></span>
+                </div>
+                <nav aria-label="Paginación">
+                    <ul class="pagination mb-0">
+                        <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                            <a class="page-link" th:href="@{/recetas(page=${currentPage - 1}, size=${pageSize}, search=${search})}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages-1)}" 
+                            th:classappend="${i == currentPage} ? 'active'">
+                            <a class="page-link" th:href="@{/recetas(page=${i}, size=${pageSize}, search=${search})}" 
+                               th:text="${i + 1}">1</a>
+                        </li>
+                        <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                            <a class="page-link" th:href="@{/recetas(page=${currentPage + 1}, size=${pageSize}, search=${search})}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+
+            <!-- FOOTER -->
+            <div th:replace="~{fragments/footer :: footer}"></div>
+
+        </main>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

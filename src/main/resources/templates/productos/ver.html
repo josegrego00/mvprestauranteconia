@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+
+<head th:replace="~{fragments/head :: head('Detalle Producto | Sistema')}"></head>
+
+<body>
+
+<!-- NAVBAR -->
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container-fluid">
+    <div class="row">
+
+        <!-- SIDEBAR -->
+        <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+
+            <!-- Header con acciones -->
+            <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+                <div class="welcome-section">
+                    <h1 class="welcome-title">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Detalle del Producto
+                    </h1>
+                    <p class="welcome-subtitle" th:text="${producto.nombre}">
+                        Café Latte
+                    </p>
+                </div>
+                <div>
+                    <a th:href="@{/productos/editar/{id}(id=${producto.id})}" class="btn btn-primary me-2">
+                        <i class="bi bi-pencil me-2"></i>
+                        Editar
+                    </a>
+                    <a th:href="@{/productos}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Volver
+                    </a>
+                </div>
+            </div>
+
+            <!-- Detalles -->
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header bg-white py-3">
+                            <h5 class="mb-0 fw-semibold">
+                                <i class="bi bi-info-square me-2"></i>
+                                Información General
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="text-secondary" width="200">Nombre:</td>
+                                    <td class="fw-semibold" th:text="${producto.nombre}">Café Latte</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Descripción:</td>
+                                    <td th:text="${producto.descripcion}">Café con leche</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Precio de Compra:</td>
+                                    <td class="fw-semibold">
+                                        <span th:if="${producto.precioCompra}">$</span>
+                                        <span th:text="${producto.precioCompra}">2.50</span>
+                                        <span th:unless="${producto.precioCompra}" class="text-secondary">No especificado</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Precio de Venta:</td>
+                                    <td class="fw-semibold">$ <span th:text="${producto.precioVenta}">5.00</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Margen estimado:</td>
+                                    <td>
+                                        <span th:if="${producto.precioCompra != null and producto.precioVenta != null}"
+                                              class="badge bg-success" 
+                                              th:text="${#numbers.formatDecimal((producto.precioVenta - producto.precioCompra) / producto.precioCompra * 100, 1, 2)} + '%'">
+                                            100%
+                                        </span>
+                                        <span th:unless="${producto.precioCompra != null and producto.precioVenta != null}" class="text-secondary">
+                                            Calcular con precio de compra
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Receta:</td>
+                                    <td>
+                                        <span th:if="${producto.tieneReceta}">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            Tiene receta asociada
+                                            <a th:href="@{/recetas/ver/{id}(id=${producto.receta.id})}" class="btn btn-sm btn-outline-primary ms-3">
+                                                <i class="bi bi-journal-bookmark-fill me-1"></i>
+                                                Ver receta
+                                            </a>
+                                        </span>
+                                        <span th:unless="${producto.tieneReceta}">
+                                            <i class="bi bi-x-circle-fill text-secondary me-2"></i>
+                                            Sin receta
+                                            <a th:href="@{/recetas/nueva?productoId={id}(id=${producto.id})}" class="btn btn-sm btn-outline-success ms-3">
+                                                <i class="bi bi-journal-plus me-1"></i>
+                                                Crear receta
+                                            </a>
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary">Estado:</td>
+                                    <td>
+                                        <span class="badge bg-success" th:if="${producto.estaActivo}">
+                                            <i class="bi bi-check-circle me-1"></i>
+                                            Activo
+                                        </span>
+                                        <span class="badge bg-secondary" th:unless="${producto.estaActivo}">
+                                            <i class="bi bi-x-circle me-1"></i>
+                                            Inactivo
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card de margen y acciones rápidas -->
+                <div class="col-md-4">
+                    <div class="card bg-primary text-white mb-4">
+                        <div class="card-body text-center py-4">
+                            <i class="bi bi-graph-up-arrow display-4 d-block mb-3"></i>
+                            <h3 class="fw-bold" th:text="'$' + ${producto.precioVenta}">$5.00</h3>
+                            <p class="mb-0 opacity-75">Precio de venta</p>
+                        </div>
+                    </div>
+
+                    <div th:if="${producto.tieneReceta}" class="card">
+                        <div class="card-body">
+                            <h6 class="fw-semibold mb-3">
+                                <i class="bi bi-calculator me-2"></i>
+                                Costo estimado por receta
+                            </h6>
+                            <p class="display-6 fw-bold text-primary mb-0" 
+                               th:text="'$' + ${producto.receta.precioBruto}">$2.50</p>
+                            <small class="text-secondary">Suma de ingredientes</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOOTER -->
+            <div th:replace="~{fragments/footer :: footer}"></div>
+
+        </main>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

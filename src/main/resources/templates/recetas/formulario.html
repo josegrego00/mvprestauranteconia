@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+
+<head th:replace="~{fragments/head :: head('Receta | Sistema')}"></head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <div class="container-fluid">
+        <div class="row">
+
+            <!-- SIDEBAR -->
+            <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+            <!-- CONTENIDO PRINCIPAL -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+
+                <!-- Header con título -->
+                <div class="welcome-section mt-4 mb-4">
+                    <h1 class="welcome-title">
+                        <i class="bi bi-journal-bookmark-fill me-2" th:if="${receta.id == null}"></i>
+                        <i class="bi bi-pencil-square me-2" th:if="${receta.id != null}"></i>
+                        <span th:text="${receta.id == null} ? 'Nueva Receta' : 'Editar Receta'"></span>
+                    </h1>
+                    <p class="welcome-subtitle"
+                        th:text="${receta.id == null} ? 'Crea una nueva receta' : 'Modifica los datos de la receta'">
+                        Crea una nueva receta
+                    </p>
+                </div>
+
+                <!-- Formulario -->
+                <div class="card">
+                    <div class="card-body">
+                        <form th:action="@{/recetas/guardar}" method="post" class="needs-validation" novalidate>
+                            <input type="hidden" name="id" th:value="${receta.id}">
+
+                            <!-- Datos básicos -->
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <label class="form-label text-uppercase small fw-bold">
+                                        <i class="bi bi-tag me-1"></i>
+                                        NOMBRE DE LA RECETA
+                                    </label>
+                                    <input type="text" class="form-control" name="nombre" th:value="${receta.nombre}"
+                                        required placeholder="Ej: Receta Café Latte">
+                                    <div class="invalid-feedback">
+                                        El nombre es obligatorio
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-4">
+                                    <label class="form-label text-uppercase small fw-bold">
+                                        <i class="bi bi-box me-1"></i>
+                                        PRODUCTO ASOCIADO
+                                    </label>
+                                    <select class="form-select" name="producto.id">
+                                        <option value="">-- Seleccionar producto --</option>
+                                        <option th:each="producto : ${productos}" th:value="${producto.id}"
+                                            th:text="${producto.nombre}"
+                                            th:selected="${receta.producto != null and receta.producto.id == producto.id}">
+                                        </option>
+                                    </select>
+                                    <small class="text-secondary">Opcional, puedes asociar después</small>
+                                </div>
+
+                                <div class="col-12 mb-4">
+                                    <label class="form-label text-uppercase small fw-bold">
+                                        <i class="bi bi-card-text me-1"></i>
+                                        DESCRIPCIÓN
+                                    </label>
+                                    <textarea class="form-control" name="descripcion" rows="2"
+                                        placeholder="Descripción de la receta...">${receta.descripcion}</textarea>
+                                </div>
+
+                                <div class="col-md-6 mb-4">
+                                    <label class="form-label text-uppercase small fw-bold">
+                                        <i class="bi bi-currency-dollar me-1"></i>
+                                        PRECIO DE VENTA SUGERIDO
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white">$</span>
+                                        <input type="number" step="0.01" class="form-control" name="precioVenta"
+                                            th:value="${receta.precioVenta}" placeholder="0.00">
+                                    </div>
+                                    <small class="text-secondary">Opcional, se puede calcular después</small>
+                                </div>
+                            </div>
+
+                            <!-- Sección de ingredientes -->
+                            <hr class="my-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="fw-semibold mb-0">
+                                    <i class="bi bi-list-check me-2"></i>
+                                    Ingredientes de la receta
+                                </h5>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="btnAgregarIngrediente">
+                                    <i class="bi bi-plus-circle me-1"></i>
+                                    Agregar ingrediente
+                                </button>
+                            </div>
+
+                            <!-- Tabla de ingredientes dinámicos -->
+                            <div class="table-responsive mb-3">
+                                <table class="table table-bordered" id="tablaIngredientes">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>INGREDIENTE</th>
+                                            <th width="200">CANTIDAD</th>
+                                            <th width="100">ACCIÓN</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyIngredientes">
+                                        <!-- Los ingredientes se cargarán aquí dinámicamente -->
+                                        <tr th:each="detalle, iter : ${receta.listaIngredientes}">
+                                            <td>
+                                                <select class="form-select"
+                                                    th:name="'ingredientesIds[' + ${iter.index} + ']'" required>
+                                                    <option value="">Seleccionar</option>
+                                                    <option th:each="ing : ${ingredientes}" th:value="${ing.id}"
+                                                        th:text="${ing.nombre}"
+                                                        th:selected="${detalle.ingrediente != null and detalle.ingrediente.id == ing.id}">
+                                                    </option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.001" class="form-control"
+                                                    th:name="'cantidades[' + ${iter.index} + ']'"
+                                                    th:value="${detalle.cantidadIngrediente}" required>
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    onclick="eliminarFila(this)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Template para nueva fila (oculto) -->
+                            <div id="templateFila" style="display: none;">
+                                <tr>
+                                    <td>
+                                        <select class="form-select" name="ingredientesIds[__index__]" required>
+                                            <option value="">Seleccionar</option>
+                                            <option th:each="ing : ${ingredientes}" th:value="${ing.id}"
+                                                th:text="${ing.nombre}">
+                                            </option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.001" class="form-control"
+                                            name="cantidades[__index__]" required>
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                            onclick="eliminarFila(this)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </div>
+
+                            <!-- Resumen de costos -->
+                            <div th:if="${receta.id != null}" class="alert alert-info mt-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span><strong>Costo bruto actual:</strong> $ <span
+                                            th:text="${receta.precioBruto}">2.50</span></span>
+                                    <span><strong>Precio venta:</strong> $ <span
+                                            th:text="${receta.precioVenta}">5.00</span></span>
+                                    <span><strong>Margen:</strong>
+                                        <span
+                                            th:text="${receta.precioBruto != null and receta.precioVenta != null} ? 
+                                          ${#numbers.formatDecimal((receta.precioVenta - receta.precioBruto) / receta.precioBruto * 100, 1, 2)} + '%' : '-'">
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Acciones -->
+                            <div class="d-flex gap-2 mt-4">
+                                <button type="submit" class="btn btn-primary px-5">
+                                    <i class="bi bi-check-circle me-2"></i>
+                                    Guardar Receta
+                                </button>
+                                <a th:href="@{/recetas}" class="btn btn-outline-secondary px-5">
+                                    <i class="bi bi-x-circle me-2"></i>
+                                    Cancelar
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- FOOTER -->
+                <div th:replace="~{fragments/footer :: footer}"></div>
+
+            </main>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script th:inline="javascript">
+        // Bootstrap validation
+        (function () {
+            'use strict'
+            var forms = document.querySelectorAll('.needs-validation')
+            Array.prototype.slice.call(forms).forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+        })()
+
+        // Manejo dinámico de ingredientes
+        /*<![CDATA[*/
+        let contador = /*[[${receta.listaIngredientes != null ? receta.listaIngredientes.size() : 0}]]*/ 0;
+        /*]]>*/
+
+        document.getElementById('btnAgregarIngrediente').addEventListener('click', function () {
+            const tbody = document.getElementById('tbodyIngredientes');
+            const template = document.getElementById('templateFila').innerHTML;
+            const newRow = template.replace(/__index__/g, contador);
+            tbody.insertAdjacentHTML('beforeend', newRow);
+            contador++;
+        });
+
+        function eliminarFila(btn) {
+            const row = btn.closest('tr');
+            row.remove();
+        }
+    </script>
+</body>
+
+</html>

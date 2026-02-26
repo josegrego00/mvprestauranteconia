@@ -1,0 +1,224 @@
+/* register.css - Estilo minimalista empresarial */
+
+:root {
+    --primary-color: #4e73df;
+    --primary-hover: #224abe;
+    --success-color: #1cc88a;
+    --danger-color: #e74a3b;
+    --dark-color: #2c3e50;
+    --gray-color: #6c757d;
+    --light-bg: #f8f9fc;
+}
+
+body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+.register-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    background: white;
+    padding: 2rem;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.register-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.register-header i {
+    font-size: 3rem;
+    color: var(--primary-color);
+    background: var(--light-bg);
+    padding: 1rem;
+    border-radius: 50%;
+    margin-bottom: 1rem;
+}
+
+.register-header h2 {
+    color: var(--dark-color);
+    font-weight: 600;
+    font-size: 1.8rem;
+    margin: 0;
+}
+
+.register-header p {
+    color: var(--gray-color);
+    font-size: 0.95rem;
+    margin-top: 0.5rem;
+}
+
+.form-label {
+    font-weight: 500;
+    color: var(--dark-color);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.form-label i {
+    color: var(--primary-color);
+    margin-right: 0.5rem;
+}
+
+.form-control,
+.form-select {
+    width: 100%;
+    border: 2px solid #e1e5eb;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    outline: none;
+}
+
+.form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-check-input {
+    width: 1.2rem;
+    height: 1.2rem;
+    cursor: pointer;
+    margin: 0;
+}
+
+.form-check-label {
+    color: var(--dark-color);
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.form-check-label i {
+    color: var(--success-color);
+    margin-right: 0.3rem;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    color: white;
+    width: 100%;
+    cursor: pointer;
+    border: none;
+    font-size: 1rem;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(78, 115, 223, 0.4);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-primary i {
+    margin-right: 0.5rem;
+}
+
+.alert {
+    border: none;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.alert-danger {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.alert i {
+    font-size: 1.2rem;
+}
+
+.register-footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--light-bg);
+    color: var(--gray-color);
+    font-size: 0.85rem;
+}
+
+.register-footer p {
+    margin: 0 0 0.3rem 0;
+}
+
+.register-footer i {
+    margin-right: 0.3rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .register-card {
+        padding: 1.5rem;
+    }
+
+    .register-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .register-header i {
+        font-size: 2.5rem;
+        padding: 0.8rem;
+    }
+}
+
+/* Utilidades */
+.text-success {
+    color: var(--success-color);
+}
+
+.me-1 {
+    margin-right: 0.25rem;
+}
+
+.me-2 {
+    margin-right: 0.5rem;
+}
+
+.mb-4 {
+    margin-bottom: 1.5rem;
+}
+
+.w-100 {
+    width: 100%;
+}

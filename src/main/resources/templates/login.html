@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Sistema de Gestión</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Reutilizamos el mismo CSS del registro -->
+    <link rel="stylesheet" th:href="@{/css/register.css}">
+</head>
+
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-4">
+                <div class="register-card"> <!-- Reutilizamos la misma clase -->
+
+                    <!-- Header -->
+                    <div class="register-header">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        <h2>Bienvenido</h2>
+                        <p>Ingrese sus credenciales para acceder</p>
+                    </div>
+
+                    <!-- Mensaje de error (opcional) -->
+                    <div th:if="${param.error}" class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        Usuario o contraseña incorrectos
+                    </div>
+
+                    <!-- Mensaje de logout (opcional) -->
+                    <div th:if="${param.logout}" class="alert alert-success">
+                        <i class="bi bi-check-circle-fill"></i>
+                        Ha cerrado sesión exitosamente
+                    </div>
+
+                    <!-- Formulario de Login -->
+                    <form th:action="@{/login}" method="post">
+
+                        <!-- Usuario -->
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="bi bi-person"></i>
+                                Usuario
+                            </label>
+                            <input type="text" name="username" class="form-control" placeholder="Ingrese su usuario"
+                                required autofocus>
+                        </div>
+
+                        <!-- Contraseña -->
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="bi bi-lock"></i>
+                                Contraseña
+                            </label>
+                            <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                        </div>
+
+                        <!-- Opciones adicionales (opcional) -->
+                        <div class="mb-4 form-check">
+                            <input type="checkbox" class="form-check-input" name="remember-me" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">
+                                <i class="bi bi-check-circle text-success"></i>
+                                Recordar mi sesión
+                            </label>
+                        </div>
+
+                        <!-- Botón de Ingreso -->
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-box-arrow-in-right"></i>
+                            Iniciar Sesión
+                        </button>
+                    </form>
+
+                    <!-- Footer con enlace a registro -->
+                    <div class="register-footer">
+                        <p class="mb-2">
+                            <i class="bi bi-shield-lock"></i>
+                            Sistema de Gestión Empresarial
+                        </p>
+                        <a th:href="@{/nuevo}" class="text-decoration-none">
+                            <i class="bi bi-person-plus"></i>
+                            ¿No tienes cuenta? Regístrate
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

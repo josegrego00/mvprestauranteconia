@@ -1,0 +1,112 @@
+<div th:fragment="sidebar" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+    <div class="position-sticky pt-3">
+
+        <!-- Título del negocio -->
+        <div class="px-3 mb-3">
+            <small class="text-secondary text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                <i class="bi bi-cup-hot-fill me-1"></i>
+                MVP RESTAURANTE
+            </small>
+        </div>
+
+        <ul class="nav flex-column">
+
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/}">
+                    <i class="bi bi-speedometer2 me-2"></i>
+                    Dashboard
+                </a>
+            </li>
+
+            <!-- SECCIÓN: INVENTARIO -->
+            <li class="nav-item mt-3">
+                <small class="px-3 text-secondary text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                    <i class="bi bi-box-seam me-1"></i>
+                    INVENTARIO
+                </small>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/ingredientes}">
+                    <i class="bi bi-basket me-2"></i>
+                    Ingredientes
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/productos}">
+                    <i class="bi bi-box me-2"></i>
+                    Productos
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/recetas}">
+                    <i class="bi bi-journal-bookmark-fill me-2"></i>
+                    Recetas
+                </a>
+            </li>
+
+            <!-- SECCIÓN: OPERACIONES -->
+            <li class="nav-item mt-3">
+                <small class="px-3 text-secondary text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                    <i class="bi bi-cash-stack me-1"></i>
+                    OPERACIONES
+                </small>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="bi bi-cart me-2"></i>
+                    Compras
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="bi bi-cash-coin me-2"></i>
+                    Ventas
+                </a>
+            </li>
+
+            <!-- SECCIÓN: INTELIGENCIA -->
+            <li class="nav-item mt-3">
+                <small class="px-3 text-secondary text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                    <i class="bi bi-cpu me-1"></i>
+                    IA ASISTENTE
+                </small>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="bi bi-chat-dots me-2"></i>
+                    Chat IA
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="bi bi-graph-up-arrow me-2"></i>
+                    Reportes IA
+                </a>
+            </li>
+
+            <!-- ADMINISTRACIÓN -->
+            <li class="nav-item mt-3">
+                <small class="px-3 text-secondary text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                    <i class="bi bi-gear me-1"></i>
+                    ADMINISTRACIÓN
+                </small>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/usuarios}">
+                    <i class="bi bi-people me-2"></i>
+                    Usuarios
+                </a>
+            </li>
+
+        </ul>
+
+    </div>
+</div>
