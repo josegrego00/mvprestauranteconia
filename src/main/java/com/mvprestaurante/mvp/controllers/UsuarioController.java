@@ -23,11 +23,6 @@ public class UsuarioController {
 
     private final UsuarioServicio usuarioServicio;
 
-    @GetMapping("/")
-    public String index() {
-        return "index";
-    }
-
     @GetMapping("/login")
     public String loginInicioSeccion() {
         return "login";

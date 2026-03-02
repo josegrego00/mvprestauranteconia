@@ -1,5 +1,7 @@
 package com.mvprestaurante.mvp.models;
 
+import org.hibernate.annotations.TenantId;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -39,5 +41,13 @@ public class Usuario {
     private Boolean estaActivo;
 
     private String email;
+
+    @TenantId
+    @Column(name = "empresa_id", nullable = false, updatable = false)
+    private String empresaId;
+
+    @ManyToOne
+    @JoinColumn(name = "empresa_id", insertable = false, updatable = false)
+    private Empresa empresa;
 
 }
