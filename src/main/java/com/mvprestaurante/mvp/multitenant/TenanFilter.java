@@ -26,6 +26,18 @@ public class TenanFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+
+        // ✅ Rutas que NO necesitan tenant (públicas)
+        return path.equals("/") || // Landing page
+                path.startsWith("/registro") || // Registro de empresas
+                path.startsWith("/css") || // Recursos estáticos
+                path.startsWith("/js") || // JavaScript
+                path.startsWith("/images"); // (imagnes, etc)
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain)
