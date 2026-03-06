@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 
 import com.mvprestaurante.mvp.DTO.UsuarioDTORequest;
 import com.mvprestaurante.mvp.models.Usuario;
-import com.mvprestaurante.mvp.services.UsuarioServicio;
+import com.mvprestaurante.mvp.services.UsuarioService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class UsuarioController {
 
-    private final UsuarioServicio usuarioServicio;
+    private final UsuarioService usuarioServicio;
 
     @GetMapping("/login")
     public String loginInicioSeccion() {

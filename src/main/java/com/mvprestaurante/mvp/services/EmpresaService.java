@@ -1,5 +1,8 @@
 package com.mvprestaurante.mvp.services;
 
+import java.security.SecureRandom;
+import java.util.Base64;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,36 +17,36 @@ import com.mvprestaurante.mvp.repositories.EmpresaRepositorio;
 public class EmpresaService {
 
     @Autowired
-    private EmpresaRepositorio empresaRepository;
+    private EmpresaRepositorio empresaRepositorio;
 
     @Autowired
     private EmpresaMapper empresaMapper;
+
+    @Autowired
+    private UsuarioService usuarioService;
+
+    @Autowired
+    private static final SecureRandom secureRandom = new SecureRandom();
+    private static final Base64.Encoder base64Encoder = Base64.getUrlEncoder().withoutPadding();
+    private static final int PASSWORD_LENGTH = 10;
 
     @Transactional
     public EmpresaDTOResponse registrarEmpresa(EmpresaDTORequest dto) {
 
         // Validar que el subdominio no exista
-        if (empresaRepository.existsBySubdominio(dto.getSubdominio())) {
+        if (empresaRepositorio.existsBySubdominio(dto.getSubdominio())) {
             throw new RuntimeException("El subdominio '" + dto.getSubdominio() + "' ya está en uso");
         }
 
-        // Convertir DTO a entidad usando el mapper
+        // 1. Guardar la empresa
         Empresa empresa = empresaMapper.toEntity(dto);
+        Empresa empresaGuardada = empresaRepositorio.save(empresa);
 
-        // Guardar en BD
-        Empresa empresaGuardada = empresaRepository.save(empresa);
+        // 3. Crear usuario ADMINISTRADOR usando UsuarioService
+        usuarioService.crearUsuarioAdmin();
 
-        // Convertir entidad a DTO de respuesta y retornar
+        // 5. Convertir a DTO de respuesta
         return empresaMapper.toResponse(empresaGuardada);
     }
 
-    public boolean existePorSubdominio(String subdominio) {
-        return empresaRepository.existsBySubdominio(subdominio);
-    }
-
-    public EmpresaDTOResponse buscarPorSubdominio(String subdominio) {
-        Empresa empresa = empresaRepository.findBySubdominio(subdominio)
-                .orElseThrow(() -> new RuntimeException("No existe empresa con subdominio: " + subdominio));
-        return empresaMapper.toResponse(empresa);
-    }
 }
