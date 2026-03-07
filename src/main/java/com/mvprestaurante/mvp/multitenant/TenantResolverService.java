@@ -20,7 +20,7 @@ public class TenantResolverService {
         this.empresaRepositorio = empresaRepositorio;
     }
 
-    public Long resolveTenantId(String subdominio) {
+    public String resolveTenantId(String subdominio) {
 
         if (subdominio == null || subdominio.isBlank()) {
             throw new ResponseStatusException(
@@ -39,7 +39,7 @@ public class TenantResolverService {
                     "Empresa inactiva");
         }
 
-        return empresa.getId();
+        return empresa.getId().toString();
     }
 
 }

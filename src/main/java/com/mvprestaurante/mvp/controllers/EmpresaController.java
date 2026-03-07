@@ -11,11 +11,14 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.mvprestaurante.mvp.DTO.EmpresaDTORequest;
 import com.mvprestaurante.mvp.DTO.EmpresaDTOResponse;
 import com.mvprestaurante.mvp.services.EmpresaService;
+import com.mvprestaurante.mvp.services.UsuarioService;
 
 @Controller
 @RequestMapping("/empresa")
 public class EmpresaController {
 
+    @Autowired
+    private UsuarioService usuarioService;
     @Autowired
     private EmpresaService empresaService;
 
@@ -50,6 +53,7 @@ public class EmpresaController {
 
             // El servicio maneja la lógica de negocio y retorna DTO de respuesta
             EmpresaDTOResponse empresaCreada = empresaService.registrarEmpresa(dto);
+            usuarioService.crearUsuarioAdmin(empresaCreada);
 
             // Mensaje de éxito
             redirectAttributes.addFlashAttribute("mensaje",

@@ -9,7 +9,7 @@ public class TenantIdentifierResolver implements CurrentTenantIdentifierResolver
     // Obtiene el tenant actual del ThreadLocal
     @Override
     public String resolveCurrentTenantIdentifier() {
-        Long tenantId = TenantContext.getTenantId();
+        String tenantId = TenantContext.getTenantId();
 
         // ⚠️ Durante el inicio de la app, NO hay tenant
         if (tenantId == null) {
@@ -17,7 +17,7 @@ public class TenantIdentifierResolver implements CurrentTenantIdentifierResolver
             return "0"; // Valor por defecto que NO existe como tenant real
         }
 
-        return tenantId.toString();
+        return tenantId;
     }
 
     // true = Hibernate valida que las sesiones existentes

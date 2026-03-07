@@ -80,7 +80,7 @@ public class TenanFilter extends OncePerRequestFilter {
                 return;
             }
 
-            Long tenantId = resolver.resolveTenantId(subdominio);
+            String tenantId = resolver.resolveTenantId(subdominio);
             TenantContext.setTenantId(tenantId);
 
             filterChain.doFilter(request, response);
