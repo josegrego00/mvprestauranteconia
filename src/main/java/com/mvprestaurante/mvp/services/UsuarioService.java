@@ -53,7 +53,7 @@ public class UsuarioService {
     }
 
     @Transactional
-    public void crearUsuarioAdmin(EmpresaDTOResponse empresa) {
+    public void crearUsuarioAdmin(Empresa empresa) {
         System.out.println("\n🔍 [crearUsuarioAdmin] ========== INICIO ==========");
 
         // 1. Obtener tenantId del contexto
@@ -82,10 +82,9 @@ public class UsuarioService {
         admin.setNombreUsuario("admin");
         admin.setContrasenna(passwordEncoder.encode("123456"));
         admin.setRol("ADMIN");
+        admin.setEmail("cliente@gail.com");
+        admin.setEmpresa(empresa);
         admin.setEstaActivo(true);
-        
-
-        admin.setEmpresa(empresaMapper.toEntity(empresa));
 
         System.out.println("📋 [crearUsuarioAdmin] Datos del usuario a guardar:");
         System.out.println("   - Nombre: " + admin.getNombre());
@@ -93,7 +92,6 @@ public class UsuarioService {
         System.out.println("   - Rol: " + admin.getRol());
         System.out.println("   - Activo: " + admin.getEstaActivo());
         System.out.println("   - Email: " + admin.getEmail());
-        System.out.println("   - empresaId: " + admin.getEmpresaId());
         System.out.println("   - empresa: " + (admin.getEmpresa() != null ? admin.getEmpresa().getId() : "null"));
 
         // 4. Guardar en BD

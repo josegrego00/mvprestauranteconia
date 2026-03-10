@@ -18,8 +18,6 @@ import com.mvprestaurante.mvp.services.UsuarioService;
 public class EmpresaController {
 
     @Autowired
-    private UsuarioService usuarioService;
-    @Autowired
     private EmpresaService empresaService;
 
     @Value("${app.dominio.principal:localhost}")
@@ -53,7 +51,6 @@ public class EmpresaController {
 
             // El servicio maneja la lógica de negocio y retorna DTO de respuesta
             EmpresaDTOResponse empresaCreada = empresaService.registrarEmpresa(dto);
-            usuarioService.crearUsuarioAdmin(empresaCreada);
 
             // Mensaje de éxito
             redirectAttributes.addFlashAttribute("mensaje",

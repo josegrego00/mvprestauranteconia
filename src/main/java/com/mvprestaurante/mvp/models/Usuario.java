@@ -4,6 +4,7 @@ import org.hibernate.annotations.TenantId;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -42,12 +43,8 @@ public class Usuario {
 
     private String email;
 
-    @TenantId
-    @Column(name = "empresa_id", nullable = false, updatable = false)
-    private String empresaId;
-
-    @ManyToOne
-    @JoinColumn(name = "empresa_id", insertable = false, updatable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "empresa_id", nullable = false)
     private Empresa empresa;
 
 }

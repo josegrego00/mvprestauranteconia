@@ -5,15 +5,15 @@ import org.springframework.stereotype.Component;
 public class TenantContext {
     
     // ThreadLocal = "cada hilo tiene su propio valor"
-    private static final ThreadLocal<String> tenantActual = new ThreadLocal<>();
+    private static final ThreadLocal<Long> tenantActual = new ThreadLocal<>();
     
     // Guardar el tenant cuando llegue la petición
-    public static void setTenantId(String id) {
+    public static void setTenantId(Long id) {
         tenantActual.set(id);
     }
     
     // Obtener el tenant actual (para usarlo en consultas)
-    public static String getTenantId() {
+    public static Long getTenantId() {
         return tenantActual.get();
     }
     

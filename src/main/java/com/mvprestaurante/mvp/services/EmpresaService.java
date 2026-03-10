@@ -15,11 +15,11 @@ public class EmpresaService {
 
     @Autowired
     private EmpresaRepositorio empresaRepositorio;
+    @Autowired
+    private UsuarioService usuarioService;
 
     @Autowired
     private EmpresaMapper empresaMapper;
-
-    
 
     @Transactional
     public EmpresaDTOResponse registrarEmpresa(EmpresaDTORequest dto) {
@@ -32,8 +32,7 @@ public class EmpresaService {
         // 1. Guardar la empresa
         Empresa empresa = empresaMapper.toEntity(dto);
         Empresa empresaGuardada = empresaRepositorio.save(empresa);
-
-        
+        usuarioService.crearUsuarioAdmin(empresa);
 
         // 5. Convertir a DTO de respuesta
         return empresaMapper.toResponse(empresaGuardada);

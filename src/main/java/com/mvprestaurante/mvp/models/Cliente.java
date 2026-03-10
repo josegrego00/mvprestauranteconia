@@ -41,10 +41,6 @@ public class Cliente {
     @OneToMany(mappedBy = "cliente")
     private List<Venta> ventas;
 
-    @TenantId
-    @Column(name = "empresa_id", nullable = false, updatable = false)
-    private String empresaId;
-
     @ManyToOne
     @JoinColumn(name = "empresa_id", insertable = false, updatable = false)
     private Empresa empresa;
