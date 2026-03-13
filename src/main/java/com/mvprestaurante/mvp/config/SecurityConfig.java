@@ -7,34 +7,59 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import com.mvprestaurante.mvp.multitenant.SubdomainExtractor;
+import com.mvprestaurante.mvp.multitenant.TenanFilter;
+import com.mvprestaurante.mvp.multitenant.TenantResolverService;
+import com.mvprestaurante.mvp.security.CustomUserDetailsService;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+        private final CustomUserDetailsService userDetailsService;
+        private final SubdomainExtractor extractor;
+        private final TenantResolverService resolver;
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/", "/registro", "/empresa/guardar", "/css/**", "/js/**").permitAll()
-                        .requestMatchers("/login").permitAll()
-                        .anyRequest().authenticated())
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .defaultSuccessUrl("/", true)
-                        .permitAll())
-                .logout(logout -> logout
-                        .logoutSuccessUrl("/login?logout=true")
-                        .permitAll())
+        public SecurityConfig(CustomUserDetailsService userDetailsService, SubdomainExtractor extractor,
+                        TenantResolverService resolver) {
+                this.userDetailsService = userDetailsService;
+                this.extractor = extractor;
+                this.resolver = resolver;
+        }
 
-                .securityContext(context -> context
-                        .requireExplicitSave(false));
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
 
-        return http.build();
-    }
+        @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+                http
+
+                                .addFilterBefore(new TenanFilter(extractor, resolver),
+                                                UsernamePasswordAuthenticationFilter.class)
+                                .authorizeHttpRequests(authz -> authz
+                                                .requestMatchers("/", "/registro", "/empresa/guardar", "/css/**",
+                                                                "/js/**")
+                                                .permitAll()
+                                                .requestMatchers("/login").permitAll()
+                                                .anyRequest().authenticated())
+                                .formLogin(form -> form
+                                                .loginPage("/login")
+                                                .defaultSuccessUrl("/dashboard", true)
+                                                .permitAll())
+                                .logout(logout -> logout
+                                                .logoutSuccessUrl("/login?logout=true")
+                                                .permitAll())
+
+                                .securityContext(context -> context
+                                                .requireExplicitSave(false))
+
+                                .userDetailsService(userDetailsService);
+                ;
+
+                return http.build();
+        }
 }

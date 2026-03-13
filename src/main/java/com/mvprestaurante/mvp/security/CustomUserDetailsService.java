@@ -6,6 +6,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.mvprestaurante.mvp.models.Usuario;
+import com.mvprestaurante.mvp.multitenant.TenantContext;
 import com.mvprestaurante.mvp.repositories.UsuarioRepositorio;
 
 @Service
@@ -20,10 +21,13 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-        Usuario usuario = repositorio.findBynombreUsuario(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
+        Long empresaId = TenantContext.getTenantId();
+
+        Usuario usuario = repositorio.findByNombreUsuarioAndEmpresa_Id(username, empresaId)
+                .orElseThrow(() -> {
+                    return new UsernameNotFoundException("Usuario no encontrado: " + username);
+                });
 
         return new CustomUserDetails(usuario);
     }
-
 }

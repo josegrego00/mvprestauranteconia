@@ -5,28 +5,25 @@ import org.springframework.stereotype.Component;
 @Component
 public class SubdomainExtractor {
 
-    // esta clase se encarga de extraer el subdominio del host
-
     public String extract(String host) {
-
-        if (host == null || !host.contains("localhost")) {
+        if (host == null)
             return null;
+
+        // Para subdominios de localhost (ej: empanadas.localhost)
+        if (host.endsWith(".localhost")) {
+            return host.substring(0, host.indexOf(".localhost"));
         }
 
-        String[] partes = host.split("\\.");
-
-        if (partes.length < 2) {
-            return null;
+        // Para producción (ej: empanadas.mibombay.com)
+        if (host.contains(".") && !host.equals("localhost") && !host.equals("mibombay.com")) {
+            String[] partes = host.split("\\.");
+            String subdominio = partes[0].toLowerCase();
+            String regex = "^[a-z0-9-]{3,30}$";
+            if (subdominio.matches(regex)) {
+                return subdominio;
+            }
         }
 
-        String subdominio = partes[0].toLowerCase();
-
-        String regex = "^[a-z0-9-]{3,30}$";
-
-        if (!subdominio.matches(regex)) {
-            return null;
-        }
-
-        return subdominio;
+        return null;
     }
 }

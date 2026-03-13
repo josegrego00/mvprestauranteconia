@@ -12,7 +12,12 @@ public class IndexController {
         return "inicio";
     }
 
-    @GetMapping("/registro")
+    @GetMapping("dashboard")
+    public String dashboard() {
+        return "index";
+    }
+
+    @GetMapping("registro")
     public String registro(@RequestParam(required = false) String subdominio, Model model) {
         // Si viene un subdominio por parámetro, lo pasamos a la vista
         if (subdominio != null && !subdominio.isEmpty()) {
