@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.mvprestaurante.mvp.DTO.EmpresaDTORequest;
-import com.mvprestaurante.mvp.DTO.EmpresaDTOResponse;
+import com.mvprestaurante.mvp.DTO.EmpresaDTO;
+
 import com.mvprestaurante.mvp.services.EmpresaService;
 import com.mvprestaurante.mvp.services.UsuarioService;
 
@@ -41,7 +41,7 @@ public class EmpresaController {
 
         try {
             // Crear DTO con los datos
-            EmpresaDTORequest dto = new EmpresaDTORequest();
+            EmpresaDTO dto = new EmpresaDTO();
             dto.setSubdominio(subdominio);
             dto.setNombreEmpresa(nombreEmpresa);
             dto.setEmail(email);
@@ -50,7 +50,7 @@ public class EmpresaController {
             dto.setActiva(activa);
 
             // El servicio maneja la lógica de negocio y retorna DTO de respuesta
-            EmpresaDTOResponse empresaCreada = empresaService.registrarEmpresa(dto);
+            EmpresaDTO empresaCreada = empresaService.registrarEmpresa(dto);
 
             // Mensaje de éxito
             redirectAttributes.addFlashAttribute("mensaje",

@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.mvprestaurante.mvp.DTO.EmpresaDTOResponse;
 import com.mvprestaurante.mvp.DTO.UsuarioDTORequest;
 import com.mvprestaurante.mvp.mapper.EmpresaMapper;
 import com.mvprestaurante.mvp.mapper.UsuarioMapper;
@@ -30,7 +29,14 @@ public class UsuarioService {
     private final UsuarioMapper usuarioMapper;
 
     public void guardarUsuario(UsuarioDTORequest usuario) {
+        Long empresaId = TenantContext.getTenantId();
+
         System.out.println("🔍 [guardarUsuario] INICIO - Guardando usuario: " + usuario.getNombreUsuario());
+        System.out.println("🔍 [guardarUsuario] INICIO - Usuario: " + usuario.getNombreUsuario());
+        System.out.println("🏢 [guardarUsuario] Tenant ID: " + empresaId);
+
+        Empresa empresa = empresaRepositorio.findById(empresaId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada con ID: " + empresaId));
 
         // Encriptar la contraseña antes de guardar
         String contraseñaEncriptada = passwordEncoder.encode(usuario.getContrasenna());
@@ -47,7 +53,7 @@ public class UsuarioService {
 
         Usuario entidad = usuarioMapper.toEntity(usuario);
         System.out.println("🔄 [guardarUsuario] Mapper convertido a entidad");
-
+        entidad.setEmpresa(empresa);
         usuarioRepositorio.save(entidad);
         System.out.println("✅ [guardarUsuario] Usuario guardado exitosamente en BD");
     }

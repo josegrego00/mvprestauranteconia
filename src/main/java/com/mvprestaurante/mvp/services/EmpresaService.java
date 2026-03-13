@@ -4,8 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.mvprestaurante.mvp.DTO.EmpresaDTORequest;
-import com.mvprestaurante.mvp.DTO.EmpresaDTOResponse;
+import com.mvprestaurante.mvp.DTO.EmpresaDTO;
+
 import com.mvprestaurante.mvp.mapper.EmpresaMapper;
 import com.mvprestaurante.mvp.models.Empresa;
 import com.mvprestaurante.mvp.repositories.EmpresaRepositorio;
@@ -22,7 +22,7 @@ public class EmpresaService {
     private EmpresaMapper empresaMapper;
 
     @Transactional
-    public EmpresaDTOResponse registrarEmpresa(EmpresaDTORequest dto) {
+    public EmpresaDTO registrarEmpresa(EmpresaDTO dto) {
 
         // Validar que el subdominio no exista
         if (empresaRepositorio.existsBySubdominio(dto.getSubdominio())) {

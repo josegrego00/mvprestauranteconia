@@ -31,4 +31,6 @@ public class UsuarioDTORequest {
     @Email  
     private String email;
 
+    private Long empresaId;
+
 }

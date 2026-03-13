@@ -3,7 +3,7 @@ package com.mvprestaurante.mvp.DTO;
 import lombok.Data;
 
 @Data
-public class EmpresaDTOResponse {
+public class EmpresaDTO {
     private Long id;
     private String subdominio;
     private String nombreEmpresa;
