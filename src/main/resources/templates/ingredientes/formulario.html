@@ -76,7 +76,7 @@
                                     <i class="bi bi-box-seam me-1"></i>
                                     STOCK INICIAL
                                 </label>
-                                <input type="number" step="0.001" class="form-control" name="stockDisponible" 
+                                <input type="number" step="0.1" class="form-control" name="stockDisponible" 
                                        th:value="${ingrediente.stockDisponible}" required
                                        placeholder="0.00">
                                 <div class="invalid-feedback">
@@ -92,7 +92,7 @@
                                 </label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-white">$</span>
-                                    <input type="number" step="0.01" class="form-control" name="precioCompra" 
+                                    <input type="number" step="1" class="form-control" name="precioCompra" 
                                            th:value="${ingrediente.precioCompra}" required
                                            placeholder="0.00">
                                 </div>

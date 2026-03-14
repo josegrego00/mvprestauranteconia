@@ -30,5 +30,9 @@ public class Producto {
 
     @OneToOne(mappedBy = "producto")
     private Receta receta;
-
+    
+    // ADD THIS - Relationship with Empresa
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "empresa_id", nullable = false)
+    private Empresa empresa;
 }

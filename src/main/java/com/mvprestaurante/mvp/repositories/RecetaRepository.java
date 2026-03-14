@@ -10,13 +10,27 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface RecetaRepository extends JpaRepository<Receta, Long> {
-    
-    Page<Receta> findByEstaActivaTrue(Pageable pageable);
-    
-    Page<Receta> findByNombreContainingIgnoreCaseAndEstaActivaTrue(String nombre, Pageable pageable);
-    
-    @Query("SELECT r FROM Receta r WHERE r.producto.id = :productoId AND r.estaActiva = true")
-    Page<Receta> findByProductoId(@Param("productoId") Long productoId, Pageable pageable);
-    
-    boolean existsByNombreAndEstaActivaTrue(String nombre);
+
+    @Query("SELECT r FROM Receta r WHERE r.empresa.id = :tenantId AND r.estaActiva = true")
+    Page<Receta> findByEstaActivaTrue(@Param("tenantId") Long tenantId, Pageable pageable);
+
+    @Query("SELECT r FROM Receta r WHERE r.empresa.id = :tenantId " +
+            "AND LOWER(r.nombre) LIKE LOWER(CONCAT('%', :nombre, '%')) AND r.estaActiva = true")
+    Page<Receta> findByNombreContainingIgnoreCaseAndEstaActivaTrue(
+            @Param("tenantId") Long tenantId,
+            @Param("nombre") String nombre,
+            Pageable pageable);
+
+    @Query("SELECT r FROM Receta r WHERE r.empresa.id = :tenantId " +
+            "AND r.producto.id = :productoId AND r.estaActiva = true")
+    Page<Receta> findByProductoId(
+            @Param("tenantId") Long tenantId,
+            @Param("productoId") Long productoId,
+            Pageable pageable);
+
+    @Query("SELECT COUNT(r) > 0 FROM Receta r " +
+            "WHERE r.empresa.id = :tenantId AND LOWER(r.nombre) = LOWER(:nombre) AND r.estaActiva = true")
+    boolean existsByNombreAndEstaActivaTrue(
+            @Param("tenantId") Long tenantId,
+            @Param("nombre") String nombre);
 }

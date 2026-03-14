@@ -36,5 +36,9 @@ public class Receta {
     @OneToOne
     @JoinColumn(name = "producto_id")
     private Producto producto;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "empresa_id", nullable = false)
+    private Empresa empresa;
 
 }

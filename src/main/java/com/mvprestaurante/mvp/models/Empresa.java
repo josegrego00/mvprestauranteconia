@@ -20,15 +20,26 @@ public class Empresa {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    
     @Column(unique = true, nullable = false)
     private String subdominio;
+    
     private Boolean activa;
     private String nombreEmpresa;
     private String email;
     private String telefono;
     private String plan;
 
-    @OneToMany(mappedBy = "empresa") 
+    @OneToMany(mappedBy = "empresa")
     private List<Usuario> listaUsuario;
 
+    @OneToMany(mappedBy = "empresa")
+    private List<Ingrediente> listaIngredientes;
+    
+    @OneToMany(mappedBy = "empresa")
+    private List<Receta> listaRecetas;
+    
+    // ADD THIS
+    @OneToMany(mappedBy = "empresa")
+    private List<Producto> listaProductos;
 }

@@ -1,11 +1,13 @@
 package com.mvprestaurante.mvp.services;
 
+import com.mvprestaurante.mvp.models.Empresa;
 import com.mvprestaurante.mvp.models.Ingrediente;
+import com.mvprestaurante.mvp.multitenant.TenantContext;
+import com.mvprestaurante.mvp.repositories.EmpresaRepositorio;
 import com.mvprestaurante.mvp.repositories.IngredienteRepository;
 
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,32 +20,73 @@ import java.util.Optional;
 public class IngredienteService {
 
     private final IngredienteRepository ingredienteRepository;
+    private final EmpresaRepositorio empresaRepositorio;
 
     @Transactional(readOnly = true)
     public Page<Ingrediente> listarActivos(Pageable pageable) {
-        return ingredienteRepository.findByEstaActivoTrue(pageable);
+        Long empresaId = TenantContext.getTenantId();
+        if (empresaId == null) {
+            throw new RuntimeException("No tenant found in context");
+        }
+        return ingredienteRepository.findByEstaActivoTrue(empresaId, pageable);
     }
 
     @Transactional(readOnly = true)
     public Page<Ingrediente> buscarPorNombre(String nombre, Pageable pageable) {
-        return ingredienteRepository.findByNombreContainingIgnoreCaseAndEstaActivoTrue(nombre, pageable);
+        Long empresaId = TenantContext.getTenantId();
+        if (empresaId == null) {
+            throw new RuntimeException("No tenant found in context");
+        }
+        return ingredienteRepository.findByNombreContainingIgnoreCaseAndEstaActivoTrue(empresaId, nombre, pageable);
     }
 
     @Transactional(readOnly = true)
     public Optional<Ingrediente> obtenerPorId(Long id) {
-        return ingredienteRepository.findById(id);
+        Long empresaId = TenantContext.getTenantId();
+        if (empresaId == null) {
+            throw new RuntimeException("No tenant found in context");
+        }
+
+        return ingredienteRepository.findById(id)
+                .filter(ingrediente -> ingrediente.getEmpresa().getId().equals(empresaId));
     }
 
     @Transactional
     public Ingrediente guardar(Ingrediente ingrediente) {
+        Long empresaId = TenantContext.getTenantId();
+        if (empresaId == null) {
+            throw new RuntimeException("No tenant found in context");
+        }
+
+        // Validate unique name within tenant
+        if (ingrediente.getId() == null && existePorNombre(ingrediente.getNombre())) {
+            throw new RuntimeException("Ya existe un ingrediente con este nombre en su empresa");
+        }
+
+        Empresa empresa = empresaRepositorio.findById(empresaId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
         ingrediente.setEstaActivo(true);
+        ingrediente.setEmpresa(empresa);
         return ingredienteRepository.save(ingrediente);
     }
 
     @Transactional
     public Optional<Ingrediente> actualizar(Long id, Ingrediente ingredienteActualizado) {
+        Long empresaId = TenantContext.getTenantId();
+        if (empresaId == null) {
+            throw new RuntimeException("No tenant found in context");
+        }
+
         return ingredienteRepository.findById(id)
+                .filter(ingrediente -> ingrediente.getEmpresa().getId().equals(empresaId))
                 .map(ingrediente -> {
+                    // Validate unique name within tenant (excluding current ingredient)
+                    if (!ingrediente.getNombre().equalsIgnoreCase(ingredienteActualizado.getNombre())
+                            && existePorNombre(ingredienteActualizado.getNombre())) {
+                        throw new RuntimeException("Ya existe un ingrediente con este nombre en su empresa");
+                    }
+
                     ingrediente.setNombre(ingredienteActualizado.getNombre());
                     ingrediente.setStockDisponible(ingredienteActualizado.getStockDisponible());
                     ingrediente.setPrecioCompra(ingredienteActualizado.getPrecioCompra());
@@ -54,7 +97,13 @@ public class IngredienteService {
 
     @Transactional
     public boolean eliminarLogico(Long id) {
+        Long empresaId = TenantContext.getTenantId();
+        if (empresaId == null) {
+            throw new RuntimeException("No tenant found in context");
+        }
+
         return ingredienteRepository.findById(id)
+                .filter(ingrediente -> ingrediente.getEmpresa().getId().equals(empresaId))
                 .map(ingrediente -> {
                     ingrediente.setEstaActivo(false);
                     ingredienteRepository.save(ingrediente);
@@ -65,6 +114,10 @@ public class IngredienteService {
 
     @Transactional(readOnly = true)
     public boolean existePorNombre(String nombre) {
-        return ingredienteRepository.existsByNombreAndEstaActivoTrue(nombre);
+        Long empresaId = TenantContext.getTenantId();
+        if (empresaId == null) {
+            throw new RuntimeException("No tenant found in context");
+        }
+        return ingredienteRepository.existsByNombreAndEstaActivoTrue(empresaId, nombre);
     }
 }
