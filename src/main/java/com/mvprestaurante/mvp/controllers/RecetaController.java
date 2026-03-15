@@ -1,6 +1,8 @@
 package com.mvprestaurante.mvp.controllers;
 
 import com.mvprestaurante.mvp.models.DetalleReceta;
+import com.mvprestaurante.mvp.models.Ingrediente;
+import com.mvprestaurante.mvp.models.Producto;
 import com.mvprestaurante.mvp.models.Receta;
 import com.mvprestaurante.mvp.services.IngredienteService;
 import com.mvprestaurante.mvp.services.ProductoService;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 @RequestMapping("/recetas")
@@ -73,31 +76,50 @@ public class RecetaController {
             @RequestParam(required = false) Double[] cantidades,
             RedirectAttributes redirectAttributes) {
         try {
+            // Validar nombre único
             if (recetaService.existePorNombre(receta.getNombre())) {
                 redirectAttributes.addFlashAttribute("error", "Ya existe una receta con ese nombre");
                 return "redirect:/recetas/nueva";
             }
 
+            // Validar que seleccionó un producto
+            if (receta.getProducto() == null || receta.getProducto().getId() == null) {
+                redirectAttributes.addFlashAttribute("error", "Debe seleccionar un producto");
+                return "redirect:/recetas/nueva";
+            }
+
             // Construir lista de detalles de receta
             if (ingredientesIds != null && cantidades != null) {
+                List<DetalleReceta> detalles = new ArrayList<>();
                 for (int i = 0; i < ingredientesIds.length; i++) {
                     if (ingredientesIds[i] != null && cantidades[i] > 0) {
+                        final Long ingredienteId = ingredientesIds[i];
+                        final Double cantidad = cantidades[i];
+
+                        // Aquí podrías validar que el ingrediente existe
+                        Ingrediente ingrediente = ingredienteService.obtenerPorId(ingredientesIds[i])
+                                .orElseThrow(
+                                        () -> new RuntimeException("Ingrediente no encontrado: " + ingredienteId));
+
                         DetalleReceta detalle = DetalleReceta.builder()
-                                .ingrediente(ingredienteService.obtenerPorId(ingredientesIds[i]).orElse(null))
+                                .ingrediente(ingrediente)
                                 .cantidadIngrediente(cantidades[i])
                                 .build();
-                        receta.getListaIngredientes().add(detalle);
+                        detalles.add(detalle);
                     }
                 }
+                receta.setListaIngredientes(detalles);
             }
 
             recetaService.guardar(receta);
             redirectAttributes.addFlashAttribute("success", "Receta guardada exitosamente");
+
         } catch (Exception e) {
             e.printStackTrace();
-            redirectAttributes.addFlashAttribute("error", "Error al guardar la receta");
+            redirectAttributes.addFlashAttribute("error", "Error al guardar la receta: " + e.getMessage());
+            return "redirect:/recetas/nueva";
         }
-        return "redirect:/recetas";
+        return "redirect:/productos"; // 👈 Mejor redirigir a productos, no a recetas
     }
 
     @GetMapping("/editar/{id}")

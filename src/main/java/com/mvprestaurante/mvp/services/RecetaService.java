@@ -2,6 +2,7 @@ package com.mvprestaurante.mvp.services;
 
 import com.mvprestaurante.mvp.models.DetalleReceta;
 import com.mvprestaurante.mvp.models.Empresa;
+import com.mvprestaurante.mvp.models.Producto;
 import com.mvprestaurante.mvp.models.Receta;
 import com.mvprestaurante.mvp.multitenant.TenantContext;
 import com.mvprestaurante.mvp.repositories.DetalleRecetaRepository;
@@ -58,6 +59,10 @@ public class RecetaService {
 
     @Transactional
     public Receta guardar(Receta receta) {
+        System.out.println("🔵 INICIO guardar receta: " + receta.getNombre());
+        System.out.println("   Producto ID: " + (receta.getProducto() != null ? receta.getProducto().getId() : "null"));
+        System.out.println("   Ingredientes: "
+                + (receta.getListaIngredientes() != null ? receta.getListaIngredientes().size() : 0));
         Long empresaId = TenantContext.getTenantId();
         if (empresaId == null) {
             throw new RuntimeException("No tenant found in context");
@@ -75,6 +80,18 @@ public class RecetaService {
 
         receta.setEstaActiva(true);
 
+        // 🔴 IMPORTANTE: Cargar el producto completo desde la BD
+        if (receta.getProducto() != null && receta.getProducto().getId() != null) {
+            Producto producto = productoService.obtenerPorId(receta.getProducto().getId())
+                    .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+
+            // Verificar que el producto pertenezca a la misma empresa
+            if (!producto.getEmpresa().getId().equals(empresaId)) {
+                throw new RuntimeException("El producto no pertenece a su empresa");
+            }
+
+            receta.setProducto(producto);
+        }
         // Calcular precio bruto basado en ingredientes si hay
         if (receta.getListaIngredientes() != null && !receta.getListaIngredientes().isEmpty()) {
             // Ensure each detalle has the receta reference
