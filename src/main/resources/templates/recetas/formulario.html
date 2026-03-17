@@ -36,9 +36,8 @@
                         <form th:action="@{/recetas/guardar}" method="post" class="needs-validation" novalidate>
 
                             <input type="hidden" name="id" th:value="${receta.id}">
-                            <input type="hidden" name="productoId"
-                                th:value="${productoId != null ? productoId : receta.producto?.id}" />
-
+                            <input type="hidden" name="totalIngredientes" id="totalIngredientes"
+                                th:value="${receta.listaIngredientes != null ? receta.listaIngredientes.size() : 0}">
 
                             <!-- Datos básicos -->
                             <div class="row">
@@ -54,41 +53,14 @@
                                     </div>
                                 </div>
 
-                                <div class="col-md-6 mb-4">
-                                    <label class="form-label text-uppercase small fw-bold">
-                                        <i class="bi bi-box me-1"></i>
-                                        PRODUCTO ASOCIADO
-                                    </label>
-                                    <select class="form-select" name="producto.id"> <!-- 👈 name="producto.id" -->
-                                        <option value="">-- Seleccionar producto --</option>
-                                        <option th:each="producto : ${productos}" th:value="${producto.id}"
-                                            th:text="${producto.nombre}"
-                                            th:selected="${receta.producto != null and receta.producto.id == producto.id}">
-                                        </option>
-                                    </select>
-                                    <small class="text-secondary">Opcional, puedes asociar después</small>
-                                </div>
-
                                 <div class="col-12 mb-4">
                                     <label class="form-label text-uppercase small fw-bold">
                                         <i class="bi bi-card-text me-1"></i>
                                         DESCRIPCIÓN
                                     </label>
                                     <textarea class="form-control" name="descripcion" rows="2"
-                                        placeholder="Descripción de la receta...">${receta.descripcion}</textarea>
-                                </div>
-
-                                <div class="col-md-6 mb-4">
-                                    <label class="form-label text-uppercase small fw-bold">
-                                        <i class="bi bi-currency-dollar me-1"></i>
-                                        PRECIO DE VENTA SUGERIDO
-                                    </label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-white">$</span>
-                                        <input type="number" step="0.01" class="form-control" name="precioVenta"
-                                            th:value="${receta.precioVenta}" placeholder="0.00">
-                                    </div>
-                                    <small class="text-secondary">Opcional, se puede calcular después</small>
+                                        placeholder="Descripción de la receta..."
+                                        th:text="${receta.descripcion}"></textarea>
                                 </div>
                             </div>
 
@@ -145,7 +117,7 @@
                                         </tr>
 
                                         <!-- Empty State Message (when no ingredients) -->
-                                        <tr th:if="${#lists.isEmpty(receta.listaIngredientes)}">
+                                        <tr th:if="${#lists.isEmpty(receta.listaIngredientes)}" id="filaVacia">
                                             <td colspan="3" class="text-center py-4 text-muted">
                                                 <i class="bi bi-database fs-4 d-block mb-2"></i>
                                                 <span>No hay ingredientes agregados</span>
@@ -159,7 +131,7 @@
                             <template id="templateFila">
                                 <tr>
                                     <td>
-                                        <select class="form-select form-select-sm" name="ingredientesIds[0]" required>
+                                        <select class="form-select form-select-sm" name="temp_ingrediente" required>
                                             <option value="">Seleccionar</option>
                                             <option th:each="ing : ${ingredientes}" th:value="${ing.id}"
                                                 th:text="${ing.nombre}">
@@ -168,7 +140,7 @@
                                     </td>
                                     <td>
                                         <input type="number" step="0.001" class="form-control form-control-sm"
-                                            name="cantidades[0]" placeholder="0.000" required>
+                                            name="temp_cantidad" placeholder="0.000" required>
                                     </td>
                                     <td class="text-center">
                                         <button type="button" class="btn btn-sm btn-outline-danger"
@@ -178,21 +150,6 @@
                                     </td>
                                 </tr>
                             </template>
-                            <!-- Resumen de costos -->
-                            <div th:if="${receta.id != null}" class="alert alert-info mt-3">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span><strong>Costo bruto actual:</strong> $ <span
-                                            th:text="${receta.precioBruto}">2.50</span></span>
-                                    <span><strong>Precio venta:</strong> $ <span
-                                            th:text="${receta.precioVenta}">5.00</span></span>
-                                    <span><strong>Margen:</strong>
-                                        <span
-                                            th:text="${receta.precioBruto != null and receta.precioVenta != null} ? 
-                                          ${#numbers.formatDecimal((receta.precioVenta - receta.precioBruto) / receta.precioBruto * 100, 1, 2)} + '%' : '-'">
-                                        </span>
-                                    </span>
-                                </div>
-                            </div>
 
                             <!-- Acciones -->
                             <div class="d-flex gap-2 mt-4">
@@ -242,15 +199,98 @@
 
         document.getElementById('btnAgregarIngrediente').addEventListener('click', function () {
             const tbody = document.getElementById('tbodyIngredientes');
-            const template = document.getElementById('templateFila').innerHTML;
-            const newRow = template.replace(/__index__/g, contador);
-            tbody.insertAdjacentHTML('beforeend', newRow);
+
+            // Eliminar mensaje de fila vacía si existe
+            const filaVacia = document.getElementById('filaVacia');
+            if (filaVacia) {
+                filaVacia.remove();
+            }
+
+            // Crear nueva fila
+            const template = document.getElementById('templateFila');
+            const newRow = template.content.cloneNode(true);
+
+            // Actualizar nombres de los campos con el índice actual
+            newRow.querySelector('select[name="temp_ingrediente"]').name = 'ingredientesIds';
+            newRow.querySelector('input[name="temp_cantidad"]').name = 'cantidades';
+            tbody.appendChild(newRow);
             contador++;
+
+            // Actualizar campo oculto
+            document.getElementById('totalIngredientes').value = contador;
         });
 
         function eliminarFila(btn) {
             const row = btn.closest('tr');
             row.remove();
+
+            // Si no quedan filas, mostrar mensaje vacío
+            const tbody = document.getElementById('tbodyIngredientes');
+            if (tbody.children.length === 0) {
+                const filaVacia = document.createElement('tr');
+                filaVacia.id = 'filaVacia';
+                filaVacia.innerHTML = '<td colspan="3" class="text-center py-4 text-muted">' +
+                    '<i class="bi bi-database fs-4 d-block mb-2"></i>' +
+                    '<span>No hay ingredientes agregados</span>' +
+                    '</td>';
+                tbody.appendChild(filaVacia);
+            }
+        }
+
+        // Antes de enviar el formulario, verificar que hay ingredientes
+        document.querySelector('form').addEventListener('submit', function (e) {
+            const tbody = document.getElementById('tbodyIngredientes');
+            const filas = tbody.querySelectorAll('tr:not([id="filaVacia"])');
+
+            if (filas.length === 0) {
+                e.preventDefault();
+                alert('Debe agregar al menos un ingrediente a la receta');
+                return false;
+            }
+            // VALIDAR DUPLICADOS
+            // ✅ VALIDAR DUPLICADOS (JS)
+            if (!validarDuplicados()) {
+                e.preventDefault();
+                return false;
+            }
+
+            // Verificar que todas las filas tengan seleccionado un ingrediente y cantidad válida
+            for (let fila of filas) {
+                const select = fila.querySelector('select');
+                const input = fila.querySelector('input[type="number"]');
+
+                if (!select.value || select.value === '') {
+                    e.preventDefault();
+                    alert('Debe seleccionar un ingrediente para todas las filas');
+                    return false;
+                }
+
+                if (!input.value || parseFloat(input.value) <= 0) {
+                    e.preventDefault();
+                    alert('Debe ingresar una cantidad válida mayor a 0 para todos los ingredientes');
+                    return false;
+                }
+            }
+        });
+        function validarDuplicados() {
+            const selects = document.querySelectorAll('#tablaIngredientes select');
+            const valores = [];
+
+            for (let select of selects) {
+                const val = select.value;
+
+                // Ignorar vacíos
+                if (!val) continue;
+
+                if (valores.includes(val)) {
+                    alert("No puedes repetir ingredientes");
+                    return false;
+                }
+
+                valores.push(val);
+            }
+
+            return true;
         }
     </script>
 </body>

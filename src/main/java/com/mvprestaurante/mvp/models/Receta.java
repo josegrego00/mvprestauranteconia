@@ -30,13 +30,13 @@ public class Receta {
 
     private Boolean estaActiva;
 
+    @OneToOne
+    @JoinColumn(name = "producto_id", unique = true)
+    private Producto producto;
+
     @OneToMany(mappedBy = "receta", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DetalleReceta> listaIngredientes;
 
-    @OneToOne
-    @JoinColumn(name = "producto_id")
-    private Producto producto;
-    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "empresa_id", nullable = false)
     private Empresa empresa;

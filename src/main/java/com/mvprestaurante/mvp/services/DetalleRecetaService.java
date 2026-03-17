@@ -27,54 +27,54 @@ public class DetalleRecetaService {
         if (empresaId == null) {
             throw new RuntimeException("No tenant found in context");
         }
-        
+
         // Verify the recipe belongs to this tenant
         if (detalleReceta.getReceta() != null) {
             Receta receta = recetaRepository.findById(detalleReceta.getReceta().getId())
                     .orElseThrow(() -> new RuntimeException("Receta no encontrada"));
-            
+
             if (!receta.getEmpresa().getId().equals(empresaId)) {
                 throw new RuntimeException("No tiene permiso para modificar esta receta");
             }
-            
+
             detalleReceta.setReceta(receta);
         }
-        
+
         // Verify the ingredient belongs to this tenant (if needed)
-        if (detalleReceta.getIngrediente() != null && 
-            !detalleReceta.getIngrediente().getEmpresa().getId().equals(empresaId)) {
+        if (detalleReceta.getIngrediente() != null &&
+                !detalleReceta.getIngrediente().getEmpresa().getId().equals(empresaId)) {
             throw new RuntimeException("No tiene permiso para usar este ingrediente");
         }
-        
+
         return detalleRecetaRepository.save(detalleReceta);
     }
 
     @Transactional
-    public List<DetalleReceta> guardarTodos(List<DetalleReceta> detalles) {
+    public List<DetalleReceta> guardarListaDetalleReceta(List<DetalleReceta> detalles) {
         Long empresaId = TenantContext.getTenantId();
         if (empresaId == null) {
             throw new RuntimeException("No tenant found in context");
         }
-        
+
         // Verify all details belong to the same tenant
         for (DetalleReceta detalle : detalles) {
             if (detalle.getReceta() != null) {
                 Receta receta = recetaRepository.findById(detalle.getReceta().getId())
                         .orElseThrow(() -> new RuntimeException("Receta no encontrada"));
-                
+
                 if (!receta.getEmpresa().getId().equals(empresaId)) {
                     throw new RuntimeException("No tiene permiso para modificar esta receta");
                 }
-                
+
                 detalle.setReceta(receta);
             }
-            
-            if (detalle.getIngrediente() != null && 
-                !detalle.getIngrediente().getEmpresa().getId().equals(empresaId)) {
+
+            if (detalle.getIngrediente() != null &&
+                    !detalle.getIngrediente().getEmpresa().getId().equals(empresaId)) {
                 throw new RuntimeException("No tiene permiso para usar este ingrediente");
             }
         }
-        
+
         return detalleRecetaRepository.saveAll(detalles);
     }
 
@@ -84,7 +84,7 @@ public class DetalleRecetaService {
         if (empresaId == null) {
             throw new RuntimeException("No tenant found in context");
         }
-        
+
         return detalleRecetaRepository.findById(id)
                 .filter(detalle -> detalle.getReceta().getEmpresa().getId().equals(empresaId));
     }
@@ -95,15 +95,15 @@ public class DetalleRecetaService {
         if (empresaId == null) {
             throw new RuntimeException("No tenant found in context");
         }
-        
+
         // Verify the recipe belongs to this tenant
         Receta receta = recetaRepository.findById(recetaId)
                 .orElseThrow(() -> new RuntimeException("Receta no encontrada"));
-        
+
         if (!receta.getEmpresa().getId().equals(empresaId)) {
             throw new RuntimeException("No tiene permiso para eliminar detalles de esta receta");
         }
-        
+
         detalleRecetaRepository.deleteByRecetaId(empresaId, recetaId);
     }
 
@@ -113,7 +113,7 @@ public class DetalleRecetaService {
         if (empresaId == null) {
             throw new RuntimeException("No tenant found in context");
         }
-        
+
         return detalleRecetaRepository.findById(id)
                 .filter(detalle -> detalle.getReceta().getEmpresa().getId().equals(empresaId))
                 .map(detalle -> {
@@ -122,4 +122,5 @@ public class DetalleRecetaService {
                 })
                 .orElse(false);
     }
+
 }

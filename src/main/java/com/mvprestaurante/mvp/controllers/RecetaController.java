@@ -18,7 +18,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @Controller
 @RequestMapping("/recetas")
@@ -59,15 +61,35 @@ public class RecetaController {
     }
 
     @GetMapping("/nueva")
-    public String nueva(Model model) {
+    public String nuevaReceta(Model model) {
         Receta receta = new Receta();
         receta.setListaIngredientes(new ArrayList<>());
 
         model.addAttribute("receta", receta);
-        model.addAttribute("productos", productoService.listarActivos(PageRequest.of(0, 100)).getContent());
+        // Si no quieres mostrar productos, comenta esta línea
+        // model.addAttribute("productos",
+        // productoService.listarActivos(PageRequest.of(0, 100)).getContent());
         model.addAttribute("ingredientes", ingredienteService.listarActivos(PageRequest.of(0, 100)).getContent());
 
         return "recetas/formulario";
+    }
+
+    @GetMapping("/editar/{id}")
+    public String editarReceta(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            Receta receta = recetaService.obtenerPorId(id)
+                    .orElseThrow(() -> new RuntimeException("Receta no encontrada"));
+
+            model.addAttribute("receta", receta);
+            // model.addAttribute("productos",
+            // productoService.listarActivos(PageRequest.of(0, 100)).getContent());
+            model.addAttribute("ingredientes", ingredienteService.listarActivos(PageRequest.of(0, 100)).getContent());
+
+            return "recetas/formulario";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error al cargar la receta: " + e.getMessage());
+            return "redirect:/recetas";
+        }
     }
 
     @PostMapping("/guardar")
@@ -75,112 +97,84 @@ public class RecetaController {
             @RequestParam(required = false) Long[] ingredientesIds,
             @RequestParam(required = false) Double[] cantidades,
             RedirectAttributes redirectAttributes) {
+        // 🔴 NUEVO LOG - PON ESTO AL INICIO
+        System.out.println("===== DATOS RECIBIDOS =====");
+        System.out.println("Nombre: " + receta.getNombre());
+        System.out.println("Descripción: " + receta.getDescripcion());
+        System.out
+                .println("Ingredientes IDs: " + (ingredientesIds != null ? Arrays.toString(ingredientesIds) : "null"));
+        System.out.println("Cantidades: " + (cantidades != null ? Arrays.toString(cantidades) : "null"));
         try {
-            // Validar nombre único
-            if (recetaService.existePorNombre(receta.getNombre())) {
+            // Validar nombre único (solo si es nueva receta o cambió el nombre)
+            if (receta.getId() == null && recetaService.existePorNombre(receta.getNombre())) {
                 redirectAttributes.addFlashAttribute("error", "Ya existe una receta con ese nombre");
                 return "redirect:/recetas/nueva";
             }
 
-            // Validar que seleccionó un producto
-            if (receta.getProducto() == null || receta.getProducto().getId() == null) {
-                redirectAttributes.addFlashAttribute("error", "Debe seleccionar un producto");
-                return "redirect:/recetas/nueva";
-            }
-
             // Construir lista de detalles de receta
-            if (ingredientesIds != null && cantidades != null) {
-                List<DetalleReceta> detalles = new ArrayList<>();
-                for (int i = 0; i < ingredientesIds.length; i++) {
-                    if (ingredientesIds[i] != null && cantidades[i] > 0) {
-                        final Long ingredienteId = ingredientesIds[i];
-                        final Double cantidad = cantidades[i];
+            List<DetalleReceta> detalles = new ArrayList<>();
 
-                        // Aquí podrías validar que el ingrediente existe
-                        Ingrediente ingrediente = ingredienteService.obtenerPorId(ingredientesIds[i])
-                                .orElseThrow(
-                                        () -> new RuntimeException("Ingrediente no encontrado: " + ingredienteId));
+            if (ingredientesIds != null && cantidades != null && ingredientesIds.length > 0) {
+                for (int i = 0; i < ingredientesIds.length; i++) {
+                    if (ingredientesIds[i] != null && cantidades[i] != null && cantidades[i] > 0) {
+                        Long idIngrediente = ingredientesIds[i];
+                        Double cantidadIngrediente = cantidades[i];
+
+                        Optional<Ingrediente> ingredienteOpt = ingredienteService.obtenerPorId(idIngrediente);
+
+                        if (!ingredienteOpt.isPresent()) {
+                            throw new RuntimeException("Ingrediente no encontrado: " + idIngrediente);
+                        }
+
+                        Ingrediente ingrediente = ingredienteOpt.get();
 
                         DetalleReceta detalle = DetalleReceta.builder()
+                                .receta(receta)
                                 .ingrediente(ingrediente)
-                                .cantidadIngrediente(cantidades[i])
+                                .cantidadIngrediente(cantidadIngrediente)
                                 .build();
                         detalles.add(detalle);
                     }
                 }
-                receta.setListaIngredientes(detalles);
             }
 
-            recetaService.guardar(receta);
+            // Validar que tenga al menos un ingrediente
+            if (detalles.isEmpty()) {
+                redirectAttributes.addFlashAttribute("error", "La receta debe tener al menos un ingrediente");
+                return "redirect:/recetas/nueva";
+            }
+
+            receta.setListaIngredientes(detalles);
+
+            // LOGS PARA VERIFICAR (AHORA SÍ DESPUÉS DE CONSTRUIR)
+            System.out.println("===== VERIFICANDO INGREDIENTES =====");
+            System.out.println("Receta nombre: " + receta.getNombre());
+            System.out.println("Receta ID (antes de guardar): " + receta.getId());
+            System.out.println("Número de ingredientes: " + receta.getListaIngredientes().size());
+
+            for (int i = 0; i < receta.getListaIngredientes().size(); i++) {
+                DetalleReceta d = receta.getListaIngredientes().get(i);
+                System.out.println("Ingrediente " + i + ":");
+                System.out.println(
+                        "  - ID Ingrediente: " + (d.getIngrediente() != null ? d.getIngrediente().getId() : "null"));
+                System.out.println("  - Cantidad: " + d.getCantidadIngrediente());
+                System.out.println(
+                        "  - Receta en detalle: " + (d.getReceta() != null ? d.getReceta().getNombre() : "null"));
+            }
+
+            recetaService.crearReceta(receta);
             redirectAttributes.addFlashAttribute("success", "Receta guardada exitosamente");
 
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/recetas/nueva";
         } catch (Exception e) {
             e.printStackTrace();
             redirectAttributes.addFlashAttribute("error", "Error al guardar la receta: " + e.getMessage());
             return "redirect:/recetas/nueva";
         }
-        return "redirect:/productos"; // 👈 Mejor redirigir a productos, no a recetas
-    }
 
-    @GetMapping("/editar/{id}")
-    public String editar(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
-        return recetaService.obtenerPorId(id)
-                .map(receta -> {
-                    model.addAttribute("receta", receta);
-                    model.addAttribute("productos", productoService.listarActivos(PageRequest.of(0, 100)).getContent());
-                    model.addAttribute("ingredientes",
-                            ingredienteService.listarActivos(PageRequest.of(0, 100)).getContent());
-                    return "recetas/formulario";
-                })
-                .orElseGet(() -> {
-                    redirectAttributes.addFlashAttribute("error", "Receta no encontrada");
-                    return "redirect:/recetas";
-                });
-    }
-
-    @GetMapping("/eliminar/{id}")
-    public String eliminar(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        if (recetaService.eliminarLogico(id)) {
-            redirectAttributes.addFlashAttribute("success", "Receta eliminada correctamente");
-        } else {
-            redirectAttributes.addFlashAttribute("error", "Error al eliminar la receta");
-        }
+        // Redirigir a la lista de recetas
         return "redirect:/recetas";
-    }
-
-    @GetMapping("/ver/{id}")
-    public String ver(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
-        return recetaService.obtenerPorId(id)
-                .map(receta -> {
-                    model.addAttribute("receta", receta);
-                    return "recetas/ver";
-                })
-                .orElseGet(() -> {
-                    redirectAttributes.addFlashAttribute("error", "Receta no encontrada");
-                    return "redirect:/recetas";
-                });
-    }
-
-    @GetMapping("/{id}/ingredientes")
-    public String verIngredientes(@PathVariable Long id,
-            @RequestParam(defaultValue = "0") int page,
-            Model model,
-            RedirectAttributes redirectAttributes) {
-        return recetaService.obtenerPorId(id)
-                .map(receta -> {
-                    Pageable pageable = PageRequest.of(page, 10);
-                    Page<DetalleReceta> ingredientesPage = recetaService.listarIngredientesDeReceta(id, pageable);
-
-                    model.addAttribute("receta", receta);
-                    model.addAttribute("ingredientes", ingredientesPage.getContent());
-                    model.addAttribute("currentPage", page);
-                    model.addAttribute("totalPages", ingredientesPage.getTotalPages());
-
-                    return "recetas/ingredientes";
-                })
-                .orElseGet(() -> {
-                    redirectAttributes.addFlashAttribute("error", "Receta no encontrada");
-                    return "redirect:/recetas";
-                });
     }
 }

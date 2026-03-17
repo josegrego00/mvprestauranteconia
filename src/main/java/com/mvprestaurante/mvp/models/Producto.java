@@ -29,8 +29,10 @@ public class Producto {
     private Boolean tieneReceta;
 
     @OneToOne(mappedBy = "producto")
-    private Receta receta;
-    
+    private Receta receta; // Puede ser null si el producto no tiene receta
+
+    private Double stock;
+
     // ADD THIS - Relationship with Empresa
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "empresa_id", nullable = false)
