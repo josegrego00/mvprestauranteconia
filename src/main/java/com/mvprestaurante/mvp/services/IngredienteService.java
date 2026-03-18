@@ -1,7 +1,9 @@
 package com.mvprestaurante.mvp.services;
 
+import com.mvprestaurante.mvp.exceptions.DuplicateResourceException;
 import com.mvprestaurante.mvp.models.Empresa;
 import com.mvprestaurante.mvp.models.Ingrediente;
+import com.mvprestaurante.mvp.models.Receta;
 import com.mvprestaurante.mvp.multitenant.TenantContext;
 import com.mvprestaurante.mvp.repositories.EmpresaRepositorio;
 import com.mvprestaurante.mvp.repositories.IngredienteRepository;
@@ -59,13 +61,11 @@ public class IngredienteService {
         }
 
         // Validate unique name within tenant
-        if (ingrediente.getId() == null && existePorNombre(ingrediente.getNombre())) {
-            throw new RuntimeException("Ya existe un ingrediente con este nombre en su empresa");
-        }
+        validarNombreDuplicado(ingrediente.getNombre());
 
         Empresa empresa = empresaRepositorio.findById(empresaId)
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
-
+        ingrediente.setId(null); // asegura que siempre sea creación
         ingrediente.setEstaActivo(true);
         ingrediente.setEmpresa(empresa);
         return ingredienteRepository.save(ingrediente);
@@ -119,5 +119,14 @@ public class IngredienteService {
             throw new RuntimeException("No tenant found in context");
         }
         return ingredienteRepository.existsByNombreAndEstaActivoTrue(empresaId, nombre);
+    }
+
+    private void validarNombreDuplicado(String nombre) {
+        String nombreNormalizado = nombre.trim().toLowerCase();
+        if (existePorNombre(nombreNormalizado)) {
+            throw new DuplicateResourceException(
+                    "Ingrediente",
+                    "Ya existe un ingrediente con el nombre: " + nombre);
+        }
     }
 }

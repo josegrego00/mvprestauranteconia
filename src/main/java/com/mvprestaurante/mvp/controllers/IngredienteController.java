@@ -57,34 +57,23 @@ public class IngredienteController {
     @PostMapping("/guardar")
     public String guardar(@ModelAttribute Ingrediente ingrediente,
             RedirectAttributes redirectAttributes) {
-        try {
-            // Check if this is an update (has ID) or new (no ID)
-            if (ingrediente.getId() != null) {
-                // UPDATE: Use the actualizar method
-                Optional<Ingrediente> actualizado = ingredienteService.actualizar(ingrediente.getId(), ingrediente);
-                if (actualizado.isPresent()) {
-                    redirectAttributes.addFlashAttribute("success", "Ingrediente actualizado exitosamente");
-                } else {
-                    redirectAttributes.addFlashAttribute("error", "No se pudo actualizar el ingrediente");
-                    return "redirect:/ingredientes/editar/" + ingrediente.getId();
-                }
-            } else {
-                // CREATE: Check if name already exists
-                if (ingredienteService.existePorNombre(ingrediente.getNombre())) {
-                    redirectAttributes.addFlashAttribute("error", "Ya existe un ingrediente con ese nombre");
-                    return "redirect:/ingredientes/nuevo";
-                }
 
-                ingredienteService.guardar(ingrediente);
-                redirectAttributes.addFlashAttribute("success", "Ingrediente guardado exitosamente");
-            }
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Error al guardar el ingrediente: " + e.getMessage());
-            if (ingrediente.getId() != null) {
+        // 🔥 SIN try-catch
+        // 🔥 SIN validación duplicada
+
+        if (ingrediente.getId() != null) {
+            Optional<Ingrediente> actualizado = ingredienteService.actualizar(ingrediente.getId(), ingrediente);
+            if (actualizado.isPresent()) {
+                redirectAttributes.addFlashAttribute("success", "Ingrediente actualizado exitosamente");
+            } else {
+                redirectAttributes.addFlashAttribute("error", "No se pudo actualizar el ingrediente");
                 return "redirect:/ingredientes/editar/" + ingrediente.getId();
             }
-            return "redirect:/ingredientes/nuevo";
+        } else {
+            ingredienteService.guardar(ingrediente);
+            redirectAttributes.addFlashAttribute("success", "Ingrediente guardado exitosamente");
         }
+
         return "redirect:/ingredientes";
     }
 

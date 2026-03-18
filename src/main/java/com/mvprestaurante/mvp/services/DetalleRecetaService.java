@@ -45,7 +45,7 @@ public class DetalleRecetaService {
                 !detalleReceta.getIngrediente().getEmpresa().getId().equals(empresaId)) {
             throw new RuntimeException("No tiene permiso para usar este ingrediente");
         }
-
+        
         return detalleRecetaRepository.save(detalleReceta);
     }
 
