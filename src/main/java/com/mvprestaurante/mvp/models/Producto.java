@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @Entity
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "nombre", "empresa_id" }))
 public class Producto {
 
     @Id
@@ -31,7 +32,7 @@ public class Producto {
     @OneToOne(mappedBy = "producto")
     private Receta receta; // Puede ser null si el producto no tiene receta
 
-    private Double stock;
+    private Double stock; // solo si no tiene receta
 
     // ADD THIS - Relationship with Empresa
     @ManyToOne(fetch = FetchType.LAZY)

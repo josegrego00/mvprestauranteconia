@@ -1,5 +1,6 @@
 package com.mvprestaurante.mvp.services;
 
+import com.mvprestaurante.mvp.exceptions.DuplicateResourceException;
 import com.mvprestaurante.mvp.models.Empresa;
 import com.mvprestaurante.mvp.models.Producto;
 import com.mvprestaurante.mvp.multitenant.TenantContext;
@@ -55,54 +56,81 @@ public class ProductoService {
         if (empresaId == null) {
             throw new RuntimeException("No tenant found in context");
         }
-        
+
         return productoRepository.findById(id)
                 .filter(producto -> producto.getEmpresa().getId().equals(empresaId));
     }
 
     @Transactional
     public Producto guardar(Producto producto) {
+
         Long empresaId = TenantContext.getTenantId();
         if (empresaId == null) {
             throw new RuntimeException("No tenant found in context");
         }
-        
-        // Validate unique name within tenant
-        if (producto.getId() == null && existePorNombre(producto.getNombre())) {
-            throw new RuntimeException("Ya existe un producto con este nombre en su empresa");
+
+        // 🔥 VALIDACIÓN DUPLICADO
+        if (producto.getId() == null &&
+                productoRepository.existsByNombreIgnoreCaseAndEmpresaIdAndEstaActivoTrue(
+                        producto.getNombre(), empresaId)) {
+
+            throw new DuplicateResourceException("Producto", producto.getNombre());
         }
-        
-        // Set the empresa
+
+        // 🔥 REGLA DE NEGOCIO: RECETA vs STOCK
+        if (Boolean.TRUE.equals(producto.getTieneReceta())) {
+            producto.setStock(null); // producto preparado → no maneja stock directo
+        } else {
+            if (producto.getStock() == null) {
+                producto.setStock(0.0); // producto de reventa → necesita stock
+            }
+        }
+
+        // 🔥 ASIGNAR EMPRESA
         Empresa empresa = empresaRepositorio.findById(empresaId)
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
         producto.setEmpresa(empresa);
-        
         producto.setEstaActivo(true);
-        producto.setTieneReceta(false); // Por defecto, hasta que se asocie una receta
+
         return productoRepository.save(producto);
     }
 
     @Transactional
     public Optional<Producto> actualizar(Long id, Producto productoActualizado) {
+
         Long empresaId = TenantContext.getTenantId();
         if (empresaId == null) {
             throw new RuntimeException("No tenant found in context");
         }
-        
+
         return productoRepository.findById(id)
                 .filter(producto -> producto.getEmpresa().getId().equals(empresaId))
                 .map(producto -> {
-                    // Validate unique name within tenant (excluding current product)
-                    if (!producto.getNombre().equalsIgnoreCase(productoActualizado.getNombre()) 
-                            && existePorNombre(productoActualizado.getNombre())) {
-                        throw new RuntimeException("Ya existe un producto con este nombre en su empresa");
+
+                    // 🔥 VALIDACIÓN DUPLICADO (EXCLUYENDO EL MISMO)
+                    if (!producto.getNombre().equalsIgnoreCase(productoActualizado.getNombre()) &&
+                            productoRepository.existsByNombreIgnoreCaseAndEmpresaIdAndEstaActivoTrue(
+                                    productoActualizado.getNombre(), empresaId)) {
+
+                        throw new DuplicateResourceException("Producto", productoActualizado.getNombre());
                     }
-                    
+
+                    // 🔥 ACTUALIZACIÓN DE CAMPOS
                     producto.setNombre(productoActualizado.getNombre());
                     producto.setDescripcion(productoActualizado.getDescripcion());
                     producto.setPrecioCompra(productoActualizado.getPrecioCompra());
                     producto.setPrecioVenta(productoActualizado.getPrecioVenta());
-                    // No actualizamos tieneReceta aquí, eso se maneja al asociar/desasociar receta
+
+                    // 🔥 REGLA DE NEGOCIO (IMPORTANTE)
+                    if (Boolean.TRUE.equals(producto.getTieneReceta())) {
+                        producto.setStock(null);
+                    } else {
+                        if (productoActualizado.getStock() != null) {
+                            producto.setStock(productoActualizado.getStock());
+                        }
+                    }
+
                     return productoRepository.save(producto);
                 });
     }
@@ -113,7 +141,7 @@ public class ProductoService {
         if (empresaId == null) {
             throw new RuntimeException("No tenant found in context");
         }
-        
+
         return productoRepository.findById(id)
                 .filter(producto -> producto.getEmpresa().getId().equals(empresaId))
                 .map(producto -> {
@@ -130,7 +158,7 @@ public class ProductoService {
         if (empresaId == null) {
             throw new RuntimeException("No tenant found in context");
         }
-        return productoRepository.existsByNombreAndEstaActivoTrue(empresaId, nombre);
+        return productoRepository.existsByNombreIgnoreCaseAndEmpresaIdAndEstaActivoTrue(nombre, empresaId);
     }
 
     @Transactional
@@ -139,7 +167,7 @@ public class ProductoService {
         if (empresaId == null) {
             throw new RuntimeException("No tenant found in context");
         }
-        
+
         productoRepository.findById(productoId)
                 .filter(producto -> producto.getEmpresa().getId().equals(empresaId))
                 .ifPresent(producto -> {
