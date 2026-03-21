@@ -1,5 +1,6 @@
 package com.mvprestaurante.mvp.services;
 
+import com.mvprestaurante.mvp.exceptions.BusinessException;
 import com.mvprestaurante.mvp.exceptions.DuplicateResourceException;
 import com.mvprestaurante.mvp.models.Empresa;
 import com.mvprestaurante.mvp.models.Producto;
@@ -77,11 +78,16 @@ public class ProductoService {
             throw new DuplicateResourceException("Producto", producto.getNombre());
         }
 
+        if (producto.getTieneReceta() == null) {
+            producto.setTieneReceta(false);
+        }
         // 🔥 REGLA DE NEGOCIO: RECETA vs STOCK
         if (Boolean.TRUE.equals(producto.getTieneReceta())) {
             producto.setStock(null); // producto preparado → no maneja stock directo
+
         } else {
-            if (producto.getStock() == null) {
+            producto.setReceta(null);
+            if ((producto.getStock() == null) || (producto.getStock() < 0)) {
                 producto.setStock(0.0); // producto de reventa → necesita stock
             }
         }
@@ -116,17 +122,32 @@ public class ProductoService {
                         throw new DuplicateResourceException("Producto", productoActualizado.getNombre());
                     }
 
+                    Boolean tieneRecetaActual = Boolean.TRUE.equals(producto.getTieneReceta());
+                    Boolean tieneRecetaNuevo = Boolean.TRUE.equals(productoActualizado.getTieneReceta());
+
+                    // 🔥 BLOQUEO DE CAMBIO DE TIPO
+                    if (tieneRecetaActual != tieneRecetaNuevo) {
+                        throw new BusinessException("No puedes cambiar el tipo de producto (con/sin receta)");
+                    }
+
                     // 🔥 ACTUALIZACIÓN DE CAMPOS
-                    producto.setNombre(productoActualizado.getNombre());
+                    producto.setNombre(productoActualizado.getNombre().trim());
                     producto.setDescripcion(productoActualizado.getDescripcion());
                     producto.setPrecioCompra(productoActualizado.getPrecioCompra());
-                    producto.setPrecioVenta(productoActualizado.getPrecioVenta());
+                    if ((productoActualizado.getPrecioVenta() == null) || (productoActualizado.getPrecioVenta() < 0)) {
+                        producto.setPrecioVenta(0.0);
+                    } else {
+                        producto.setPrecioVenta(productoActualizado.getPrecioVenta());
+                    }
 
                     // 🔥 REGLA DE NEGOCIO (IMPORTANTE)
-                    if (Boolean.TRUE.equals(producto.getTieneReceta())) {
-                        producto.setStock(null);
+                    if (producto.getTieneReceta()) {
+                        producto.setStock(null); // esto es por el momento antes de verificar que tiene Estimacion de
+                                                 // cantidad con Ingredientes
                     } else {
-                        if (productoActualizado.getStock() != null) {
+                        if ((productoActualizado.getStock() == null) || (productoActualizado.getStock() < 0)) {
+                            producto.setStock(0.0); // producto de reventa → necesita stock
+                        } else {
                             producto.setStock(productoActualizado.getStock());
                         }
                     }

@@ -42,133 +42,137 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
 
-                            <form th:action="@{/productos/guardar}" method="post" class="needs-validation" novalidate>
-                                <form th:action="@{/productos/guardar}" method="post" class="needs-validation"
-                                    novalidate>
-                                    <input type="hidden" name="id" th:value="${producto.id}">
-                                    <input type="hidden" name="tieneReceta" value="false">
+                            <form th:action="@{/productos/guardar}" th:object="${producto}" method="post"
+                                class="needs-validation" novalidate>
+
+                                <input type="hidden" name="id" th:value="${producto.id}">
 
 
-                                    <div class="row">
-                                        <!-- Nombre -->
-                                        <div class="col-md-6 mb-4">
-                                            <label class="form-label text-uppercase small fw-bold">
-                                                <i class="bi bi-tag me-1"></i>
-                                                NOMBRE DEL PRODUCTO
-                                            </label>
-                                            <input type="text" class="form-control" name="nombre"
-                                                th:value="${producto.nombre}" required placeholder="Ej: Café Latte">
-                                            <div class="invalid-feedback">
-                                                El nombre es obligatorio
-                                            </div>
-                                        </div>
+                                <div class="row">
+                                    <!-- Nombre -->
+                                    <div class="col-md-6 mb-4">
+                                        <label class="form-label text-uppercase small fw-bold">
+                                            <i class="bi bi-tag me-1"></i>
+                                            NOMBRE DEL PRODUCTO
+                                        </label>
 
-                                        <!-- Precio Venta -->
-                                        <div class="col-md-6 mb-4">
-                                            <label class="form-label text-uppercase small fw-bold">
-                                                <i class="bi bi-currency-dollar me-1"></i>
-                                                PRECIO DE VENTA
-                                            </label>
-                                            <div class="input-group">
-                                                <span class="input-group-text bg-white">$</span>
-                                                <input type="number" step="0.01" class="form-control" name="precioVenta"
-                                                    th:value="${producto.precioVenta}" required placeholder="0.00">
-                                            </div>
-                                            <div class="invalid-feedback">
-                                                Ingresa el precio de venta
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 mb-4">
-                                            <label class="form-label text-uppercase small fw-bold">
-                                                <i class="bi bi-list-check me-1"></i>
-                                                TIPO DE PRODUCTO
-                                            </label>
+                                        <input type="text" class="form-control" th:field="*{nombre}"
+                                            placeholder="Ej: Café Latte" required>
 
-                                            <div class="form-check form-switch mt-2">
-                                                <input class="form-check-input" type="checkbox" id="tieneReceta"
-                                                    name="tieneReceta" th:checked="${producto.tieneReceta}">
-                                                <label class="form-check-label" for="tieneReceta">
-                                                    ¿Este producto tiene receta?
-                                                </label>
-                                            </div>
-
-                                            <small class="text-secondary">
-                                                Actívalo si este producto se prepara con ingredientes (ej: hamburguesa)
-                                            </small>
-                                        </div>
-
-                                        <div class="col-md-6 mb-4" id="stockContainer">
-                                            <label class="form-label text-uppercase small fw-bold">
-                                                <i class="bi bi-box-seam me-1"></i>
-                                                STOCK ACTUAL
-                                            </label>
-
-                                            <input type="number" step="0.01" class="form-control" name="stock"
-                                                th:value="${producto.stock}" placeholder="0">
-
-                                            <small class="text-secondary">
-                                                Solo para productos sin receta (ej: bebidas)
-                                            </small>
-                                        </div>
-                                        <!-- Precio Compra (opcional) -->
-                                        <div class="col-md-6 mb-4">
-                                            <label class="form-label text-uppercase small fw-bold">
-                                                <i class="bi bi-currency-dollar me-1"></i>
-                                                PRECIO DE COMPRA (OPCIONAL)
-                                            </label>
-                                            <div class="input-group">
-                                                <span class="input-group-text bg-white">$</span>
-                                                <input type="number" step="0.01" class="form-control"
-                                                    name="precioCompra" th:value="${producto.precioCompra}"
-                                                    placeholder="0.00">
-                                            </div>
-                                            <small class="text-secondary">Costo del producto si lo compras para
-                                                reventa</small>
-                                        </div>
-
-                                        <!-- Descripción -->
-                                        <div class="col-12 mb-4">
-                                            <label class="form-label text-uppercase small fw-bold">
-                                                <i class="bi bi-card-text me-1"></i>
-                                                DESCRIPCIÓN
-                                            </label>
-                                            <textarea class="form-control" name="descripcion" rows="3"
-                                                placeholder="Descripción del producto..."
-                                                th:text="${producto.descripcion}"></textarea>
+                                        <div class="text-danger" th:if="${#fields.hasErrors('nombre')}"
+                                            th:errors="*{nombre}">
                                         </div>
                                     </div>
 
-                                    <!-- Información adicional solo lectura -->
-                                    <div th:if="${producto.id != null}"
-                                        class="alert alert-info bg-opacity-10 d-flex align-items-center">
-                                        <i class="bi bi-info-circle-fill me-3 fs-4"></i>
-                                        <div>
-                                            <strong>Receta:</strong>
-                                            <span th:if="${producto.tieneReceta}">
-                                                Este producto tiene una receta asociada.
-                                                <a th:href="@{/recetas/ver/{id}(id=${producto.receta.id})}"
-                                                    class="alert-link">Ver receta</a>
-                                            </span>
-                                            <span th:unless="${producto.tieneReceta}">
-                                                Este producto no tiene receta. Puedes
-                                                <a th:href="@{/recetas/nueva?productoId={id}(id=${producto.id})}"
-                                                    class="alert-link">crear una receta</a>
-                                            </span>
+                                    <!-- Precio Venta -->
+                                    <div class="col-md-6 mb-4">
+                                        <label class="form-label text-uppercase small fw-bold">
+                                            <i class="bi bi-currency-dollar me-1"></i>
+                                            PRECIO DE VENTA
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white">$</span>
+                                            <input type="number" step="0.01" class="form-control" name="precioVenta"
+                                                th:value="${producto.precioVenta}" required placeholder="0.00">
+                                        </div>
+                                        <div class="invalid-feedback">
+                                            Ingresa el precio de venta
                                         </div>
                                     </div>
+                                    <div class="col-md-6 mb-4">
+                                        <label class="form-label text-uppercase small fw-bold">
+                                            <i class="bi bi-list-check me-1"></i>
+                                            TIPO DE PRODUCTO
+                                        </label>
 
-                                    <!-- Acciones -->
-                                    <div class="d-flex gap-2 mt-4">
-                                        <button type="submit" class="btn btn-primary px-5">
-                                            <i class="bi bi-check-circle me-2"></i>
-                                            Guardar
-                                        </button>
-                                        <a th:href="@{/productos}" class="btn btn-outline-secondary px-5">
-                                            <i class="bi bi-x-circle me-2"></i>
-                                            Cancelar
-                                        </a>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="tieneReceta"
+                                                th:field="*{tieneReceta}" th:disabled="${producto.id != null}" />
+
+                                            <input type="hidden" th:if="${producto.id != null}" name="tieneReceta"
+                                                th:value="${producto.tieneReceta}" />
+
+                                            <label class="form-check-label">
+                                                ¿Este producto tiene receta?
+                                            </label>
+                                        </div>
+                                        <small class="text-danger" th:if="${producto.id != null}">
+                                            El tipo de producto no se puede modificar después de creado
+                                        </small>
                                     </div>
-                                </form>
+
+                                    <div class="col-md-6 mb-4" id="stockContainer">
+                                        <label class="form-label text-uppercase small fw-bold">
+                                            <i class="bi bi-box-seam me-1"></i>
+                                            STOCK ACTUAL
+                                        </label>
+
+                                        <input type="number" step="0.01" class="form-control" name="stock"
+                                            th:value="${producto.stock}" placeholder="0">
+
+                                        <small class="text-secondary">
+                                            Solo para productos sin receta (ej: bebidas)
+                                        </small>
+                                    </div>
+                                    <!-- Precio Compra (opcional) -->
+                                    <div class="col-md-6 mb-4">
+                                        <label class="form-label text-uppercase small fw-bold">
+                                            <i class="bi bi-currency-dollar me-1"></i>
+                                            PRECIO DE COMPRA (OPCIONAL)
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white">$</span>
+                                            <input type="number" step="0.01" class="form-control" name="precioCompra"
+                                                th:value="${producto.precioCompra}" placeholder="0.00">
+                                        </div>
+                                        <small class="text-secondary">Costo del producto si lo compras para
+                                            reventa</small>
+                                    </div>
+
+                                    <!-- Descripción -->
+                                    <div class="col-12 mb-4">
+                                        <label class="form-label text-uppercase small fw-bold">
+                                            <i class="bi bi-card-text me-1"></i>
+                                            DESCRIPCIÓN
+                                        </label>
+                                        <textarea class="form-control" name="descripcion" rows="3"
+                                            placeholder="Descripción del producto..."
+                                            th:text="${producto.descripcion}"></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Información adicional solo lectura -->
+                                <div th:if="${producto.id != null}"
+                                    class="alert alert-info bg-opacity-10 d-flex align-items-center">
+                                    <i class="bi bi-info-circle-fill me-3 fs-4"></i>
+                                    <div>
+                                        <strong>Receta:</strong>
+                                        <span th:if="${producto.receta != null}">
+                                            Este producto tiene una receta asociada.
+                                            <a th:href="@{/recetas/ver/{id}(id=${producto.receta.id})}"
+                                                class="alert-link">Ver receta</a>
+                                        </span>
+
+                                        <span th:if="${producto.receta == null}">
+                                            Este producto no tiene receta. Puedes
+                                            <a th:href="@{/recetas/nueva?productoId={id}(id=${producto.id})}"
+                                                class="alert-link">crear una receta</a>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Acciones -->
+                                <div class="d-flex gap-2 mt-4">
+                                    <button type="submit" class="btn btn-primary px-5">
+                                        <i class="bi bi-check-circle me-2"></i>
+                                        Guardar
+                                    </button>
+                                    <a th:href="@{/productos}" class="btn btn-outline-secondary px-5">
+                                        <i class="bi bi-x-circle me-2"></i>
+                                        Cancelar
+                                    </a>
+                                </div>
+                            </form>
                         </div>
                     </div>
 

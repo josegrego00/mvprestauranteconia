@@ -131,7 +131,7 @@
                                             <span th:if="${producto.tieneReceta}" class="text-secondary">
                                                 -
                                             </span>
-                                        </td>   
+                                        </td>
                                         <td>
                                             <span class="badge bg-success bg-opacity-10 text-success"
                                                 th:if="${producto.tieneReceta}">
@@ -171,16 +171,17 @@
                                                     onclick="return confirm('¿Estás seguro de eliminar este producto?')">
                                                     <i class="bi bi-trash"></i>
                                                 </a>
-                                                <a th:if="${!producto.tieneReceta}"
+                                                <a th:if="${producto.receta == null}"
                                                     th:href="@{/recetas/nueva?productoId={id}(id=${producto.id})}"
                                                     class="btn btn-sm btn-outline-success" title="Crear receta">
                                                     <i class="bi bi-journal-plus"></i>
                                                 </a>
-                                                <a th:if="${producto.tieneReceta}"
-                                                    th:href="@{/recetas/ver/{id}(id=${producto.receta.id})}"
-                                                    class="btn btn-sm btn-outline-warning" title="Ver receta">
-                                                    <i class="bi bi-journal-bookmark-fill"></i>
-                                                </a>
+                                                <th:block th:if="${producto.receta != null}">
+                                                    <a th:href="@{/recetas/ver/{id}(id=${producto.receta.id})}"
+                                                        class="btn btn-sm btn-outline-warning" title="Ver receta">
+                                                        <i class="bi bi-journal-bookmark-fill"></i>
+                                                    </a>
+                                                </th:block>
                                             </div>
                                         </td>
                                     </tr>

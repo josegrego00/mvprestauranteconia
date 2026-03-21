@@ -1,6 +1,7 @@
 package com.mvprestaurante.mvp.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +19,7 @@ public class Producto {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @NotBlank(message = "El nombre no puede estar vacío")
     private String nombre;
 
     private String descripcion;
@@ -27,7 +28,9 @@ public class Producto {
     private Double precioVenta;
 
     private Boolean estaActivo;
-    private Boolean tieneReceta;
+    
+    @Column(nullable = false)
+    private Boolean tieneReceta = false;
 
     @OneToOne(mappedBy = "producto")
     private Receta receta; // Puede ser null si el producto no tiene receta

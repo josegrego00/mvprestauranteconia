@@ -2,6 +2,9 @@ package com.mvprestaurante.mvp.controllers;
 
 import com.mvprestaurante.mvp.models.Producto;
 import com.mvprestaurante.mvp.services.ProductoService;
+
+import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -9,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -55,12 +59,23 @@ public class ProductoController {
     }
 
     @PostMapping("/guardar")
-    public String guardar(@ModelAttribute Producto producto,
+    public String guardar(@Valid @ModelAttribute Producto producto, BindingResult result,
             RedirectAttributes redirectAttributes) {
 
-        productoService.guardar(producto);
+        if (result.hasErrors()) {
+            return "productos/formulario";
+        }
 
-        redirectAttributes.addFlashAttribute("success", "Producto guardado exitosamente");
+        if (producto.getId() == null) {
+            // CREAR
+            productoService.guardar(producto);
+            redirectAttributes.addFlashAttribute("success", "Producto creado exitosamente");
+        } else {
+            // EDITAR
+            productoService.actualizar(producto.getId(), producto);
+            redirectAttributes.addFlashAttribute("success", "Producto actualizado correctamente");
+        }
+
         return "redirect:/productos";
     }
 
