@@ -15,6 +15,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.ArrayList;
@@ -61,14 +65,12 @@ public class RecetaController {
     }
 
     @GetMapping("/nueva")
-    public String nuevaReceta(Model model) {
+    public String nuevaReceta(@RequestParam(required = false) Long productoId, Model model) {
         Receta receta = new Receta();
         receta.setListaIngredientes(new ArrayList<>());
 
         model.addAttribute("receta", receta);
-        // Si no quieres mostrar productos, comenta esta línea
-        // model.addAttribute("productos",
-        // productoService.listarActivos(PageRequest.of(0, 100)).getContent());
+        model.addAttribute("productoId", productoId);
         model.addAttribute("ingredientes", ingredienteService.listarActivos(PageRequest.of(0, 100)).getContent());
 
         return "recetas/formulario";
@@ -96,6 +98,7 @@ public class RecetaController {
     public String guardar(@ModelAttribute Receta receta,
             @RequestParam(required = false) Long[] ingredientesIds,
             @RequestParam(required = false) Double[] cantidades,
+            @RequestParam(required = false) Long productoId,
             RedirectAttributes redirectAttributes) {
         // 🔴 NUEVO LOG - PON ESTO AL INICIO
         System.out.println("===== DATOS RECIBIDOS =====");
@@ -106,9 +109,11 @@ public class RecetaController {
         System.out.println("Cantidades: " + (cantidades != null ? Arrays.toString(cantidades) : "null"));
         try {
             // Validar nombre único (solo si es nueva receta o cambió el nombre)
-            if (receta.getId() == null && recetaService.existePorNombre(receta.getNombre())) {
-                redirectAttributes.addFlashAttribute("error", "Ya existe una receta con ese nombre");
-                return "redirect:/recetas/nueva";
+            if (receta.getId() == null) {
+                if (recetaService.existePorNombre(receta.getNombre())) {
+                    redirectAttributes.addFlashAttribute("error", "Ya existe una receta con ese nombre");
+                    return "redirect:/recetas/nueva";
+                }
             }
 
             // Construir lista de detalles de receta
@@ -146,6 +151,21 @@ public class RecetaController {
 
             receta.setListaIngredientes(detalles);
 
+            Receta recetaGuardada;
+            if (receta.getId() != null) {
+                recetaGuardada = recetaService.actualizar(receta.getId(), receta);
+                redirectAttributes.addFlashAttribute("success", "Receta actualizada exitosamente");
+            } else {
+                recetaGuardada = recetaService.crearReceta(receta);
+                redirectAttributes.addFlashAttribute("success", "Receta guardada exitosamente");
+            }
+
+            if (productoId != null) {
+                productoService.asociarReceta(productoId, recetaGuardada.getId());
+                redirectAttributes.addFlashAttribute("success", "Receta creada y asociada al producto");
+                return "redirect:/productos/editar/" + productoId;
+            }
+
             // LOGS PARA VERIFICAR (AHORA SÍ DESPUÉS DE CONSTRUIR)
             System.out.println("===== VERIFICANDO INGREDIENTES =====");
             System.out.println("Receta nombre: " + receta.getNombre());
@@ -162,19 +182,55 @@ public class RecetaController {
                         "  - Receta en detalle: " + (d.getReceta() != null ? d.getReceta().getNombre() : "null"));
             }
 
-            recetaService.crearReceta(receta);
-            redirectAttributes.addFlashAttribute("success", "Receta guardada exitosamente");
-
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
+            if (receta.getId() != null) {
+                return "redirect:/recetas/editar/" + receta.getId();
+            }
             return "redirect:/recetas/nueva";
         } catch (Exception e) {
             e.printStackTrace();
             redirectAttributes.addFlashAttribute("error", "Error al guardar la receta: " + e.getMessage());
+            if (receta.getId() != null) {
+                return "redirect:/recetas/editar/" + receta.getId();
+            }
             return "redirect:/recetas/nueva";
         }
 
         // Redirigir a la lista de recetas
         return "redirect:/recetas";
+    }
+
+    @GetMapping("/eliminar/{id}")
+    public String eliminar(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            if (recetaService.eliminarLogico(id)) {
+                redirectAttributes.addFlashAttribute("success", "Receta eliminada correctamente");
+            } else {
+                redirectAttributes.addFlashAttribute("error", "Error al eliminar la receta");
+            }
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/recetas";
+    }
+
+    @GetMapping("/ver/{id}")
+    public String ver(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+        return recetaService.obtenerPorId(id)
+                .map(receta -> {
+                    model.addAttribute("receta", receta);
+                    return "recetas/ver";
+                })
+                .orElseGet(() -> {
+                    redirectAttributes.addFlashAttribute("error", "Receta no encontrada");
+                    return "redirect:/recetas";
+                });
+    }
+
+    @GetMapping("/stock/{id}")
+    @ResponseBody
+    public Double obtenerStock(@PathVariable Long id) {
+        return recetaService.calcularStockDisponible(id);
     }
 }

@@ -93,10 +93,14 @@ public class IngredienteController {
 
     @GetMapping("/eliminar/{id}")
     public String eliminar(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        if (ingredienteService.eliminarLogico(id)) {
-            redirectAttributes.addFlashAttribute("success", "Ingrediente eliminado correctamente");
-        } else {
-            redirectAttributes.addFlashAttribute("error", "Error al eliminar el ingrediente");
+        try {
+            if (ingredienteService.eliminarLogico(id)) {
+                redirectAttributes.addFlashAttribute("success", "Ingrediente eliminado correctamente");
+            } else {
+                redirectAttributes.addFlashAttribute("error", "Error al eliminar el ingrediente");
+            }
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/ingredientes";
     }

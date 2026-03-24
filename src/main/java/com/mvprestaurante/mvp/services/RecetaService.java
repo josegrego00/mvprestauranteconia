@@ -1,5 +1,7 @@
 package com.mvprestaurante.mvp.services;
 
+import com.mvprestaurante.mvp.exceptions.BusinessException;
+import com.mvprestaurante.mvp.exceptions.DuplicateResourceException;
 import com.mvprestaurante.mvp.models.DetalleReceta;
 import com.mvprestaurante.mvp.models.Empresa;
 import com.mvprestaurante.mvp.models.Producto;
@@ -28,100 +30,100 @@ public class RecetaService {
     private final RecetaRepository recetaRepository;
     private final DetalleRecetaRepository detalleRecetaRepository;
     private final ProductoService productoService;
-    private final EmpresaRepositorio empresaRepositorio; // ADD THIS
+    private final EmpresaRepositorio empresaRepositorio;
+
+    private void validarTenant() {
+        Long empresaId = TenantContext.getTenantId();
+        if (empresaId == null) {
+            throw new BusinessException("No se ha identificado la empresa");
+        }
+    }
 
     @Transactional(readOnly = true)
     public Page<Receta> listarActivas(Pageable pageable) {
-        Long empresaId = TenantContext.getTenantId();
-        if (empresaId == null) {
-            throw new RuntimeException("No tenant found in context");
-        }
-        return recetaRepository.findByEstaActivaTrue(empresaId, pageable);
+        validarTenant();
+        return recetaRepository.findByEstaActivaTrue(TenantContext.getTenantId(), pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Receta> listarSinProducto(Pageable pageable) {
+        validarTenant();
+        return recetaRepository.findBySinProducto(TenantContext.getTenantId(), pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Receta> listarDisponiblesParaProducto(Long productoId, Pageable pageable) {
+        validarTenant();
+        return recetaRepository.findDisponiblesParaProducto(TenantContext.getTenantId(), productoId, pageable);
     }
 
     @Transactional(readOnly = true)
     public Page<Receta> buscarPorNombre(String nombre, Pageable pageable) {
-        Long empresaId = TenantContext.getTenantId();
-        if (empresaId == null) {
-            throw new RuntimeException("No tenant found in context");
-        }
-        return recetaRepository.findByNombreContainingIgnoreCaseAndEstaActivaTrue(empresaId, nombre, pageable);
+        validarTenant();
+        return recetaRepository.findByNombreContainingIgnoreCaseAndEstaActivaTrue(TenantContext.getTenantId(), nombre, pageable);
     }
 
     @Transactional(readOnly = true)
     public Optional<Receta> obtenerPorId(Long id) {
-        Long empresaId = TenantContext.getTenantId();
-        if (empresaId == null) {
-            throw new RuntimeException("No tenant found in context");
-        }
-
+        validarTenant();
         return recetaRepository.findById(id)
-                .filter(receta -> receta.getEmpresa().getId().equals(empresaId));
+                .filter(receta -> receta.getEmpresa().getId().equals(TenantContext.getTenantId()));
     }
 
     @Transactional
     public Receta crearReceta(Receta receta) {
-        Long empresaId = TenantContext.getTenantId();
-        if (empresaId == null) {
-            throw new RuntimeException("No tenant found in context");
+        validarTenant();
+
+        if (receta.getNombre() == null || receta.getNombre().trim().isEmpty()) {
+            throw new BusinessException("El nombre de la receta es obligatorio");
         }
-        validarIngredientesUnicos(receta);
-
-        // Validate unique name within tenant
-        if (receta.getId() == null && existePorNombre(receta.getNombre())) {
-            throw new RuntimeException("Ya existe una receta con este nombre en su empresa");
-        }
-
-        // Set the empresa
-        Empresa empresa = empresaRepositorio.findById(empresaId)
-                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
-        receta.setEmpresa(empresa);
-
-        receta.setEstaActiva(true);
 
         if (receta.getListaIngredientes() == null || receta.getListaIngredientes().isEmpty()) {
-            throw new RuntimeException("La receta debe tener al menos un ingrediente");
+            throw new BusinessException("La receta debe tener al menos un ingrediente");
         }
 
-        if (receta.getListaIngredientes() != null) {
-            for (DetalleReceta detalle : receta.getListaIngredientes()) {
-                detalle.setReceta(receta);
-            }
-        }
-        if (receta.getListaIngredientes() == null) {
-            receta.setPrecioBruto(0.0);
-        } else {
-            calcularPrecioBruto(receta);
+        validarIngredientesUnicos(receta);
+
+        if (receta.getId() == null && existePorNombre(receta.getNombre())) {
+            throw new DuplicateResourceException("Receta", receta.getNombre());
         }
 
-        Receta recetaGuardada = recetaRepository.save(receta);
+        Empresa empresa = empresaRepositorio.findById(TenantContext.getTenantId())
+                .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
+        
+        receta.setEmpresa(empresa);
+        receta.setEstaActiva(true);
+        receta.setNombre(receta.getNombre().trim());
 
-        return recetaGuardada;
+        if (receta.getDescripcion() != null) {
+            receta.setDescripcion(receta.getDescripcion().trim());
+        }
+
+        for (DetalleReceta detalle : receta.getListaIngredientes()) {
+            detalle.setReceta(receta);
+        }
+
+        calcularPrecioBruto(receta);
+
+        return recetaRepository.save(receta);
     }
 
     @Transactional(readOnly = true)
     public boolean existePorNombre(String nombre) {
-        Long empresaId = TenantContext.getTenantId();
-        if (empresaId == null) {
-            throw new RuntimeException("No tenant found in context");
-        }
-        return recetaRepository.existsByNombreAndEstaActivaTrue(empresaId, nombre);
+        validarTenant();
+        return recetaRepository.existsByNombreAndEstaActivaTrue(TenantContext.getTenantId(), nombre);
     }
 
     @Transactional(readOnly = true)
     public Page<DetalleReceta> listarIngredientesDeReceta(Long recetaId, Pageable pageable) {
-        Long empresaId = TenantContext.getTenantId();
-        if (empresaId == null) {
-            throw new RuntimeException("No tenant found in context");
-        }
+        validarTenant();
 
-        // First verify the receta belongs to this tenant
         Optional<Receta> receta = recetaRepository.findById(recetaId);
-        if (receta.isEmpty() || !receta.get().getEmpresa().getId().equals(empresaId)) {
-            throw new RuntimeException("Receta no encontrada o no pertenece a su empresa");
+        if (receta.isEmpty() || !receta.get().getEmpresa().getId().equals(TenantContext.getTenantId())) {
+            throw new BusinessException("Receta no encontrada o no pertenece a su empresa");
         }
 
-        return detalleRecetaRepository.findByRecetaId(empresaId, recetaId, pageable);
+        return detalleRecetaRepository.findByRecetaId(TenantContext.getTenantId(), recetaId, pageable);
     }
 
     private void calcularPrecioBruto(Receta receta) {
@@ -140,11 +142,99 @@ public class RecetaService {
         Set<Long> ids = new HashSet<>();
 
         for (DetalleReceta d : receta.getListaIngredientes()) {
+            if (d.getIngrediente() == null) {
+                throw new BusinessException("Todos los ingredientes deben estar seleccionados");
+            }
             Long id = d.getIngrediente().getId();
 
             if (!ids.add(id)) {
-                throw new RuntimeException("Ingrediente duplicado: " + d.getIngrediente().getNombre());
+                throw new BusinessException("Ingrediente duplicado: " + d.getIngrediente().getNombre());
+            }
+            if (d.getCantidadIngrediente() == null || d.getCantidadIngrediente() <= 0) {
+                throw new BusinessException("La cantidad del ingrediente debe ser mayor a 0");
             }
         }
+    }
+
+    @Transactional
+    public Receta actualizar(Long id, Receta recetaActualizada) {
+        validarTenant();
+
+        Receta recetaExistente = recetaRepository.findById(id)
+                .filter(r -> r.getEmpresa().getId().equals(TenantContext.getTenantId()))
+                .orElseThrow(() -> new BusinessException("Receta no encontrada"));
+
+        if (recetaActualizada.getNombre() == null || recetaActualizada.getNombre().trim().isEmpty()) {
+            throw new BusinessException("El nombre de la receta es obligatorio");
+        }
+
+        if (!recetaExistente.getNombre().equalsIgnoreCase(recetaActualizada.getNombre())
+                && existePorNombre(recetaActualizada.getNombre())) {
+            throw new DuplicateResourceException("Receta", recetaActualizada.getNombre());
+        }
+
+        if (recetaActualizada.getListaIngredientes() == null || recetaActualizada.getListaIngredientes().isEmpty()) {
+            throw new BusinessException("La receta debe tener al menos un ingrediente");
+        }
+
+        validarIngredientesUnicos(recetaActualizada);
+
+        recetaExistente.setNombre(recetaActualizada.getNombre().trim());
+        if (recetaActualizada.getDescripcion() != null) {
+            recetaExistente.setDescripcion(recetaActualizada.getDescripcion().trim());
+        }
+        recetaExistente.setPrecioVenta(recetaActualizada.getPrecioVenta());
+
+        recetaExistente.getListaIngredientes().clear();
+        for (DetalleReceta detalle : recetaActualizada.getListaIngredientes()) {
+            detalle.setReceta(recetaExistente);
+            recetaExistente.getListaIngredientes().add(detalle);
+        }
+
+        calcularPrecioBruto(recetaExistente);
+
+        return recetaRepository.save(recetaExistente);
+    }
+
+    @Transactional(readOnly = true)
+    public Double calcularStockDisponible(Long recetaId) {
+        validarTenant();
+
+        Receta receta = recetaRepository.findById(recetaId)
+                .filter(r -> r.getEmpresa().getId().equals(TenantContext.getTenantId()))
+                .orElseThrow(() -> new BusinessException("Receta no encontrada"));
+
+        if (receta.getListaIngredientes() == null || receta.getListaIngredientes().isEmpty()) {
+            return 0.0;
+        }
+
+        return receta.getListaIngredientes().stream()
+                .mapToDouble(detalle -> {
+                    Double stock = detalle.getIngrediente().getStockDisponible();
+                    Double cantidad = detalle.getCantidadIngrediente();
+                    if (stock == null || cantidad == null || cantidad == 0) {
+                        return Double.MAX_VALUE;
+                    }
+                    return stock / cantidad;
+                })
+                .min()
+                .orElse(0.0);
+    }
+
+    @Transactional
+    public boolean eliminarLogico(Long id) {
+        validarTenant();
+
+        return recetaRepository.findById(id)
+                .filter(receta -> receta.getEmpresa().getId().equals(TenantContext.getTenantId()))
+                .map(receta -> {
+                    if (receta.getProducto() != null) {
+                        throw new BusinessException("No se puede eliminar la receta porque está asociada a un producto");
+                    }
+                    receta.setEstaActiva(false);
+                    recetaRepository.save(receta);
+                    return true;
+                })
+                .orElse(false);
     }
 }

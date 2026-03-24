@@ -33,4 +33,10 @@ public interface RecetaRepository extends JpaRepository<Receta, Long> {
     boolean existsByNombreAndEstaActivaTrue(
             @Param("tenantId") Long tenantId,
             @Param("nombre") String nombre);
+
+    @Query("SELECT r FROM Receta r WHERE r.empresa.id = :tenantId AND r.estaActiva = true AND r.producto IS NULL")
+    Page<Receta> findBySinProducto(@Param("tenantId") Long tenantId, Pageable pageable);
+
+    @Query("SELECT r FROM Receta r WHERE r.empresa.id = :tenantId AND r.estaActiva = true AND (r.producto IS NULL OR r.producto.id = :productoId)")
+    Page<Receta> findDisponiblesParaProducto(@Param("tenantId") Long tenantId, @Param("productoId") Long productoId, Pageable pageable);
 }

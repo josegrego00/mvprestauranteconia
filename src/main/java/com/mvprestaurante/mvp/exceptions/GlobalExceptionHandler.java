@@ -6,10 +6,16 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-import org.springframework.web.bind.annotation.RequestHeader;
-
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    private String getRedirectUrl(HttpServletRequest request) {
+        String referer = request.getHeader("Referer");
+        if (referer != null && !referer.isEmpty()) {
+            return "redirect:" + referer;
+        }
+        return "redirect:/";
+    }
 
     @ExceptionHandler(DuplicateResourceException.class)
     public String handleDuplicate(
@@ -18,31 +24,26 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
 
         redirectAttributes.addFlashAttribute("error", ex.getMessage());
-
-        String referer = request.getHeader("Referer");
-
-        if (referer != null) {
-            return "redirect:" + referer;
-        }
-
-        return "redirect:/ingredientes";
+        return getRedirectUrl(request);
     }
 
     @ExceptionHandler(BusinessException.class)
     public String handleBusiness(
             BusinessException ex,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes,
+            HttpServletRequest request) {
 
         redirectAttributes.addFlashAttribute("error", ex.getMessage());
-        return "redirect:/ingredientes";
+        return getRedirectUrl(request);
     }
 
     @ExceptionHandler(Exception.class)
     public String handleGeneral(
             Exception ex,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes,
+            HttpServletRequest request) {
 
-        redirectAttributes.addFlashAttribute("error", "Ocurrió un error inesperado");
-        return "redirect:/ingredientes";
+        redirectAttributes.addFlashAttribute("error", "Ocurrió un error inesperado: " + ex.getMessage());
+        return getRedirectUrl(request);
     }
 }

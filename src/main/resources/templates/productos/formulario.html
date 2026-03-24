@@ -114,6 +114,31 @@
                                             Solo para productos sin receta (ej: bebidas)
                                         </small>
                                     </div>
+
+                                    <div class="col-md-6 mb-4" id="recetaContainer" style="display: none;">
+                                        <label class="form-label text-uppercase small fw-bold">
+                                            <i class="bi bi-journal-bookmark me-1"></i>
+                                            RECETA ASOCIADA
+                                        </label>
+
+                                        <div class="input-group">
+                                            <select class="form-select" name="recetaId">
+                                                <option value="">Seleccionar receta...</option>
+                                                <option th:each="rec : ${recetas}" th:value="${rec.id}"
+                                                    th:text="${rec.nombre}"
+                                                    th:selected="${producto.receta != null and producto.receta.id == rec.id}">
+                                                </option>
+                                            </select>
+                                            <a th:href="@{/recetas/nueva(productoId=${producto.id})}" class="btn btn-outline-success" 
+                                               title="Crear nueva receta">
+                                                <i class="bi bi-plus-circle"></i>
+                                            </a>
+                                        </div>
+
+                                        <small class="text-secondary">
+                                            Selecciona una receta o crea una nueva
+                                        </small>
+                                    </div>
                                     <!-- Precio Compra (opcional) -->
                                     <div class="col-md-6 mb-4">
                                         <label class="form-label text-uppercase small fw-bold">
@@ -207,11 +232,14 @@
         function toggleStock() {
             const checkbox = document.getElementById('tieneReceta');
             const stockContainer = document.getElementById('stockContainer');
+            const recetaContainer = document.getElementById('recetaContainer');
 
             if (checkbox.checked) {
                 stockContainer.style.display = 'none';
+                recetaContainer.style.display = 'block';
             } else {
                 stockContainer.style.display = 'block';
+                recetaContainer.style.display = 'none';
             }
         }
 

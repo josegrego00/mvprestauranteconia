@@ -1,7 +1,9 @@
 package com.mvprestaurante.mvp.controllers;
 
 import com.mvprestaurante.mvp.models.Producto;
+import com.mvprestaurante.mvp.models.Receta;
 import com.mvprestaurante.mvp.services.ProductoService;
+import com.mvprestaurante.mvp.services.RecetaService;
 
 import jakarta.validation.Valid;
 
@@ -16,12 +18,17 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 @Controller
 @RequestMapping("/productos")
 public class ProductoController {
 
     @Autowired
     private ProductoService productoService;
+
+    @Autowired
+    private RecetaService recetaService;
 
     @GetMapping
     public String listar(@RequestParam(defaultValue = "0") int page,
@@ -55,25 +62,38 @@ public class ProductoController {
     @GetMapping("/nuevo")
     public String nuevo(Model model) {
         model.addAttribute("producto", new Producto());
+        model.addAttribute("recetas", recetaService.listarSinProducto(PageRequest.of(0, 100)).getContent());
         return "productos/formulario";
     }
 
     @PostMapping("/guardar")
-    public String guardar(@Valid @ModelAttribute Producto producto, BindingResult result,
+    public String guardar(@Valid @ModelAttribute Producto producto, 
+            @RequestParam(required = false) Long recetaId,
+            BindingResult result,
+            Model model,
             RedirectAttributes redirectAttributes) {
 
         if (result.hasErrors()) {
+            model.addAttribute("recetas", recetaService.listarActivas(PageRequest.of(0, 100)).getContent());
             return "productos/formulario";
         }
 
-        if (producto.getId() == null) {
-            // CREAR
-            productoService.guardar(producto);
-            redirectAttributes.addFlashAttribute("success", "Producto creado exitosamente");
-        } else {
-            // EDITAR
-            productoService.actualizar(producto.getId(), producto);
-            redirectAttributes.addFlashAttribute("success", "Producto actualizado correctamente");
+        try {
+            if (producto.getId() == null) {
+                productoService.guardar(producto, recetaId);
+                redirectAttributes.addFlashAttribute("success", "Producto creado exitosamente");
+            } else {
+                productoService.actualizar(producto.getId(), producto, recetaId);
+                redirectAttributes.addFlashAttribute("success", "Producto actualizado correctamente");
+            }
+        } catch (RuntimeException e) {
+            model.addAttribute("error", e.getMessage());
+            if (producto.getId() != null) {
+                model.addAttribute("recetas", recetaService.listarDisponiblesParaProducto(producto.getId(), PageRequest.of(0, 100)).getContent());
+            } else {
+                model.addAttribute("recetas", recetaService.listarSinProducto(PageRequest.of(0, 100)).getContent());
+            }
+            return "productos/formulario";
         }
 
         return "redirect:/productos";
@@ -84,6 +104,7 @@ public class ProductoController {
         return productoService.obtenerPorId(id)
                 .map(producto -> {
                     model.addAttribute("producto", producto);
+                    model.addAttribute("recetas", recetaService.listarDisponiblesParaProducto(id, PageRequest.of(0, 100)).getContent());
                     return "productos/formulario";
                 })
                 .orElseGet(() -> {
@@ -113,6 +134,12 @@ public class ProductoController {
                     redirectAttributes.addFlashAttribute("error", "Producto no encontrado");
                     return "redirect:/productos";
                 });
+    }
+
+    @GetMapping("/estimado/{id}")
+    @ResponseBody
+    public Double obtenerEstimado(@PathVariable Long id) {
+        return productoService.calcularStockEstimado(id);
     }
 
     @GetMapping("/receta/{id}")
