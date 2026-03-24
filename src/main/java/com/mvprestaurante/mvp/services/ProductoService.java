@@ -22,77 +22,66 @@ import java.util.Optional;
 public class ProductoService {
 
     private final ProductoRepository productoRepository;
-    private final EmpresaRepositorio empresaRepositorio; // ADD THIS
+    private final EmpresaRepositorio empresaRepositorio;
 
-    @Transactional(readOnly = true)
-    public Page<Producto> listarActivos(Pageable pageable) {
+    private Long getTenantId() {
         Long empresaId = TenantContext.getTenantId();
         if (empresaId == null) {
             throw new RuntimeException("No tenant found in context");
         }
-        return productoRepository.findByEstaActivoTrue(empresaId, pageable);
+        return empresaId;
+    }
+
+    private void validarTenant(Long empresaId) {
+        if (empresaId == null) {
+            throw new RuntimeException("No tenant found in context");
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Producto> listarActivos(Pageable pageable) {
+        return productoRepository.findByEstaActivoTrue(getTenantId(), pageable);
     }
 
     @Transactional(readOnly = true)
     public Page<Producto> buscarPorNombre(String nombre, Pageable pageable) {
-        Long empresaId = TenantContext.getTenantId();
-        if (empresaId == null) {
-            throw new RuntimeException("No tenant found in context");
-        }
-        return productoRepository.findByNombreContainingIgnoreCaseAndEstaActivoTrue(empresaId, nombre, pageable);
+        return productoRepository.findByNombreContainingIgnoreCaseAndEstaActivoTrue(getTenantId(), nombre, pageable);
     }
 
     @Transactional(readOnly = true)
     public Page<Producto> listarProductosConReceta(Pageable pageable) {
-        Long empresaId = TenantContext.getTenantId();
-        if (empresaId == null) {
-            throw new RuntimeException("No tenant found in context");
-        }
-        return productoRepository.findByTieneRecetaTrueAndEstaActivoTrue(empresaId, pageable);
+        return productoRepository.findByTieneRecetaTrueAndEstaActivoTrue(getTenantId(), pageable);
     }
 
     @Transactional(readOnly = true)
     public Optional<Producto> obtenerPorId(Long id) {
-        Long empresaId = TenantContext.getTenantId();
-        if (empresaId == null) {
-            throw new RuntimeException("No tenant found in context");
-        }
-
+        Long empresaId = getTenantId();
         return productoRepository.findById(id)
                 .filter(producto -> producto.getEmpresa().getId().equals(empresaId));
     }
 
     @Transactional
     public Producto guardar(Producto producto) {
+        Long empresaId = getTenantId();
 
-        Long empresaId = TenantContext.getTenantId();
-        if (empresaId == null) {
-            throw new RuntimeException("No tenant found in context");
-        }
-
-        // 🔥 VALIDACIÓN DUPLICADO
         if (producto.getId() == null &&
                 productoRepository.existsByNombreIgnoreCaseAndEmpresaIdAndEstaActivoTrue(
                         producto.getNombre(), empresaId)) {
-
             throw new DuplicateResourceException("Producto", producto.getNombre());
         }
 
         if (producto.getTieneReceta() == null) {
             producto.setTieneReceta(false);
         }
-        // 🔥 REGLA DE NEGOCIO: RECETA vs STOCK
         if (Boolean.TRUE.equals(producto.getTieneReceta())) {
-            producto.setStock(null); // producto preparado → no maneja stock directo
-
+            producto.setStock(null);
         } else {
             producto.setReceta(null);
             if ((producto.getStock() == null) || (producto.getStock() < 0)) {
-                producto.setStock(0.0); // producto de reventa → necesita stock
+                producto.setStock(0.0);
             }
         }
 
-        // 🔥 ASIGNAR EMPRESA
         Empresa empresa = empresaRepositorio.findById(empresaId)
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
 
@@ -104,33 +93,24 @@ public class ProductoService {
 
     @Transactional
     public Optional<Producto> actualizar(Long id, Producto productoActualizado) {
-
-        Long empresaId = TenantContext.getTenantId();
-        if (empresaId == null) {
-            throw new RuntimeException("No tenant found in context");
-        }
+        Long empresaId = getTenantId();
 
         return productoRepository.findById(id)
                 .filter(producto -> producto.getEmpresa().getId().equals(empresaId))
                 .map(producto -> {
-
-                    // 🔥 VALIDACIÓN DUPLICADO (EXCLUYENDO EL MISMO)
                     if (!producto.getNombre().equalsIgnoreCase(productoActualizado.getNombre()) &&
                             productoRepository.existsByNombreIgnoreCaseAndEmpresaIdAndEstaActivoTrue(
                                     productoActualizado.getNombre(), empresaId)) {
-
                         throw new DuplicateResourceException("Producto", productoActualizado.getNombre());
                     }
 
                     Boolean tieneRecetaActual = Boolean.TRUE.equals(producto.getTieneReceta());
                     Boolean tieneRecetaNuevo = Boolean.TRUE.equals(productoActualizado.getTieneReceta());
 
-                    // 🔥 BLOQUEO DE CAMBIO DE TIPO
                     if (tieneRecetaActual != tieneRecetaNuevo) {
                         throw new BusinessException("No puedes cambiar el tipo de producto (con/sin receta)");
                     }
 
-                    // 🔥 ACTUALIZACIÓN DE CAMPOS
                     producto.setNombre(productoActualizado.getNombre().trim());
                     producto.setDescripcion(productoActualizado.getDescripcion());
                     producto.setPrecioCompra(productoActualizado.getPrecioCompra());
@@ -140,13 +120,11 @@ public class ProductoService {
                         producto.setPrecioVenta(productoActualizado.getPrecioVenta());
                     }
 
-                    // 🔥 REGLA DE NEGOCIO (IMPORTANTE)
                     if (producto.getTieneReceta()) {
-                        producto.setStock(null); // esto es por el momento antes de verificar que tiene Estimacion de
-                                                 // cantidad con Ingredientes
+                        producto.setStock(null);
                     } else {
                         if ((productoActualizado.getStock() == null) || (productoActualizado.getStock() < 0)) {
-                            producto.setStock(0.0); // producto de reventa → necesita stock
+                            producto.setStock(0.0);
                         } else {
                             producto.setStock(productoActualizado.getStock());
                         }
@@ -158,10 +136,7 @@ public class ProductoService {
 
     @Transactional
     public boolean eliminarLogico(Long id) {
-        Long empresaId = TenantContext.getTenantId();
-        if (empresaId == null) {
-            throw new RuntimeException("No tenant found in context");
-        }
+        Long empresaId = getTenantId();
 
         return productoRepository.findById(id)
                 .filter(producto -> producto.getEmpresa().getId().equals(empresaId))
@@ -175,19 +150,12 @@ public class ProductoService {
 
     @Transactional(readOnly = true)
     public boolean existePorNombre(String nombre) {
-        Long empresaId = TenantContext.getTenantId();
-        if (empresaId == null) {
-            throw new RuntimeException("No tenant found in context");
-        }
-        return productoRepository.existsByNombreIgnoreCaseAndEmpresaIdAndEstaActivoTrue(nombre, empresaId);
+        return productoRepository.existsByNombreIgnoreCaseAndEmpresaIdAndEstaActivoTrue(nombre, getTenantId());
     }
 
     @Transactional
     public void actualizarFlagReceta(Long productoId, boolean tieneReceta) {
-        Long empresaId = TenantContext.getTenantId();
-        if (empresaId == null) {
-            throw new RuntimeException("No tenant found in context");
-        }
+        Long empresaId = getTenantId();
 
         productoRepository.findById(productoId)
                 .filter(producto -> producto.getEmpresa().getId().equals(empresaId))

@@ -147,16 +147,18 @@
                                     <i class="bi bi-info-circle-fill me-3 fs-4"></i>
                                     <div>
                                         <strong>Receta:</strong>
-                                        <span th:if="${producto.receta != null}">
+                                        <span th:if="${producto.tieneReceta and producto.receta != null}">
                                             Este producto tiene una receta asociada.
                                             <a th:href="@{/recetas/ver/{id}(id=${producto.receta.id})}"
                                                 class="alert-link">Ver receta</a>
                                         </span>
-
-                                        <span th:if="${producto.receta == null}">
-                                            Este producto no tiene receta. Puedes
+                                        <span th:if="${producto.tieneReceta and producto.receta == null}">
+                                            Este producto aún no tiene receta. 
                                             <a th:href="@{/recetas/nueva?productoId={id}(id=${producto.id})}"
-                                                class="alert-link">crear una receta</a>
+                                                class="alert-link">Crear receta</a>
+                                        </span>
+                                        <span th:unless="${producto.tieneReceta}">
+                                            Este producto es sin receta. No es posible agregar receta.
                                         </span>
                                     </div>
                                 </div>

@@ -114,4 +114,23 @@ public class ProductoController {
                     return "redirect:/productos";
                 });
     }
+
+    @GetMapping("/receta/{id}")
+    public String gestionarReceta(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        return productoService.obtenerPorId(id)
+                .map(producto -> {
+                    if (!Boolean.TRUE.equals(producto.getTieneReceta())) {
+                        redirectAttributes.addFlashAttribute("error", "Los productos sin receta no pueden tener receta");
+                        return "redirect:/productos/ver/" + id;
+                    }
+                    if (producto.getReceta() != null) {
+                        return "redirect:/recetas/ver/" + producto.getReceta().getId();
+                    }
+                    return "redirect:/recetas/nueva?productoId=" + id;
+                })
+                .orElseGet(() -> {
+                    redirectAttributes.addFlashAttribute("error", "Producto no encontrado");
+                    return "redirect:/productos";
+                });
+    }
 }
