@@ -36,25 +36,31 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
 
-                <!-- Formulario de guardar -->
-                <form th:action="@{/ajuste-precios/guardar}" method="post" id="formPrecios">
-                    
-                    <!-- Filtro y porcentaje de ganancia -->
+                <!-- Filtro y porcentaje de ganancia (fuera del formulario de guardado) -->
+                <form method="get" th:action="@{/ajuste-precios}" class="row g-3">
                     <div class="card mb-4">
                         <div class="card-body">
-                            <form method="get" th:action="@{/ajuste-precios}" class="row g-3">
-                                <div class="col-md-3">
-                                    <label for="search" class="form-label">Buscar por nombre</label>
+                            <div class="row g-3">
+                                <div class="col-md-2">
+                                    <label for="search" class="form-label">Buscar</label>
                                     <input type="text" class="form-control" id="search" name="search" 
-                                           th:value="${search}" placeholder="Ej: Café">
+                                           th:value="${search}" placeholder="Nombre...">
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="tipoProducto" class="form-label">Tipo</label>
+                                    <select class="form-select" id="tipoProducto" name="tipoProducto" onchange="this.form.submit()">
+                                        <option value="all" th:selected="${tipoProducto == null or tipoProducto == 'all'}">Todos</option>
+                                        <option value="conReceta" th:selected="${tipoProducto == 'conReceta'}">Con receta</option>
+                                        <option value="sinReceta" th:selected="${tipoProducto == 'sinReceta'}">Sin receta</option>
+                                    </select>
                                 </div>
                                 <div class="col-md-3">
-                                    <label for="porcentajeGanancia" class="form-label">% Ganancia deseada</label>
+                                    <label for="porcentajeGanancia" class="form-label">% Ganancia</label>
                                     <div class="input-group">
                                         <input type="number" class="form-control" id="porcentajeGanancia" name="porcentajeGanancia" 
                                                th:value="${porcentajeGanancia}" min="0" max="500" step="1">
                                         <button type="submit" class="btn btn-outline-primary">
-                                            <i class="bi bi-calculator"></i> Calcular
+                                            <i class="bi bi-calculator"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -63,9 +69,13 @@
                                         <i class="bi bi-x-circle"></i> Limpiar
                                     </a>
                                 </div>
-                            </form>
-                        </div>
+                            </div>
+                        </form>
                     </div>
+
+                    <!-- Formulario de guardado -->
+                    <form th:action="@{/ajuste-precios/guardar}" method="post" id="formPrecios">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 
                     <!-- Tabla de productos -->
                     <div class="card">
@@ -103,13 +113,19 @@
                                             <td>
                                                 $<span th:text="${(producto.tieneReceta and producto.receta != null) ? producto.receta.precioBruto : producto.precioCompra}">2.50</span>
                                             </td>
-                                            <td style="min-width: 150px;">
+                                            <td style="min-width: 180px;">
                                                 <div class="input-group input-group-sm">
                                                     <span class="input-group-text">$</span>
                                                     <input type="number" class="form-control precio-venta-input" 
                                                            th:name="${'precios[' + producto.id + ']'}"
                                                            th:value="${producto.precioVenta}"
-                                                           step="0.01" min="0">
+                                                           step="0.01" min="0"
+                                                           th:data-producto-id="${producto.id}"
+                                                           th:data-costo="${(producto.tieneReceta and producto.receta != null) ? producto.receta.precioBruto : producto.precioCompra}">
+                                                    <button type="button" class="btn btn-outline-success btn-guardar-precio" 
+                                                            th:data-producto-id="${producto.id}" title="Guardar precio">
+                                                        <i class="bi bi-check-lg"></i>
+                                                    </button>
                                                 </div>
                                             </td>
                                             <td>
@@ -154,15 +170,15 @@
                         <nav>
                             <ul class="pagination mb-0">
                                 <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
-                                    <a class="page-link" th:href="@{/ajuste-precios(page=${currentPage - 1}, size=${pageSize}, search=${search}, porcentajeGanancia=${porcentajeGanancia})}">Anterior</a>
+                                    <a class="page-link" th:href="@{/ajuste-precios(page=${currentPage - 1}, size=${pageSize}, search=${search}, porcentajeGanancia=${porcentajeGanancia}, tipoProducto=${tipoProducto})}">Anterior</a>
                                 </li>
                                 <li class="page-item" th:each="i : ${#numbers.sequence(0, productos.totalPages - 1)}" 
                                     th:classappend="${i == currentPage} ? 'active'">
-                                    <a class="page-link" th:href="@{/ajuste-precios(page=${i}, size=${pageSize}, search=${search}, porcentajeGanancia=${porcentajeGanancia})}" 
+                                    <a class="page-link" th:href="@{/ajuste-precios(page=${i}, size=${pageSize}, search=${search}, porcentajeGanancia=${porcentajeGanancia}, tipoProducto=${tipoProducto})}" 
                                        th:text="${i + 1}">1</a>
                                 </li>
                                 <li class="page-item" th:classappend="${currentPage + 1 >= productos.totalPages} ? 'disabled'">
-                                    <a class="page-link" th:href="@{/ajuste-precios(page=${currentPage + 1}, size=${pageSize}, search=${search}, porcentajeGanancia=${porcentajeGanancia})}">Siguiente</a>
+                                    <a class="page-link" th:href="@{/ajuste-precios(page=${currentPage + 1}, size=${pageSize}, search=${search}, porcentajeGanancia=${porcentajeGanancia}, tipoProducto=${tipoProducto})}">Siguiente</a>
                                 </li>
                             </ul>
                         </nav>
@@ -210,6 +226,70 @@
                         else clase = 'text-success';
                         margenCell.innerHTML = '<span class="' + clase + '">' + margen.toFixed(2) + '%</span>';
                     }
+                });
+            });
+
+            // Guardar precio individual con AJAX
+            const csrfToken = '[[${_csrf.token}]]';
+            const csrfParam = '[[${_csrf.parameterName}]]';
+
+            document.querySelectorAll('.btn-guardar-precio').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const productoId = this.getAttribute('data-producto-id');
+                    const row = this.closest('tr');
+                    const input = row.querySelector('.precio-venta-input');
+                    const nuevoPrecio = parseFloat(input.value);
+                    const costo = parseFloat(input.getAttribute('data-costo'));
+                    const btnGuardar = this;
+
+                    // Deshabilitar botón durante la solicitud
+                    btnGuardar.disabled = true;
+                    btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+                    fetch('/ajuste-precios/actualizar-precio/' + productoId, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: csrfParam + '=' + csrfToken + '&precio=' + nuevoPrecio
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Mostrar check de éxito
+                            btnGuardar.classList.remove('btn-outline-success');
+                            btnGuardar.classList.add('btn-success');
+                            btnGuardar.innerHTML = '<i class="bi bi-check-lg"></i>';
+                            
+                            // Actualizar margen visualmente
+                            if (nuevoPrecio > 0 && costo > 0) {
+                                const margen = ((nuevoPrecio - costo) / costo) * 100;
+                                const margenCell = row.querySelector('td:nth-child(6)');
+                                let clase = 'text-secondary';
+                                if (margen < 0) clase = 'text-danger';
+                                else if (margen <= 5) clase = 'text-warning';
+                                else clase = 'text-success';
+                                margenCell.innerHTML = '<span class="' + clase + '">' + margen.toFixed(2) + '%</span>';
+                            }
+                            
+                            // Restaurar después de 2 segundos
+                            setTimeout(function() {
+                                btnGuardar.classList.remove('btn-success');
+                                btnGuardar.classList.add('btn-outline-success');
+                                btnGuardar.innerHTML = '<i class="bi bi-check-lg"></i>';
+                                btnGuardar.disabled = false;
+                            }, 2000);
+                        } else {
+                            alert('Error: ' + data.error);
+                            btnGuardar.disabled = false;
+                            btnGuardar.innerHTML = '<i class="bi bi-check-lg"></i>';
+                        }
+                    })
+                    .catch(function(error) {
+                        alert('Error al guardar el precio');
+                        btnGuardar.disabled = false;
+                        btnGuardar.innerHTML = '<i class="bi bi-check-lg"></i>';
+                    });
                 });
             });
         });

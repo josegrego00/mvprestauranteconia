@@ -27,6 +27,12 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
                      @Param("tenantId") Long tenantId,
                      Pageable pageable);
 
+       @Query("SELECT p FROM Producto p WHERE p.empresa.id = :tenantId " +
+                     "AND p.tieneReceta = false AND p.estaActivo = true")
+       Page<Producto> findByTieneRecetaFalseAndEstaActivoTrue(
+                     @Param("tenantId") Long tenantId,
+                     Pageable pageable);
+
        // 🔥 ESTE ES EL IMPORTANTE
        boolean existsByNombreIgnoreCaseAndEmpresaIdAndEstaActivoTrue(
                      String nombre,

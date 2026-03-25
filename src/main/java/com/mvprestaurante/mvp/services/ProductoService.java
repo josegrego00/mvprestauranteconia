@@ -53,6 +53,12 @@ public class ProductoService {
     }
 
     @Transactional(readOnly = true)
+    public Page<Producto> listarProductosSinReceta(Pageable pageable) {
+        validarTenant();
+        return productoRepository.findByTieneRecetaFalseAndEstaActivoTrue(TenantContext.getTenantId(), pageable);
+    }
+
+    @Transactional(readOnly = true)
     public Optional<Producto> obtenerPorId(Long id) {
         validarTenant();
         return productoRepository.findById(id)
