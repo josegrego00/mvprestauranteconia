@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+
+<head th:replace="~{fragments/head :: head}"></head>
+
+<body>
+
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <div class="container-fluid">
+        <div class="row">
+
+            <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+
+                <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+                    <div class="welcome-section">
+                        <h1 class="welcome-title">
+                            <i class="bi bi-currency-dollar me-2"></i>
+                            Ajuste de Precios
+                        </h1>
+                        <p class="welcome-subtitle">
+                            Ajusta los precios de venta de tus productos
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Mensajes flash -->
+                <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <span th:text="${success}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Formulario de guardar -->
+                <form th:action="@{/ajuste-precios/guardar}" method="post" id="formPrecios">
+                    
+                    <!-- Filtro y porcentaje de ganancia -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <form method="get" th:action="@{/ajuste-precios}" class="row g-3">
+                                <div class="col-md-3">
+                                    <label for="search" class="form-label">Buscar por nombre</label>
+                                    <input type="text" class="form-control" id="search" name="search" 
+                                           th:value="${search}" placeholder="Ej: Café">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="porcentajeGanancia" class="form-label">% Ganancia deseada</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="porcentajeGanancia" name="porcentajeGanancia" 
+                                               th:value="${porcentajeGanancia}" min="0" max="500" step="1">
+                                        <button type="submit" class="btn btn-outline-primary">
+                                            <i class="bi bi-calculator"></i> Calcular
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <a th:href="@{/ajuste-precios}" class="btn btn-outline-secondary">
+                                        <i class="bi bi-x-circle"></i> Limpiar
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de productos -->
+                    <div class="card">
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th class="ps-4">NOMBRE</th>
+                                            <th>TIPO</th>
+                                            <th>COSTO</th>
+                                            <th>PRECIO VENTA</th>
+                                            <th>SUGERIDO (<span th:text="${porcentajeGanancia}">30</span>%)</th>
+                                            <th>MARGEN</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="producto : ${productos}">
+                                            <td class="ps-4">
+                                                <div class="fw-semibold" th:text="${producto.nombre}">Café Latte</div>
+                                                <small class="text-secondary" th:text="${producto.descripcion}">Café con leche</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-success bg-opacity-10 text-success"
+                                                    th:if="${producto.tieneReceta}">
+                                                    <i class="bi bi-check-circle me-1"></i>
+                                                    Con receta
+                                                </span>
+                                                <span class="badge bg-secondary bg-opacity-10 text-secondary"
+                                                    th:if="${!producto.tieneReceta}">
+                                                    <i class="bi bi-tag me-1"></i>
+                                                    Sin receta
+                                                </span>
+                                            </td>
+                                            <td>
+                                                $<span th:text="${(producto.tieneReceta and producto.receta != null) ? producto.receta.precioBruto : producto.precioCompra}">2.50</span>
+                                            </td>
+                                            <td style="min-width: 150px;">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text">$</span>
+                                                    <input type="number" class="form-control precio-venta-input" 
+                                                           th:name="${'precios[' + producto.id + ']'}"
+                                                           th:value="${producto.precioVenta}"
+                                                           step="0.01" min="0">
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <th:block th:with="costo=${(producto.tieneReceta and producto.receta != null) ? producto.receta.precioBruto : producto.precioCompra}, pct=${porcentajeGanancia != null ? porcentajeGanancia : 0}, sugerido=${costo != null ? costo * (1 + pct/100) : 0}">
+                                                    <button type="button" class="btn btn-sm btn-outline-success aplicar-sugerido"
+                                                            th:data-costo="${costo}"
+                                                            th:data-porcentaje="${pct}">
+                                                        $<span th:text="${#numbers.formatDecimal(sugerido, 1, 2)}">3.25</span>
+                                                    </button>
+                                                </th:block>
+                                            </td>
+                                            <td>
+                                                <th:block th:with="costo=${(producto.tieneReceta and producto.receta != null) ? producto.receta.precioBruto : producto.precioCompra}, margen=${(costo != null and producto.precioVenta != null and costo > 0) ? (producto.precioVenta - costo) / costo * 100 : 0}">
+                                                    <span th:if="${costo != null and producto.precioVenta != null and costo > 0}"
+                                                          th:class="${margen < 0 ? 'text-danger' : (margen <= 5 ? 'text-warning' : 'text-success')}"
+                                                          th:text="${#numbers.formatDecimal(margen, 1, 2)} + '%'">
+                                                        100%
+                                                    </span>
+                                                    <span th:unless="${costo != null and producto.precioVenta != null and costo > 0}"
+                                                          class="text-secondary">-</span>
+                                                </th:block>
+                                            </td>
+                                        </tr>
+                                        <tr th:if="${productos.empty}">
+                                            <td colspan="6" class="text-center py-4 text-secondary">
+                                                No hay productos para mostrar
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paginación -->
+                    <div th:if="${productos.totalPages > 1}" class="d-flex justify-content-between align-items-center mt-4">
+                        <span class="text-secondary">
+                            Mostrando <span th:text="${productos.number * productos.size + 1}"></span> 
+                            a <span th:text="${(productos.number + 1) * productos.size > productos.totalElements ? productos.totalElements : (productos.number + 1) * productos.size}"></span>
+                            de <span th:text="${productos.totalElements}"></span> productos
+                        </span>
+                        <nav>
+                            <ul class="pagination mb-0">
+                                <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/ajuste-precios(page=${currentPage - 1}, size=${pageSize}, search=${search}, porcentajeGanancia=${porcentajeGanancia})}">Anterior</a>
+                                </li>
+                                <li class="page-item" th:each="i : ${#numbers.sequence(0, productos.totalPages - 1)}" 
+                                    th:classappend="${i == currentPage} ? 'active'">
+                                    <a class="page-link" th:href="@{/ajuste-precios(page=${i}, size=${pageSize}, search=${search}, porcentajeGanancia=${porcentajeGanancia})}" 
+                                       th:text="${i + 1}">1</a>
+                                </li>
+                                <li class="page-item" th:classappend="${currentPage + 1 >= productos.totalPages} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/ajuste-precios(page=${currentPage + 1}, size=${pageSize}, search=${search}, porcentajeGanancia=${porcentajeGanancia})}">Siguiente</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+
+                    <!-- Botón guardar -->
+                    <div class="d-flex justify-content-end mt-4 mb-4">
+                        <input type="hidden" name="porcentajeGanancia" th:value="${porcentajeGanancia}">
+                        <button type="submit" class="btn btn-primary btn-lg px-5">
+                            <i class="bi bi-save me-2"></i>
+                            Guardar Cambios
+                        </button>
+                    </div>
+
+                </form>
+
+            </main>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/scripts :: scripts}"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Aplicar precio sugerido al hacer clic en el botón
+            document.querySelectorAll('.aplicar-sugerido').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const costo = parseFloat(this.getAttribute('data-costo'));
+                    const porcentaje = parseFloat(this.getAttribute('data-porcentaje'));
+                    const sugerido = costo * (1 + porcentaje / 100);
+                    
+                    // Encontrar el input de precio de venta en la misma fila
+                    const row = this.closest('tr');
+                    const input = row.querySelector('.precio-venta-input');
+                    input.value = sugerido.toFixed(2);
+                    
+                    // Actualizar el margen visualmente
+                    const precioVenta = parseFloat(input.value);
+                    if (precioVenta > 0 && costo > 0) {
+                        const margen = ((precioVenta - costo) / costo) * 100;
+                        const margenCell = row.querySelector('td:nth-child(6)');
+                        let clase = 'text-secondary';
+                        if (margen < 0) clase = 'text-danger';
+                        else if (margen <= 5) clase = 'text-warning';
+                        else clase = 'text-success';
+                        margenCell.innerHTML = '<span class="' + clase + '">' + margen.toFixed(2) + '%</span>';
+                    }
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>

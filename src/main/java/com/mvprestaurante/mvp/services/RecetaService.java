@@ -126,7 +126,7 @@ public class RecetaService {
         return detalleRecetaRepository.findByRecetaId(TenantContext.getTenantId(), recetaId, pageable);
     }
 
-    private void calcularPrecioBruto(Receta receta) {
+    public void calcularPrecioBruto(Receta receta) {
         double total = receta.getListaIngredientes().stream()
                 .mapToDouble(detalle -> {
                     if (detalle.getIngrediente() != null && detalle.getIngrediente().getPrecioCompra() != null) {

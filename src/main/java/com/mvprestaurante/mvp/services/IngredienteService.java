@@ -4,9 +4,12 @@ import com.mvprestaurante.mvp.exceptions.BusinessException;
 import com.mvprestaurante.mvp.exceptions.DuplicateResourceException;
 import com.mvprestaurante.mvp.models.Empresa;
 import com.mvprestaurante.mvp.models.Ingrediente;
+import com.mvprestaurante.mvp.models.Receta;
 import com.mvprestaurante.mvp.multitenant.TenantContext;
+import com.mvprestaurante.mvp.repositories.DetalleRecetaRepository;
 import com.mvprestaurante.mvp.repositories.EmpresaRepositorio;
 import com.mvprestaurante.mvp.repositories.IngredienteRepository;
+import com.mvprestaurante.mvp.repositories.RecetaRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -15,6 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -23,6 +28,9 @@ public class IngredienteService {
 
     private final IngredienteRepository ingredienteRepository;
     private final EmpresaRepositorio empresaRepositorio;
+    private final RecetaRepository recetaRepository;
+    private final DetalleRecetaRepository detalleRecetaRepository;
+    private final RecetaService recetaService;
 
     private void validarTenant() {
         Long empresaId = TenantContext.getTenantId();
@@ -97,12 +105,34 @@ public class IngredienteService {
                         throw new DuplicateResourceException("Ingrediente", ingredienteActualizado.getNombre());
                     }
 
+                    boolean precioCambio = !Objects.equals(
+                            ingrediente.getPrecioCompra(),
+                            ingredienteActualizado.getPrecioCompra() != null ? ingredienteActualizado.getPrecioCompra() : 0.0
+                    );
+
                     ingrediente.setNombre(ingredienteActualizado.getNombre().trim());
                     ingrediente.setStockDisponible(ingredienteActualizado.getStockDisponible() != null ? ingredienteActualizado.getStockDisponible() : 0.0);
                     ingrediente.setPrecioCompra(ingredienteActualizado.getPrecioCompra() != null ? ingredienteActualizado.getPrecioCompra() : 0.0);
                     ingrediente.setUnidadMedida(ingredienteActualizado.getUnidadMedida().trim());
-                    return ingredienteRepository.save(ingrediente);
+                    
+                    Ingrediente ingredienteGuardado = ingredienteRepository.save(ingrediente);
+                    
+                    if (precioCambio) {
+                        recalcularRecetasQueUsenIngrediente(ingredienteGuardado);
+                    }
+                    
+                    return ingredienteGuardado;
                 });
+    }
+
+    private void recalcularRecetasQueUsenIngrediente(Ingrediente ingrediente) {
+        List<Receta> recetas = detalleRecetaRepository.findRecetasByIngredienteId(
+                TenantContext.getTenantId(), ingrediente.getId());
+        
+        for (Receta receta : recetas) {
+            recetaService.calcularPrecioBruto(receta);
+            recetaRepository.save(receta);
+        }
     }
 
     @Transactional

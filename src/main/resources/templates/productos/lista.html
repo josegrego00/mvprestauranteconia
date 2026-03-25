@@ -86,7 +86,7 @@
                                 <thead>
                                     <tr>
                                         <th class="ps-4">NOMBRE</th>
-                                        <th>PRECIO COMPRA</th>
+                                        <th>COSTO</th>
                                         <th>PRECIO VENTA</th>
                                         <th>MARGEN</th>
                                         <th>STOCK</th>
@@ -104,22 +104,26 @@
                                                 leche</small>
                                         </td>
                                         <td>
-                                            <span th:if="${producto.precioCompra}">$</span>
-                                            <span th:text="${producto.precioCompra}">2.50</span>
+                                            <span th:if="${producto.tieneReceta and producto.receta != null}">$</span>
+                                            <span th:if="${producto.tieneReceta and producto.receta != null}" 
+                                                  th:text="${producto.receta.precioBruto}">2.50</span>
+                                            <span th:if="${!producto.tieneReceta}">$</span>
+                                            <span th:if="${!producto.tieneReceta}" th:text="${producto.precioCompra}">2.50</span>
                                         </td>
                                         <td>
                                             <span class="fw-semibold">$</span>
                                             <span class="fw-semibold" th:text="${producto.precioVenta}">5.00</span>
                                         </td>
                                         <td>
-                                            <span
-                                                th:if="${producto.precioCompra != null and producto.precioVenta != null}"
-                                                th:text="${#numbers.formatDecimal((producto.precioVenta - producto.precioCompra) / producto.precioCompra * 100, 1, 2)} + '%'">
-                                                100%
-                                            </span>
-                                            <span
-                                                th:unless="${producto.precioCompra != null and producto.precioVenta != null}"
-                                                class="text-secondary">-</span>
+                                            <th:block th:with="costo=${(producto.tieneReceta and producto.receta != null) ? producto.receta.precioBruto : producto.precioCompra}, margen=${(costo != null and producto.precioVenta != null and costo > 0) ? (producto.precioVenta - costo) / costo * 100 : 0}">
+                                                <span th:if="${costo != null and producto.precioVenta != null and costo > 0}"
+                                                      th:class="${margen < 0 ? 'text-danger' : (margen <= 5 ? 'text-warning' : 'text-success')}"
+                                                      th:text="${#numbers.formatDecimal(margen, 1, 2)} + '%'">
+                                                    100%
+                                                </span>
+                                                <span th:unless="${costo != null and producto.precioVenta != null and costo > 0}"
+                                                      class="text-secondary">-</span>
+                                            </th:block>
                                         </td>
                                         <td>
                                             <!-- Producto SIN receta -->

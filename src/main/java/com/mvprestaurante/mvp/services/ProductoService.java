@@ -257,4 +257,16 @@ public class ProductoService {
                 .min()
                 .orElse(0.0);
     }
+
+    @Transactional
+    public void actualizarPrecioVenta(Long productoId, Double nuevoPrecio) {
+        validarTenant();
+        
+        productoRepository.findById(productoId)
+                .filter(producto -> producto.getEmpresa().getId().equals(TenantContext.getTenantId()))
+                .ifPresent(producto -> {
+                    producto.setPrecioVenta(nuevoPrecio);
+                    productoRepository.save(producto);
+                });
+    }
 }
