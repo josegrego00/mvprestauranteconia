@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -63,21 +64,18 @@ public class CompraService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Compra> buscarPorNumero(String numero, Pageable pageable) {
+    public Page<Compra> buscar(String search, String fechaInicio, String fechaFin, Pageable pageable) {
         validarTenant();
-        return compraRepository.findByNumeroContainingIgnoreCase(TenantContext.getTenantId(), numero, pageable);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<Compra> filtrarPorEstado(String estado, Pageable pageable) {
-        validarTenant();
-        return compraRepository.findByEstado(TenantContext.getTenantId(), estado, pageable);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<Compra> filtrarPorFecha(LocalDateTime fechaInicio, LocalDateTime fechaFin, Pageable pageable) {
-        validarTenant();
-        return compraRepository.findByFechaBetween(TenantContext.getTenantId(), fechaInicio, fechaFin, pageable);
+        
+        if (search != null && !search.isEmpty()) {
+            return compraRepository.findByNumeroContainingIgnoreCase(TenantContext.getTenantId(), search, pageable);
+        } else if (fechaInicio != null && !fechaInicio.isEmpty() && fechaFin != null && !fechaFin.isEmpty()) {
+            LocalDateTime inicio = LocalDateTime.parse(fechaInicio + "T00:00:00");
+            LocalDateTime fin = LocalDateTime.parse(fechaFin + "T23:59:59");
+            return compraRepository.findByFechaBetween(TenantContext.getTenantId(), inicio, fin, pageable);
+        } else {
+            return compraRepository.findAllByTenantId(TenantContext.getTenantId(), pageable);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -85,6 +83,61 @@ public class CompraService {
         validarTenant();
         return compraRepository.findById(id)
                 .filter(compra -> compra.getUsuario().getEmpresa().getId().equals(TenantContext.getTenantId()));
+    }
+
+    @Transactional
+    public Compra guardarDesdeFormulario(Compra compra, Map<String, String> allParams) {
+        validarTenant();
+
+        List<DetalleCompra> detalles = new ArrayList<>();
+
+        for (String key : allParams.keySet()) {
+            if (key.startsWith("itemId[")) {
+                String index = key.substring(7, key.length() - 1);
+                String itemValue = allParams.get(key);
+                String cantidadParam = "cantidad[" + index + "]";
+                String precioParam = "precio[" + index + "]";
+                
+                if (itemValue != null && !itemValue.isEmpty() && 
+                    allParams.containsKey(cantidadParam) && 
+                    allParams.containsKey(precioParam)) {
+                    
+                    String[] parts = itemValue.split("\\|");
+                    if (parts.length != 2) continue;
+                    
+                    Long itemId = Long.parseLong(parts[0]);
+                    String tipoItem = parts[1];
+                    Integer cantidad = Integer.parseInt(allParams.get(cantidadParam));
+                    Double precio = Double.parseDouble(allParams.get(precioParam));
+                    
+                    if (cantidad == null || cantidad <= 0) {
+                        throw new BusinessException("La cantidad debe ser mayor a 0");
+                    }
+                    if (precio == null || precio < 0) {
+                        throw new BusinessException("El precio no puede ser negativo");
+                    }
+                    
+                    DetalleCompra detalle = new DetalleCompra();
+                    
+                    if ("INGREDIENTE".equals(tipoItem)) {
+                        Ingrediente ing = new Ingrediente();
+                        ing.setId(itemId);
+                        detalle.setIngrediente(ing);
+                    } else if ("PRODUCTO".equals(tipoItem)) {
+                        Producto prod = new Producto();
+                        prod.setId(itemId);
+                        detalle.setProducto(prod);
+                    }
+                    
+                    detalle.setTipoItem(tipoItem);
+                    detalle.setCantidad(cantidad);
+                    detalle.setPrecioUnitarioCompra(precio);
+                    detalles.add(detalle);
+                }
+            }
+        }
+
+        return guardar(compra, detalles);
     }
 
     @Transactional

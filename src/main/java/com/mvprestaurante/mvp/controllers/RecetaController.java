@@ -100,63 +100,13 @@ public class RecetaController {
             @RequestParam(required = false) Double[] cantidades,
             @RequestParam(required = false) Long productoId,
             RedirectAttributes redirectAttributes) {
-        // 🔴 NUEVO LOG - PON ESTO AL INICIO
-        System.out.println("===== DATOS RECIBIDOS =====");
-        System.out.println("Nombre: " + receta.getNombre());
-        System.out.println("Descripción: " + receta.getDescripcion());
-        System.out
-                .println("Ingredientes IDs: " + (ingredientesIds != null ? Arrays.toString(ingredientesIds) : "null"));
-        System.out.println("Cantidades: " + (cantidades != null ? Arrays.toString(cantidades) : "null"));
         try {
-            // Validar nombre único (solo si es nueva receta o cambió el nombre)
-            if (receta.getId() == null) {
-                if (recetaService.existePorNombre(receta.getNombre())) {
-                    redirectAttributes.addFlashAttribute("error", "Ya existe una receta con ese nombre");
-                    return "redirect:/recetas/nueva";
-                }
-            }
-
-            // Construir lista de detalles de receta
-            List<DetalleReceta> detalles = new ArrayList<>();
-
-            if (ingredientesIds != null && cantidades != null && ingredientesIds.length > 0) {
-                for (int i = 0; i < ingredientesIds.length; i++) {
-                    if (ingredientesIds[i] != null && cantidades[i] != null && cantidades[i] > 0) {
-                        Long idIngrediente = ingredientesIds[i];
-                        Double cantidadIngrediente = cantidades[i];
-
-                        Optional<Ingrediente> ingredienteOpt = ingredienteService.obtenerPorId(idIngrediente);
-
-                        if (!ingredienteOpt.isPresent()) {
-                            throw new RuntimeException("Ingrediente no encontrado: " + idIngrediente);
-                        }
-
-                        Ingrediente ingrediente = ingredienteOpt.get();
-
-                        DetalleReceta detalle = DetalleReceta.builder()
-                                .receta(receta)
-                                .ingrediente(ingrediente)
-                                .cantidadIngrediente(cantidadIngrediente)
-                                .build();
-                        detalles.add(detalle);
-                    }
-                }
-            }
-
-            // Validar que tenga al menos un ingrediente
-            if (detalles.isEmpty()) {
-                redirectAttributes.addFlashAttribute("error", "La receta debe tener al menos un ingrediente");
-                return "redirect:/recetas/nueva";
-            }
-
-            receta.setListaIngredientes(detalles);
-
             Receta recetaGuardada;
             if (receta.getId() != null) {
-                recetaGuardada = recetaService.actualizar(receta.getId(), receta);
+                recetaGuardada = recetaService.actualizarConIngredientes(receta.getId(), receta, ingredientesIds, cantidades);
                 redirectAttributes.addFlashAttribute("success", "Receta actualizada exitosamente");
             } else {
-                recetaGuardada = recetaService.crearReceta(receta);
+                recetaGuardada = recetaService.crearRecetaConIngredientes(receta, ingredientesIds, cantidades);
                 redirectAttributes.addFlashAttribute("success", "Receta guardada exitosamente");
             }
 
@@ -166,21 +116,7 @@ public class RecetaController {
                 return "redirect:/productos/editar/" + productoId;
             }
 
-            // LOGS PARA VERIFICAR (AHORA SÍ DESPUÉS DE CONSTRUIR)
-            System.out.println("===== VERIFICANDO INGREDIENTES =====");
-            System.out.println("Receta nombre: " + receta.getNombre());
-            System.out.println("Receta ID (antes de guardar): " + receta.getId());
-            System.out.println("Número de ingredientes: " + receta.getListaIngredientes().size());
-
-            for (int i = 0; i < receta.getListaIngredientes().size(); i++) {
-                DetalleReceta d = receta.getListaIngredientes().get(i);
-                System.out.println("Ingrediente " + i + ":");
-                System.out.println(
-                        "  - ID Ingrediente: " + (d.getIngrediente() != null ? d.getIngrediente().getId() : "null"));
-                System.out.println("  - Cantidad: " + d.getCantidadIngrediente());
-                System.out.println(
-                        "  - Receta en detalle: " + (d.getReceta() != null ? d.getReceta().getNombre() : "null"));
-            }
+            return "redirect:/recetas";
 
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -188,17 +124,7 @@ public class RecetaController {
                 return "redirect:/recetas/editar/" + receta.getId();
             }
             return "redirect:/recetas/nueva";
-        } catch (Exception e) {
-            e.printStackTrace();
-            redirectAttributes.addFlashAttribute("error", "Error al guardar la receta: " + e.getMessage());
-            if (receta.getId() != null) {
-                return "redirect:/recetas/editar/" + receta.getId();
-            }
-            return "redirect:/recetas/nueva";
         }
-
-        // Redirigir a la lista de recetas
-        return "redirect:/recetas";
     }
 
     @GetMapping("/eliminar/{id}")

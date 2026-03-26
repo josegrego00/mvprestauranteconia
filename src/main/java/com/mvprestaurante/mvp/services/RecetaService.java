@@ -4,11 +4,13 @@ import com.mvprestaurante.mvp.exceptions.BusinessException;
 import com.mvprestaurante.mvp.exceptions.DuplicateResourceException;
 import com.mvprestaurante.mvp.models.DetalleReceta;
 import com.mvprestaurante.mvp.models.Empresa;
+import com.mvprestaurante.mvp.models.Ingrediente;
 import com.mvprestaurante.mvp.models.Producto;
 import com.mvprestaurante.mvp.models.Receta;
 import com.mvprestaurante.mvp.multitenant.TenantContext;
 import com.mvprestaurante.mvp.repositories.DetalleRecetaRepository;
 import com.mvprestaurante.mvp.repositories.EmpresaRepositorio;
+import com.mvprestaurante.mvp.repositories.IngredienteRepository;
 import com.mvprestaurante.mvp.repositories.RecetaRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +32,7 @@ public class RecetaService {
 
     private final RecetaRepository recetaRepository;
     private final DetalleRecetaRepository detalleRecetaRepository;
+    private final IngredienteRepository ingredienteRepository;
     private final ProductoService productoService;
     private final EmpresaRepositorio empresaRepositorio;
 
@@ -71,18 +75,18 @@ public class RecetaService {
     }
 
     @Transactional
-    public Receta crearReceta(Receta receta) {
+    public Receta crearRecetaConIngredientes(Receta receta, Long[] ingredientesIds, Double[] cantidades) {
         validarTenant();
 
         if (receta.getNombre() == null || receta.getNombre().trim().isEmpty()) {
             throw new BusinessException("El nombre de la receta es obligatorio");
         }
 
-        if (receta.getListaIngredientes() == null || receta.getListaIngredientes().isEmpty()) {
+        if (ingredientesIds == null || cantidades == null || ingredientesIds.length == 0) {
             throw new BusinessException("La receta debe tener al menos un ingrediente");
         }
 
-        validarIngredientesUnicos(receta);
+        validarIngredientesEnFormulario(ingredientesIds, cantidades);
 
         if (receta.getId() == null && existePorNombre(receta.getNombre())) {
             throw new DuplicateResourceException("Receta", receta.getNombre());
@@ -99,13 +103,40 @@ public class RecetaService {
             receta.setDescripcion(receta.getDescripcion().trim());
         }
 
-        for (DetalleReceta detalle : receta.getListaIngredientes()) {
-            detalle.setReceta(receta);
+        List<DetalleReceta> detalles = new ArrayList<>();
+        for (int i = 0; i < ingredientesIds.length; i++) {
+            Long idIngrediente = ingredientesIds[i];
+            Double cantidadIngrediente = cantidades[i];
+
+            if (idIngrediente != null && cantidadIngrediente != null && cantidadIngrediente > 0) {
+                Ingrediente ingrediente = ingredienteRepository.findById(idIngrediente)
+                        .filter(ing -> ing.getEmpresa().getId().equals(TenantContext.getTenantId()))
+                        .orElseThrow(() -> new BusinessException("Ingrediente no encontrado: " + idIngrediente));
+
+                DetalleReceta detalle = DetalleReceta.builder()
+                        .receta(receta)
+                        .ingrediente(ingrediente)
+                        .cantidadIngrediente(cantidadIngrediente)
+                        .build();
+                detalles.add(detalle);
+            }
         }
+
+        if (detalles.isEmpty()) {
+            throw new BusinessException("La receta debe tener al menos un ingrediente");
+        }
+
+        receta.setListaIngredientes(detalles);
 
         calcularPrecioBruto(receta);
 
         return recetaRepository.save(receta);
+    }
+
+    private void validarIngredientesEnFormulario(Long[] ingredientesIds, Double[] cantidades) {
+        if (ingredientesIds == null || cantidades == null || ingredientesIds.length != cantidades.length) {
+            throw new BusinessException("Los datos de ingredientes no son válidos");
+        }
     }
 
     @Transactional(readOnly = true)
@@ -157,7 +188,7 @@ public class RecetaService {
     }
 
     @Transactional
-    public Receta actualizar(Long id, Receta recetaActualizada) {
+    public Receta actualizarConIngredientes(Long id, Receta recetaActualizada, Long[] ingredientesIds, Double[] cantidades) {
         validarTenant();
 
         Receta recetaExistente = recetaRepository.findById(id)
@@ -173,11 +204,11 @@ public class RecetaService {
             throw new DuplicateResourceException("Receta", recetaActualizada.getNombre());
         }
 
-        if (recetaActualizada.getListaIngredientes() == null || recetaActualizada.getListaIngredientes().isEmpty()) {
+        if (ingredientesIds == null || cantidades == null || ingredientesIds.length == 0) {
             throw new BusinessException("La receta debe tener al menos un ingrediente");
         }
 
-        validarIngredientesUnicos(recetaActualizada);
+        validarIngredientesEnFormulario(ingredientesIds, cantidades);
 
         recetaExistente.setNombre(recetaActualizada.getNombre().trim());
         if (recetaActualizada.getDescripcion() != null) {
@@ -185,11 +216,31 @@ public class RecetaService {
         }
         recetaExistente.setPrecioVenta(recetaActualizada.getPrecioVenta());
 
-        recetaExistente.getListaIngredientes().clear();
-        for (DetalleReceta detalle : recetaActualizada.getListaIngredientes()) {
-            detalle.setReceta(recetaExistente);
-            recetaExistente.getListaIngredientes().add(detalle);
+        List<DetalleReceta> nuevosDetalles = new ArrayList<>();
+        for (int i = 0; i < ingredientesIds.length; i++) {
+            Long idIngrediente = ingredientesIds[i];
+            Double cantidadIngrediente = cantidades[i];
+
+            if (idIngrediente != null && cantidadIngrediente != null && cantidadIngrediente > 0) {
+                Ingrediente ingrediente = ingredienteRepository.findById(idIngrediente)
+                        .filter(ing -> ing.getEmpresa().getId().equals(TenantContext.getTenantId()))
+                        .orElseThrow(() -> new BusinessException("Ingrediente no encontrado: " + idIngrediente));
+
+                DetalleReceta detalle = DetalleReceta.builder()
+                        .receta(recetaExistente)
+                        .ingrediente(ingrediente)
+                        .cantidadIngrediente(cantidadIngrediente)
+                        .build();
+                nuevosDetalles.add(detalle);
+            }
         }
+
+        if (nuevosDetalles.isEmpty()) {
+            throw new BusinessException("La receta debe tener al menos un ingrediente");
+        }
+
+        recetaExistente.getListaIngredientes().clear();
+        recetaExistente.getListaIngredientes().addAll(nuevosDetalles);
 
         calcularPrecioBruto(recetaExistente);
 

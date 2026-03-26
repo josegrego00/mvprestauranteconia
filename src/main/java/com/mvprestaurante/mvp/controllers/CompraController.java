@@ -1,13 +1,12 @@
 package com.mvprestaurante.mvp.controllers;
 
 import com.mvprestaurante.mvp.DTO.CompraDetalleDTO;
-import com.mvprestaurante.mvp.DTO.DetalleCompraSimpleDTO;
-import com.mvprestaurante.mvp.DTO.IngredienteSimpleDTO;
-import com.mvprestaurante.mvp.DTO.ProductoSimpleDTO;
+import com.mvprestaurante.mvp.DTO.IngredienteDTO;
+import com.mvprestaurante.mvp.DTO.ProductoDTO;
+import com.mvprestaurante.mvp.mapper.CompraMapper;
+import com.mvprestaurante.mvp.mapper.IngredienteMapper;
+import com.mvprestaurante.mvp.mapper.ProductoMapper;
 import com.mvprestaurante.mvp.models.Compra;
-import com.mvprestaurante.mvp.models.DetalleCompra;
-import com.mvprestaurante.mvp.models.Ingrediente;
-import com.mvprestaurante.mvp.models.Producto;
 import com.mvprestaurante.mvp.services.CompraService;
 import com.mvprestaurante.mvp.services.IngredienteService;
 import com.mvprestaurante.mvp.services.ProductoService;
@@ -23,7 +22,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -41,6 +39,15 @@ public class CompraController {
     @Autowired
     private ProductoService productoService;
 
+    @Autowired
+    private IngredienteMapper ingredienteMapper;
+
+    @Autowired
+    private ProductoMapper productoMapper;
+
+    @Autowired
+    private CompraMapper compraMapper;
+
     @GetMapping
     public String listar(@RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -50,19 +57,16 @@ public class CompraController {
             Model model) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("fechaCompra").descending());
-        Page<Compra> comprasPage;
+        Page<Compra> comprasPage = compraService.buscar(search, fechaInicio, fechaFin, pageable);
 
         if (search != null && !search.isEmpty()) {
-            comprasPage = compraService.buscarPorNumero(search, pageable);
             model.addAttribute("search", search);
-        } else if (fechaInicio != null && !fechaInicio.isEmpty() && fechaFin != null && !fechaFin.isEmpty()) {
-            LocalDateTime inicio = LocalDateTime.parse(fechaInicio + "T00:00:00");
-            LocalDateTime fin = LocalDateTime.parse(fechaFin + "T23:59:59");
-            comprasPage = compraService.filtrarPorFecha(inicio, fin, pageable);
+        }
+        if (fechaInicio != null && !fechaInicio.isEmpty()) {
             model.addAttribute("fechaInicio", fechaInicio);
+        }
+        if (fechaFin != null && !fechaFin.isEmpty()) {
             model.addAttribute("fechaFin", fechaFin);
-        } else {
-            comprasPage = compraService.listarActivos(pageable);
         }
 
         model.addAttribute("compras", comprasPage.getContent());
@@ -78,23 +82,16 @@ public class CompraController {
     public String nueva(Model model) {
         model.addAttribute("compra", new Compra());
         
-        List<IngredienteSimpleDTO> ingredientesDTO = ingredienteService.listarActivos(PageRequest.of(0, 100))
+        List<IngredienteDTO> ingredientesDTO = ingredienteService.listarActivos(PageRequest.of(0, 100))
             .getContent()
             .stream()
-            .map(i -> IngredienteSimpleDTO.builder()
-                .id(i.getId())
-                .nombre(i.getNombre())
-                .unidadMedida(i.getUnidadMedida())
-                .build())
+            .map(ingredienteMapper::toSimpleDTO)
             .collect(Collectors.toList());
         
-        List<ProductoSimpleDTO> productosDTO = productoService.listarProductosSinReceta(PageRequest.of(0, 100))
+        List<ProductoDTO> productosDTO = productoService.listarProductosSinReceta(PageRequest.of(0, 100))
             .getContent()
             .stream()
-            .map(p -> ProductoSimpleDTO.builder()
-                .id(p.getId())
-                .nombre(p.getNombre())
-                .build())
+            .map(productoMapper::toSimpleDTO)
             .collect(Collectors.toList());
         
         model.addAttribute("ingredientes", ingredientesDTO);
@@ -109,48 +106,7 @@ public class CompraController {
             RedirectAttributes ra) {
 
         try {
-            List<DetalleCompra> detalles = new ArrayList<>();
-
-            for (String key : allParams.keySet()) {
-                if (key.startsWith("itemId[")) {
-                    String index = key.substring(7, key.length() - 1);
-                    String itemValue = allParams.get(key);
-                    String cantidadParam = "cantidad[" + index + "]";
-                    String precioParam = "precio[" + index + "]";
-                    
-                    if (itemValue != null && !itemValue.isEmpty() && 
-                        allParams.containsKey(cantidadParam) && 
-                        allParams.containsKey(precioParam)) {
-                        
-                        String[] parts = itemValue.split("\\|");
-                        if (parts.length != 2) continue;
-                        
-                        Long itemId = Long.parseLong(parts[0]);
-                        String tipoItem = parts[1];
-                        Integer cantidad = Integer.parseInt(allParams.get(cantidadParam));
-                        Double precio = Double.parseDouble(allParams.get(precioParam));
-                        
-                        DetalleCompra detalle = new DetalleCompra();
-                        
-                        if ("INGREDIENTE".equals(tipoItem)) {
-                            Ingrediente ing = new Ingrediente();
-                            ing.setId(itemId);
-                            detalle.setIngrediente(ing);
-                        } else if ("PRODUCTO".equals(tipoItem)) {
-                            Producto prod = new Producto();
-                            prod.setId(itemId);
-                            detalle.setProducto(prod);
-                        }
-                        
-                        detalle.setTipoItem(tipoItem);
-                        detalle.setCantidad(cantidad);
-                        detalle.setPrecioUnitarioCompra(precio);
-                        detalles.add(detalle);
-                    }
-                }
-            }
-
-            compraService.guardar(compra, detalles);
+            compraService.guardarDesdeFormulario(compra, allParams);
             ra.addFlashAttribute("success", "Compra registrada exitosamente");
         } catch (RuntimeException e) {
             ra.addFlashAttribute("error", e.getMessage());
@@ -164,37 +120,7 @@ public class CompraController {
     public String ver(@PathVariable Long id, Model model, RedirectAttributes ra) {
         return compraService.obtenerPorId(id)
                 .map(compra -> {
-                    List<DetalleCompraSimpleDTO> detallesDTO = new ArrayList<>();
-                    for (DetalleCompra detalle : compra.getDetallesCompra()) {
-                        String nombreItem = "";
-                        if ("INGREDIENTE".equals(detalle.getTipoItem()) && detalle.getIngrediente() != null) {
-                            nombreItem = detalle.getIngrediente().getNombre();
-                        } else if ("PRODUCTO".equals(detalle.getTipoItem()) && detalle.getProducto() != null) {
-                            nombreItem = detalle.getProducto().getNombre();
-                        }
-                        detallesDTO.add(DetalleCompraSimpleDTO.builder()
-                            .tipoItem(detalle.getTipoItem())
-                            .nombreItem(nombreItem)
-                            .cantidad(detalle.getCantidad())
-                            .precioUnitarioCompra(detalle.getPrecioUnitarioCompra())
-                            .subtotal(detalle.getSubtotal())
-                            .build());
-                    }
-                    
-                    CompraDetalleDTO compraDTO = CompraDetalleDTO.builder()
-                        .id(compra.getId())
-                        .numeroCompra(compra.getNumeroCompra())
-                        .fechaCompra(compra.getFechaCompra())
-                        .proveedor(compra.getProveedor())
-                        .observaciones(compra.getObservaciones())
-                        .estado(compra.getEstado())
-                        .subtotal(compra.getSubtotal())
-                        .impuesto(compra.getImpuesto())
-                        .total(compra.getTotal())
-                        .nombreUsuario(compra.getUsuario().getNombre())
-                        .detalles(detallesDTO)
-                        .build();
-                    
+                    CompraDetalleDTO compraDTO = compraMapper.toDetalleDTO(compra);
                     model.addAttribute("compra", compraDTO);
                     return "compras/ver";
                 })

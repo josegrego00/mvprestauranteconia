@@ -23,5 +23,5 @@ public class CompraDetalleDTO {
     private Double impuesto;
     private Double total;
     private String nombreUsuario;
-    private List<DetalleCompraSimpleDTO> detalles;
+    private List<DetalleCompraDTO> detalles;
 }
