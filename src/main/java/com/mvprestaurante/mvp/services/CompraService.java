@@ -1,14 +1,17 @@
 package com.mvprestaurante.mvp.services;
 
 import com.mvprestaurante.mvp.exceptions.BusinessException;
+import com.mvprestaurante.mvp.exceptions.DuplicateResourceException;
 import com.mvprestaurante.mvp.models.Compra;
 import com.mvprestaurante.mvp.models.DetalleCompra;
+import com.mvprestaurante.mvp.models.Empresa;
 import com.mvprestaurante.mvp.models.Ingrediente;
 import com.mvprestaurante.mvp.models.Producto;
 import com.mvprestaurante.mvp.models.Usuario;
 import com.mvprestaurante.mvp.multitenant.TenantContext;
 import com.mvprestaurante.mvp.repositories.CompraRepository;
 import com.mvprestaurante.mvp.repositories.DetalleCompraRepository;
+import com.mvprestaurante.mvp.repositories.EmpresaRepositorio;
 import com.mvprestaurante.mvp.repositories.IngredienteRepository;
 import com.mvprestaurante.mvp.repositories.ProductoRepository;
 import com.mvprestaurante.mvp.repositories.UsuarioRepositorio;
@@ -38,6 +41,7 @@ public class CompraService {
     private final IngredienteRepository ingredienteRepository;
     private final ProductoRepository productoRepository;
     private final UsuarioRepositorio usuarioRepository;
+    private final EmpresaRepositorio empresaRepository;
 
     private void validarTenant() {
         Long empresaId = TenantContext.getTenantId();
@@ -81,8 +85,8 @@ public class CompraService {
     @Transactional(readOnly = true)
     public Optional<Compra> obtenerPorId(Long id) {
         validarTenant();
-        return compraRepository.findById(id)
-                .filter(compra -> compra.getUsuario().getEmpresa().getId().equals(TenantContext.getTenantId()));
+        return compraRepository.findByIdWithEmpresa(id)
+                .filter(compra -> compra.getEmpresa().getId().equals(TenantContext.getTenantId()));
     }
 
     @Transactional
@@ -143,15 +147,25 @@ public class CompraService {
     @Transactional
     public Compra guardar(Compra compra, List<DetalleCompra> detalles) {
         validarTenant();
+        Long empresaId = TenantContext.getTenantId();
 
         if (detalles == null || detalles.isEmpty()) {
             throw new BusinessException("La compra debe tener al menos un item");
         }
 
+        if (compra.getId() == null) {
+            if (compraRepository.existsByNumeroCompraAndEmpresaId(compra.getNumeroCompra(), empresaId)) {
+                throw new DuplicateResourceException("Compra", "El número de factura '" + compra.getNumeroCompra() + "' ya existe en esta empresa");
+            }
+        }
+
         Usuario usuario = getUsuarioActual();
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
 
         compra.setFechaCompra(LocalDateTime.now());
         compra.setUsuario(usuario);
+        compra.setEmpresa(empresa);
         compra.setEstado("COMPLETADA");
 
         double subtotal = 0;
@@ -204,7 +218,7 @@ public class CompraService {
         validarTenant();
 
         return compraRepository.findById(id)
-                .filter(compra -> compra.getUsuario().getEmpresa().getId().equals(TenantContext.getTenantId()))
+                .filter(compra -> compra.getEmpresa().getId().equals(TenantContext.getTenantId()))
                 .filter(compra -> "COMPLETADA".equals(compra.getEstado()))
                 .map(compra -> {
                     for (DetalleCompra detalle : compra.getDetallesCompra()) {

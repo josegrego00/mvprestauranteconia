@@ -29,7 +29,6 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "El nombre no puede ser vacio")
     private String nombre;
 
     @Column(nullable = false)

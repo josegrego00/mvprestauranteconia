@@ -32,9 +32,9 @@ public class RecetaService {
 
     private final RecetaRepository recetaRepository;
     private final DetalleRecetaRepository detalleRecetaRepository;
-    private final IngredienteRepository ingredienteRepository;
     private final ProductoService productoService;
     private final EmpresaRepositorio empresaRepositorio;
+    private final IngredienteRepository ingredienteRepository;
 
     private void validarTenant() {
         Long empresaId = TenantContext.getTenantId();
@@ -64,7 +64,8 @@ public class RecetaService {
     @Transactional(readOnly = true)
     public Page<Receta> buscarPorNombre(String nombre, Pageable pageable) {
         validarTenant();
-        return recetaRepository.findByNombreContainingIgnoreCaseAndEstaActivaTrue(TenantContext.getTenantId(), nombre, pageable);
+        return recetaRepository.findByNombreContainingIgnoreCaseAndEstaActivaTrue(TenantContext.getTenantId(), nombre,
+                pageable);
     }
 
     @Transactional(readOnly = true)
@@ -94,7 +95,7 @@ public class RecetaService {
 
         Empresa empresa = empresaRepositorio.findById(TenantContext.getTenantId())
                 .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
-        
+
         receta.setEmpresa(empresa);
         receta.setEstaActiva(true);
         receta.setNombre(receta.getNombre().trim());
@@ -188,7 +189,8 @@ public class RecetaService {
     }
 
     @Transactional
-    public Receta actualizarConIngredientes(Long id, Receta recetaActualizada, Long[] ingredientesIds, Double[] cantidades) {
+    public Receta actualizarConIngredientes(Long id, Receta recetaActualizada, Long[] ingredientesIds,
+            Double[] cantidades) {
         validarTenant();
 
         Receta recetaExistente = recetaRepository.findById(id)
@@ -280,7 +282,8 @@ public class RecetaService {
                 .filter(receta -> receta.getEmpresa().getId().equals(TenantContext.getTenantId()))
                 .map(receta -> {
                     if (receta.getProducto() != null) {
-                        throw new BusinessException("No se puede eliminar la receta porque está asociada a un producto");
+                        throw new BusinessException(
+                                "No se puede eliminar la receta porque está asociada a un producto");
                     }
                     receta.setEstaActiva(false);
                     recetaRepository.save(receta);

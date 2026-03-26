@@ -15,23 +15,30 @@ import java.util.Optional;
 @Repository
 public interface CompraRepository extends JpaRepository<Compra, Long> {
 
-    @Query("SELECT c FROM Compra c WHERE c.usuario.empresa.id = :tenantId ORDER BY c.fechaCompra DESC")
+    @Query("SELECT c FROM Compra c JOIN FETCH c.empresa JOIN FETCH c.usuario WHERE c.id = :id")
+    Optional<Compra> findByIdWithEmpresa(@Param("id") Long id);
+
+    @Query("SELECT c FROM Compra c JOIN FETCH c.empresa WHERE c.empresa.id = :tenantId ORDER BY c.fechaCompra DESC")
     Page<Compra> findAllByTenantId(@Param("tenantId") Long tenantId, Pageable pageable);
 
-    @Query("SELECT c FROM Compra c WHERE c.usuario.empresa.id = :tenantId " +
+    @Query("SELECT c FROM Compra c JOIN FETCH c.empresa WHERE c.empresa.id = :tenantId " +
             "AND LOWER(c.numeroCompra) LIKE LOWER(CONCAT('%', :numero, '%')) ORDER BY c.fechaCompra DESC")
     Page<Compra> findByNumeroContainingIgnoreCase(@Param("tenantId") Long tenantId, @Param("numero") String numero, Pageable pageable);
 
-    @Query("SELECT c FROM Compra c WHERE c.usuario.empresa.id = :tenantId " +
+    @Query("SELECT c FROM Compra c JOIN FETCH c.empresa WHERE c.empresa.id = :tenantId " +
             "AND c.estado = :estado ORDER BY c.fechaCompra DESC")
     Page<Compra> findByEstado(@Param("tenantId") Long tenantId, @Param("estado") String estado, Pageable pageable);
 
-    @Query("SELECT c FROM Compra c WHERE c.usuario.empresa.id = :tenantId " +
+    @Query("SELECT c FROM Compra c JOIN FETCH c.empresa WHERE c.empresa.id = :tenantId " +
             "AND c.fechaCompra BETWEEN :fechaInicio AND :fechaFin ORDER BY c.fechaCompra DESC")
     Page<Compra> findByFechaBetween(@Param("tenantId") Long tenantId, 
             @Param("fechaInicio") LocalDateTime fechaInicio, 
             @Param("fechaFin") LocalDateTime fechaFin, Pageable pageable);
 
-    @Query("SELECT MAX(c.numeroCompra) FROM Compra c WHERE c.usuario.empresa.id = :tenantId AND c.numeroCompra LIKE :prefix%")
+    @Query("SELECT MAX(c.numeroCompra) FROM Compra c WHERE c.empresa.id = :tenantId AND c.numeroCompra LIKE :prefix%")
     Optional<String> findMaxNumeroCompraByPrefix(@Param("tenantId") Long tenantId, @Param("prefix") String prefix);
+
+    boolean existsByNumeroCompraAndEmpresaId(String numeroCompra, Long empresaId);
+
+    boolean existsByNumeroCompraAndEmpresaIdAndIdNot(String numeroCompra, Long empresaId, Long id);
 }

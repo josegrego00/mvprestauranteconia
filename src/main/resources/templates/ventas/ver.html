@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+
+<head th:replace="~{fragments/head :: head}"></head>
+
+<body>
+
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <div class="container-fluid">
+        <div class="row">
+
+            <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+
+                <div class="welcome-section mt-4 mb-4">
+                    <h1 class="welcome-title">
+                        <i class="bi bi-receipt me-2"></i>
+                        Detalle de Venta
+                    </h1>
+                    <p class="welcome-subtitle">
+                        Información completa de la venta
+                    </p>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Datos de la Venta</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label class="form-label text-uppercase small fw-bold">NÚMERO DE VENTA</label>
+                                <p class="fs-5" th:text="${venta.numeroVenta}">VT-20260326-0001</p>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-uppercase small fw-bold">FECHA</label>
+                                <p class="fs-5" th:text="${#temporals.format(venta.fechaVenta, 'dd/MM/yyyy HH:mm')}">26/03/2026 10:00</p>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-uppercase small fw-bold">CLIENTE</label>
+                                <p class="fs-5" th:text="${venta.nombreCliente}">Consumidor Final</p>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-uppercase small fw-bold">ESTADO</label>
+                                <p>
+                                    <span th:if="${venta.estado == 'COMPLETADA'}" class="badge bg-success fs-6">COMPLETADA</span>
+                                    <span th:if="${venta.estado == 'ANULADA'}" class="badge bg-danger fs-6">ANULADA</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-3">
+                                <label class="form-label text-uppercase small fw-bold">MÉTODO DE PAGO</label>
+                                <p class="fs-5" th:text="${venta.metodoPago}">EFECTIVO</p>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-uppercase small fw-bold">USUARIO</label>
+                                <p class="fs-5" th:text="${venta.nombreUsuario}">Admin</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-uppercase small fw-bold">OBSERVACIONES</label>
+                                <p class="fs-5" th:text="${venta.observaciones != null} ? ${venta.observaciones} : '-'">-</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-cart3 me-2"></i>Productos Vendidos</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Producto</th>
+                                    <th class="text-end">Cantidad</th>
+                                    <th class="text-end">Precio Unitario</th>
+                                    <th class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="detalle : ${venta.detalles}">
+                                    <td th:text="${detalle.nombreProducto}">Producto</td>
+                                    <td class="text-end" th:text="${detalle.cantidad}">1</td>
+                                    <td class="text-end">$<span th:text="${#numbers.formatDecimal(detalle.precioUnitario, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+                                    <td class="text-end fw-bold">$<span th:text="${#numbers.formatDecimal(detalle.subtotal, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end fw-bold">Subtotal:</td>
+                                    <td class="text-end">$<span th:text="${#numbers.formatDecimal(venta.subtotal, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-end fw-bold">Impuesto:</td>
+                                    <td class="text-end">$<span th:text="${#numbers.formatDecimal(venta.impuesto, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-end fw-bold fs-5">TOTAL:</td>
+                                    <td class="text-end fw-bold fs-4 text-success">$<span th:text="${#numbers.formatDecimal(venta.total, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-4 mb-4">
+                    <a th:href="@{/ventas}" class="btn btn-outline-secondary px-5">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Volver a Ventas
+                    </a>
+                </div>
+
+                <div th:replace="~{fragments/footer :: footer}"></div>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>

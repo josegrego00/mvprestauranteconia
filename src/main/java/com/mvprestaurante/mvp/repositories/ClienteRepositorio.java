@@ -5,7 +5,10 @@ import org.springframework.stereotype.Repository;
 
 import com.mvprestaurante.mvp.models.Cliente;
 
+import java.util.Optional;
+
 @Repository
 public interface ClienteRepositorio extends JpaRepository<Cliente, Long> {
 
+    Optional<Cliente> findByNombreContainingIgnoreCase(String nombre);
 }
