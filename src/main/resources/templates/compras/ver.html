@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+
+<head th:replace="~{fragments/head :: head}"></head>
+
+<body>
+
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <div class="container-fluid">
+        <div class="row">
+
+            <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+
+                <div class="welcome-section mt-4 mb-4">
+                    <h1 class="welcome-title">
+                        <i class="bi bi-receipt me-2"></i>
+                        Detalle de Compra
+                    </h1>
+                    <p class="welcome-subtitle">
+                        Información completa de la compra
+                    </p>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Información General</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label class="form-label text-uppercase small fw-bold text-secondary">NÚMERO</label>
+                                <p class="fs-5 fw-semibold" th:text="${compra.numeroCompra}">CMP-20250101-0001</p>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-uppercase small fw-bold text-secondary">FECHA</label>
+                                <p class="fs-5" th:text="${#temporals.format(compra.fechaCompra, 'dd/MM/yyyy HH:mm')}">01/01/2025 10:30</p>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-uppercase small fw-bold text-secondary">PROVEEDOR</label>
+                                <p class="fs-5" th:text="${compra.proveedor != null ? compra.proveedor : '-'}">Proveedor X</p>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-uppercase small fw-bold text-secondary">ESTADO</label>
+                                <p>
+                                    <span class="badge bg-success bg-opacity-10 text-success fs-6"
+                                        th:if="${compra.estado == 'COMPLETADA'}">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        Completada
+                                    </span>
+                                    <span class="badge bg-danger bg-opacity-10 text-danger fs-6"
+                                        th:if="${compra.estado == 'ANULADA'}">
+                                        <i class="bi bi-x-circle me-1"></i>
+                                        Anulada
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="row mt-3" th:if="${compra.observaciones}">
+                            <div class="col-12">
+                                <label class="form-label text-uppercase small fw-bold text-secondary">OBSERVACIONES</label>
+                                <p th:text="${compra.observaciones}">Notas adicionales...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Items de la Compra</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-4">TIPO</th>
+                                        <th>ITEM</th>
+                                        <th class="text-center">CANTIDAD</th>
+                                        <th class="text-end">PRECIO UNIT.</th>
+                                        <th class="text-end pe-4">SUBTOTAL</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="detalle : ${compra.detalles}">
+                                        <td class="ps-4">
+                                            <span class="badge bg-info bg-opacity-10 text-info"
+                                                th:if="${detalle.tipoItem == 'INGREDIENTE'}">
+                                                <i class="bi bi-cup-hot me-1"></i>
+                                                Ingrediente
+                                            </span>
+                                            <span class="badge bg-warning bg-opacity-10 text-warning"
+                                                th:if="${detalle.tipoItem == 'PRODUCTO'}">
+                                                <i class="bi bi-box me-1"></i>
+                                                Producto
+                                            </span>
+                                        </td>
+                                        <td th:text="${detalle.nombreItem}">Nombre</td>
+                                        <td class="text-center" th:text="${detalle.cantidad}">10</td>
+                                        <td class="text-end">
+                                            $<span th:text="${#numbers.formatDecimal(detalle.precioUnitarioCompra, 1, 2)}">15.00</span>
+                                        </td>
+                                        <td class="text-end pe-4 fw-semibold">
+                                            $<span th:text="${#numbers.formatDecimal(detalle.subtotal, 1, 2)}">150.00</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <td colspan="4" class="text-end fw-bold fs-5">TOTAL:</td>
+                                        <td class="text-end pe-4 fw-bold fs-5 text-primary">
+                                            $<span th:text="${#numbers.formatDecimal(compra.total, 1, 2)}">150.00</span>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-4 mb-4">
+                    <a th:href="@{/compras}" class="btn btn-outline-secondary px-5">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Volver al listado
+                    </a>
+                    <form th:if="${compra.estado == 'COMPLETADA'}" 
+                          th:action="@{/compras/anular/{id}(id=${compra.id})}" 
+                          method="post">
+                        <button type="submit" class="btn btn-danger px-5" 
+                                onclick="return confirm('¿Estás seguro de anular esta compra? Se revertirá el stock.')">
+                            <i class="bi bi-x-lg me-2"></i>
+                            Anular Compra
+                        </button>
+                    </form>
+                </div>
+
+                <div th:replace="~{fragments/footer :: footer}"></div>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>
