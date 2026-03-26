@@ -1,7 +1,7 @@
 package com.mvprestaurante.mvp.controllers;
 
 import com.mvprestaurante.mvp.DTO.ProductoVentaDTO;
-import com.mvprestaurante.mvp.DTO.VentaDetalleDTO;
+import com.mvprestaurante.mvp.DTO.VentaDTO;
 import com.mvprestaurante.mvp.mapper.ProductoVentaMapper;
 import com.mvprestaurante.mvp.mapper.VentaMapper;
 import com.mvprestaurante.mvp.models.Venta;
@@ -133,7 +133,7 @@ public class VentaController {
     public String ver(@PathVariable Long id, Model model, RedirectAttributes ra) {
         return ventaService.obtenerPorId(id)
                 .map(venta -> {
-                    VentaDetalleDTO ventaDTO = ventaMapper.toDetalleDTO(venta);
+                    VentaDTO ventaDTO = ventaMapper.toDetalleDTO(venta);
                     model.addAttribute("venta", ventaDTO);
                     return "ventas/ver";
                 })

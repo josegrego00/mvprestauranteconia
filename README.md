@@ -13,6 +13,23 @@ Sistema de gestión para restaurantes con soporte multi-empresa (multi-tenant).
 
 ## Características
 
+### Punto de Venta (Caja)
+- Interfaz rápida para cajeros
+- Productos visualizados como botones para selección rápida
+- **Stock estimado**: Productos con receta muestran disponibilidad desde ingredientes
+- **Validación de stock**: Bloquea productos con stock 0
+- **Pagos mixtos**: Efectivo, Tarjeta, Transferencia o combinación
+- **Botón Pago Exacto**: Autocompleta el monto total
+- **Cambio visual**: Rojo si falta pagar, azul si está completo
+- **Redirect automático**: Después de venta exitosa, nueva venta lista
+- Persistencia del carrito en errores de validación
+
+### Gestión de Compras
+- Registro de compras de ingredientes y productos
+- Actualización automática de stock al registrar
+- Anulación de compras con reversa de stock
+- Validación de número de factura único por empresa
+
 ### Gestión de Productos
 - Productos con y sin receta
 - Control de stock (solo productos sin receta)
@@ -37,7 +54,11 @@ Sistema de gestión para restaurantes con soporte multi-empresa (multi-tenant).
 
 ### Gestión de Clientes
 - Registro de clientes
-- Historial de pedidos
+- Cliente default "Consumidor Final" para ventas rápidas
+
+### Ajuste de Precios
+- Filtros por tipo de producto (con/sin receta)
+- Actualización inline de precios de venta
 
 ### Multi-Tenant
 - Aislamiento de datos por empresa
@@ -97,17 +118,19 @@ export DB_PASSWORD=tu_password
 | Ruta | Descripción |
 |------|-------------|
 | `/` | Login |
+| `/dashboard` | Dashboard principal |
 | `/productos` | Lista de productos |
 | `/productos/nuevo` | Nuevo producto |
 | `/productos/editar/{id}` | Editar producto |
-| `/productos/ver/{id}` | Ver detalle de producto |
 | `/recetas` | Lista de recetas |
 | `/recetas/nueva` | Nueva receta |
-| `/recetas/editar/{id}` | Editar receta |
-| `/recetas/ver/{id}` | Ver detalle de receta |
-| `/recetas/stock/{id}` | API: Stock disponible de receta |
 | `/ingredientes` | Lista de ingredientes |
-| `/ingredientes/nuevo` | Nuevo ingrediente |
+| `/compras` | Lista de compras |
+| `/compras/nueva` | Nueva compra |
+| `/ventas` | Dashboard de ventas |
+| `/ventas/nueva` | Punto de venta (caja) |
+| `/ventas/ver/{id}` | Ver detalle de venta |
+| `/ajuste-precios` | Ajuste de precios |
 
 ## API Endpoints (JSON)
 
@@ -138,7 +161,20 @@ export DB_PASSWORD=tu_password
 3. **Eliminación**: Protegida si está siendo usado en alguna receta
 4. **Eliminación**: Solo lógica (desactivación)
 
-### Excepciones Personalizadas
+### Compras
+1. **Items**: Puede incluir ingredientes y/o productos sin receta
+2. **Stock**: Se actualiza automáticamente al guardar
+3. **Anulación**: Reversa el stock de los items
+4. **Número único**: Por empresa, validado en backend
+
+### Ventas
+1. **Productos**: Todos los activos (con y sin receta)
+2. **Stock**: Directo para sin receta, estimado para con receta
+3. **Validación**: Bloquea productos con stock 0
+4. **Pago**: Efectivo, Tarjeta, Transferencia o Mixto
+5. **Anulación**: Reversa stock de productos/ingredientes
+
+## Excepciones Personalizadas
 - **BusinessException**: Errores de negocio (validaciones, reglas)
 - **DuplicateResourceException**: Recursos duplicados
 - **GlobalExceptionHandler**: Manejo centralizado de excepciones con redirección a página anterior

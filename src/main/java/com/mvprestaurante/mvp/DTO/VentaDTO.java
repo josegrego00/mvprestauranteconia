@@ -12,7 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class VentaDetalleDTO {
+public class VentaDTO {
     private Long id;
     private String numeroVenta;
     private LocalDateTime fechaVenta;

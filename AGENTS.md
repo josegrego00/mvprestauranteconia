@@ -78,6 +78,12 @@ public class EntityDTO {
 }
 ```
 
+**Nota sobre nomenclatura DTOs:**
+- NombreentidadDTO: Para el objeto completo (ej: VentaDTO, CompraDTO)
+- DetalleentidadDTO: Para detalles/items (ej: DetalleVentaDTO, DetalleCompraDTO)
+- SimpleentidadDTO: Para listas (opcional, usar solo si se necesita versión reducida)
+- Para casos específicos agregar sufijo descriptivo (ej: ProductoVentaDTO, VentaDetalleDTO)
+
 ### Mappers (MapStruct)
 ```java
 @Mapper(componentModel = "spring")
