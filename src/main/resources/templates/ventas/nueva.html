@@ -107,16 +107,43 @@
 
                                     <div class="mb-3">
                                         <label class="form-label text-uppercase small fw-bold">MÉTODO DE PAGO</label>
-                                        <select class="form-select" name="metodoPago" id="metodoPago" onchange="actualizarCambio()">
+                                        <select class="form-select" name="metodoPago" id="metodoPago" onchange="actualizarFormasPago()">
                                             <option value="EFECTIVO">Efectivo</option>
                                             <option value="TARJETA">Tarjeta</option>
                                             <option value="TRANSFERENCIA">Transferencia</option>
+                                            <option value="MIXTO">Mixto (Multiples formas)</option>
                                         </select>
                                     </div>
 
-                                    <div class="mb-3" id="pagoSection">
-                                        <label class="form-label text-uppercase small fw-bold">CANTIDAD PAGADA</label>
-                                        <input type="number" class="form-control form-control-lg" name="cantidadPagada" id="cantidadPagada" value="0" step="0.01" min="0" onchange="actualizarCambio()" oninput="actualizarCambio()">
+                                    <div id="pagoSimple">
+                                        <div class="mb-3" id="pagoSection">
+                                            <label class="form-label text-uppercase small fw-bold">CANTIDAD PAGADA</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control form-control-lg" name="cantidadPagada" id="cantidadPagada" value="0" step="0.01" min="0" onchange="actualizarCambio()" oninput="actualizarCambio()">
+                                                <button type="button" class="btn btn-outline-success" onclick="pagoExacto()" title="Pago exacto">
+                                                    <i class="bi bi-cash"></i> Exacto
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="pagoMixto" style="display: none;">
+                                        <div class="mb-3">
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <label class="form-label small fw-bold">Efectivo</label>
+                                                    <input type="number" class="form-control" name="pagoEfectivo" id="pagoEfectivo" value="0" step="0.01" min="0" onchange="actualizarCambioMixto()" oninput="actualizarCambioMixto()">
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label small fw-bold">Tarjeta</label>
+                                                    <input type="number" class="form-control" name="pagoTarjeta" id="pagoTarjeta" value="0" step="0.01" min="0" onchange="actualizarCambioMixto()" oninput="actualizarCambioMixto()">
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label small fw-bold">Transferencia</label>
+                                                    <input type="number" class="form-control" name="pagoTransferencia" id="pagoTransferencia" value="0" step="0.01" min="0" onchange="actualizarCambioMixto()" oninput="actualizarCambioMixto()">
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <hr>
@@ -136,7 +163,7 @@
 
                                     <div class="d-flex justify-content-between mb-4" id="cambioSection">
                                         <span class="fw-bold">Cambio:</span>
-                                        <span class="fw-bold fs-5 text-primary">$<span id="cambioDisplay">0.00</span></span>
+                                        <span class="fw-bold fs-5" id="cambioDisplay">-</span>
                                     </div>
 
                                     <div class="d-grid gap-2">
@@ -164,6 +191,73 @@
     <script th:inline="javascript">
         let productos = /*[[${productos}]]*/ [];
         let itemCount = 0;
+
+        const carritoParams = /*[[${carritoParams}]]*/ null;
+        if (carritoParams) {
+            for (const key in carritoParams) {
+                if (key.startsWith('producto[')) {
+                    const match = key.match(/producto\[(\d+)\]/);
+                    if (match) {
+                        const idx = match[1];
+                        const productoId = carritoParams[key];
+                        const cantidad = parseInt(carritoParams['cantidad[' + idx + ']']) || 1;
+                        
+                        const prod = productos.find(p => p.id == productoId);
+                        if (prod) {
+                            seleccionarProductoConCantidad(prod, cantidad);
+                        }
+                    }
+                }
+            }
+            if (carritoParams['metodoPago']) {
+                document.getElementById('metodoPago').value = carritoParams['metodoPago'];
+            }
+            if (carritoParams['cantidadPagada']) {
+                document.getElementById('cantidadPagada').value = carritoParams['cantidadPagada'];
+                actualizarCambio();
+            }
+        }
+
+        function seleccionarProductoConCantidad(prod, cantidad) {
+            document.getElementById('carritoVacio').style.display = 'none';
+            
+            const id = prod.id;
+            const nombre = prod.nombre;
+            const precio = parseFloat(prod.precioVenta);
+            const stock = parseInt(prod.tieneReceta ? (prod.stockEstimado || 0) : (prod.stock || 0));
+
+            const tbody = document.getElementById('carritoBody');
+            const tr = document.createElement('tr');
+            tr.id = 'item-' + itemCount;
+            tr.dataset.productoId = id;
+            tr.dataset.precio = precio;
+            tr.dataset.stock = stock;
+            
+            tr.innerHTML = `
+                <td>
+                    <input type="hidden" name="producto[${itemCount}]" value="${id}">
+                    ${nombre}
+                </td>
+                <td>
+                    <div class="input-group input-group-sm">
+                        <button class="btn btn-outline-secondary" type="button" onclick="cambiarCantidad(${itemCount}, -1)">-</button>
+                        <input type="number" class="form-control text-center" name="cantidad[${itemCount}]" value="${cantidad}" min="1" max="${stock}" onchange="actualizarSubtotal(${itemCount})" oninput="actualizarSubtotal(${itemCount})">
+                        <button class="btn btn-outline-secondary" type="button" onclick="cambiarCantidad(${itemCount}, 1)">+</button>
+                    </div>
+                </td>
+                <td class="text-end">$<span class="precio-display">${precio.toFixed(2)}</span></td>
+                <td class="text-end fw-bold">$<span class="subtotal-display">${(cantidad * precio).toFixed(2)}</span></td>
+                <td>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="eliminarItem(${itemCount})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            `;
+            
+            tbody.appendChild(tr);
+            itemCount++;
+            calcularTotal();
+        }
 
         function seleccionarProducto(element) {
             document.getElementById('carritoVacio').style.display = 'none';
@@ -241,9 +335,57 @@
             actualizarCambio();
         }
 
+        function actualizarFormasPago() {
+            const metodoPago = document.getElementById('metodoPago').value;
+            const pagoSimple = document.getElementById('pagoSimple');
+            const pagoMixto = document.getElementById('pagoMixto');
+            const cambioSection = document.getElementById('cambioSection');
+            
+            if (metodoPago === 'MIXTO') {
+                pagoSimple.style.display = 'none';
+                pagoMixto.style.display = 'block';
+                cambioSection.style.display = 'flex';
+                actualizarCambioMixto();
+            } else if (metodoPago === 'EFECTIVO') {
+                pagoSimple.style.display = 'block';
+                pagoMixto.style.display = 'none';
+                cambioSection.style.display = 'flex';
+                actualizarCambio();
+            } else {
+                pagoSimple.style.display = 'none';
+                pagoMixto.style.display = 'none';
+                cambioSection.style.display = 'none';
+            }
+        }
+
+        function actualizarCambioMixto() {
+            const total = parseFloat(document.getElementById('totalDisplay').textContent);
+            const cambioDisplay = document.getElementById('cambioDisplay');
+            
+            const efectivo = parseFloat(document.getElementById('pagoEfectivo').value) || 0;
+            const tarjeta = parseFloat(document.getElementById('pagoTarjeta').value) || 0;
+            const transferencia = parseFloat(document.getElementById('pagoTransferencia').value) || 0;
+            const totalPagado = efectivo + tarjeta + transferencia;
+            
+            if (totalPagado === 0) {
+                cambioDisplay.textContent = '-';
+                cambioDisplay.className = 'fw-bold fs-5';
+            } else {
+                const cambio = totalPagado - total;
+                if (cambio >= 0) {
+                    cambioDisplay.textContent = '$' + cambio.toFixed(2);
+                    cambioDisplay.className = 'fw-bold fs-5 text-primary';
+                } else {
+                    cambioDisplay.textContent = '$' + Math.abs(cambio).toFixed(2);
+                    cambioDisplay.className = 'fw-bold fs-5 text-danger';
+                }
+            }
+        }
+
         function actualizarCambio() {
             const metodoPago = document.getElementById('metodoPago').value;
             const total = parseFloat(document.getElementById('totalDisplay').textContent);
+            const cambioDisplay = document.getElementById('cambioDisplay');
             
             const pagoSection = document.getElementById('pagoSection');
             const cambioSection = document.getElementById('cambioSection');
@@ -255,13 +397,32 @@
                 btnCobrar.disabled = false;
                 
                 const cantidadPagada = parseFloat(document.getElementById('cantidadPagada').value) || 0;
-                const cambio = cantidadPagada - total;
-                document.getElementById('cambioDisplay').textContent = cambio >= 0 ? cambio.toFixed(2) : '0.00';
+                
+                if (cantidadPagada === 0) {
+                    cambioDisplay.textContent = '-';
+                    cambioDisplay.className = 'fw-bold fs-5';
+                } else {
+                    const cambio = cantidadPagada - total;
+                    if (cambio >= 0) {
+                        cambioDisplay.textContent = '$' + cambio.toFixed(2);
+                        cambioDisplay.className = 'fw-bold fs-5 text-primary';
+                    } else {
+                        cambioDisplay.textContent = '$' + Math.abs(cambio).toFixed(2);
+                        cambioDisplay.className = 'fw-bold fs-5 text-danger';
+                    }
+                }
             } else {
                 pagoSection.style.display = 'none';
                 cambioSection.style.display = 'none';
-                document.getElementById('cambioDisplay').textContent = '0.00';
+                cambioDisplay.textContent = '-';
+                cambioDisplay.className = 'fw-bold fs-5';
             }
+        }
+
+        function pagoExacto() {
+            const total = parseFloat(document.getElementById('totalDisplay').textContent);
+            document.getElementById('cantidadPagada').value = total.toFixed(2);
+            actualizarCambio();
         }
 
         function eliminarItem(id) {

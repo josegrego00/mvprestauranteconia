@@ -55,6 +55,26 @@
                                 <label class="form-label text-uppercase small fw-bold">MÉTODO DE PAGO</label>
                                 <p class="fs-5" th:text="${venta.metodoPago}">EFECTIVO</p>
                             </div>
+                            <div class="col-md-3" th:if="${venta.metodoPago != 'MIXTO'}">
+                                <label class="form-label text-uppercase small fw-bold">CANTIDAD PAGADA</label>
+                                <p class="fs-5">$<span th:text="${#numbers.formatDecimal(venta.cantidadPagada, 1, 'COMMA', 2, 'POINT')}">0.00</span></p>
+                            </div>
+                            <div class="col-md-3" th:if="${venta.metodoPago == 'MIXTO'}">
+                                <label class="form-label text-uppercase small fw-bold">PAGO EFECTIVO</label>
+                                <p class="fs-5">$<span th:text="${#numbers.formatDecimal(venta.pagoEfectivo, 1, 'COMMA', 2, 'POINT')}">0.00</span></p>
+                            </div>
+                            <div class="col-md-3" th:if="${venta.metodoPago == 'MIXTO'}">
+                                <label class="form-label text-uppercase small fw-bold">PAGO TARJETA</label>
+                                <p class="fs-5">$<span th:text="${#numbers.formatDecimal(venta.pagoTarjeta, 1, 'COMMA', 2, 'POINT')}">0.00</span></p>
+                            </div>
+                            <div class="col-md-3" th:if="${venta.metodoPago == 'MIXTO'}">
+                                <label class="form-label text-uppercase small fw-bold">PAGO TRANSFERENCIA</label>
+                                <p class="fs-5">$<span th:text="${#numbers.formatDecimal(venta.pagoTransferencia, 1, 'COMMA', 2, 'POINT')}">0.00</span></p>
+                            </div>
+                            <div class="col-md-3" th:if="${venta.metodoPago != 'MIXTO'}">
+                                <label class="form-label text-uppercase small fw-bold">CAMBIO</label>
+                                <p class="fs-5">$<span th:text="${#numbers.formatDecimal(venta.cantidadCambio, 1, 'COMMA', 2, 'POINT')}">0.00</span></p>
+                            </div>
                             <div class="col-md-3">
                                 <label class="form-label text-uppercase small fw-bold">USUARIO</label>
                                 <p class="fs-5" th:text="${venta.nombreUsuario}">Admin</p>
@@ -62,6 +82,14 @@
                             <div class="col-md-6">
                                 <label class="form-label text-uppercase small fw-bold">OBSERVACIONES</label>
                                 <p class="fs-5" th:text="${venta.observaciones != null} ? ${venta.observaciones} : '-'">-</p>
+                            </div>
+                        </div>
+                        <div class="row mt-2" th:if="${venta.metodoPago == 'MIXTO'}">
+                            <div class="col-md-12">
+                                <label class="form-label text-uppercase small fw-bold">TOTAL PAGADO</label>
+                                <p class="fs-5 fw-bold text-success">$<span th:text="${#numbers.formatDecimal(venta.cantidadPagada, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                                <span class="text-muted"> | Cambio: $</span>
+                                <span th:text="${#numbers.formatDecimal(venta.cantidadCambio, 1, 'COMMA', 2, 'POINT')}">0.00</span></p>
                             </div>
                         </div>
                     </div>

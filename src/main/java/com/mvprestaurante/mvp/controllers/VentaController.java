@@ -98,17 +98,35 @@ public class VentaController {
     @PostMapping("/guardar")
     public String guardar(@ModelAttribute Venta venta,
             @RequestParam Map<String, String> allParams,
-            RedirectAttributes ra) {
+            RedirectAttributes ra, Model model) {
 
         try {
             ventaService.guardarDesdeFormulario(venta, allParams);
             ra.addFlashAttribute("success", "Venta registrada exitosamente");
+            return "redirect:/ventas/nueva";
         } catch (RuntimeException e) {
             ra.addFlashAttribute("error", e.getMessage());
-            return "redirect:/ventas/nueva";
+            
+            List<ProductoVentaDTO> productos = productoService.listarActivos(PageRequest.of(0, 100))
+                .getContent()
+                .stream()
+                .map(producto -> {
+                    ProductoVentaDTO dto = productoVentaMapper.toVentaDTO(producto);
+                    dto.setTieneReceta(producto.getTieneReceta());
+                    if (Boolean.TRUE.equals(producto.getTieneReceta()) && producto.getReceta() != null) {
+                        dto.setStockEstimado(ventaService.calcularStockDisponibleReceta(producto.getReceta().getId()));
+                    }
+                    return dto;
+                })
+                .collect(Collectors.toList());
+            
+            model.addAttribute("venta", new Venta());
+            model.addAttribute("productos", productos);
+            model.addAttribute("numeroVenta", venta.getNumeroVenta() != null ? venta.getNumeroVenta() : ventaService.generarNumeroVenta());
+            model.addAttribute("carritoParams", allParams);
+            
+            return "ventas/nueva";
         }
-
-        return "redirect:/ventas";
     }
 
     @GetMapping("/ver/{id}")

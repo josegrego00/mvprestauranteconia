@@ -26,5 +26,8 @@ public class VentaDetalleDTO {
     private Double total;
     private String estado;
     private String observaciones;
+    private Double pagoEfectivo;
+    private Double pagoTarjeta;
+    private Double pagoTransferencia;
     private List<DetalleVentaDTO> detalles;
 }

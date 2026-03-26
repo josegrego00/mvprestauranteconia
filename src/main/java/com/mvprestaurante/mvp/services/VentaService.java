@@ -66,6 +66,17 @@ public class VentaService {
                 .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
     }
 
+    private Double parseDoubleSafe(String value) {
+        if (value == null || value.isEmpty()) {
+            return 0.0;
+        }
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
+    }
+
     @Transactional(readOnly = true)
     public Page<Venta> buscar(String search, String fechaInicio, String fechaFin, Pageable pageable) {
         validarTenant();
@@ -182,13 +193,25 @@ public class VentaService {
 
         Cliente cliente = obtenerOClienteDefault(allParams.get("clienteId"), empresaId);
 
+        String metodoPago = allParams.get("metodoPago");
         Double cantidadPagada = 0.0;
-        if (allParams.containsKey("cantidadPagada") && allParams.get("cantidadPagada") != null) {
+        
+        if ("MIXTO".equals(metodoPago)) {
+            Double efectivo = parseDoubleSafe(allParams.get("pagoEfectivo"));
+            Double tarjeta = parseDoubleSafe(allParams.get("pagoTarjeta"));
+            Double transferencia = parseDoubleSafe(allParams.get("pagoTransferencia"));
+            cantidadPagada = efectivo + tarjeta + transferencia;
+            
+            venta.setPagoEfectivo(efectivo);
+            venta.setPagoTarjeta(tarjeta);
+            venta.setPagoTransferencia(transferencia);
+        } else if (allParams.containsKey("cantidadPagada") && allParams.get("cantidadPagada") != null) {
             cantidadPagada = Double.parseDouble(allParams.get("cantidadPagada"));
         }
 
         Double total = detalles.stream().mapToDouble(DetalleVenta::getSubtotal).sum();
         Double cambio = cantidadPagada - total;
+        
         if (cambio < 0) {
             throw new BusinessException("La cantidad pagada debe ser mayor o igual al total");
         }

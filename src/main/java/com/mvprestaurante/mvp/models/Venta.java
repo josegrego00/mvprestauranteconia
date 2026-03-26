@@ -62,6 +62,9 @@ public class Venta {
     private Double total;
 
     private String metodoPago;
+    private Double pagoEfectivo;
+    private Double pagoTarjeta;
+    private Double pagoTransferencia;
 
     private String estado;
 
