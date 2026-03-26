@@ -42,11 +42,14 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="d-flex flex-wrap gap-2" id="productosGrid">
-                                        <button th:each="producto : ${productos}" type="button" class="btn btn-outline-primary producto-btn" 
+                                        <button th:each="producto : ${productos}" type="button" class="btn producto-btn" 
+                                            th:classappend="${(producto.tieneReceta ? (producto.stockEstimado == null or producto.stockEstimado <= 0) : (producto.stock == null or producto.stock <= 0)) ? 'btn-secondary disabled' : 'btn-outline-primary'}"
+                                            th:disabled="${(producto.tieneReceta ? (producto.stockEstimado == null or producto.stockEstimado <= 0) : (producto.stock == null or producto.stock <= 0))}"
                                             th:data-id="${producto.id}" 
                                             th:data-nombre="${producto.nombre}" 
                                             th:data-precio="${producto.precioVenta}" 
                                             th:data-stock="${producto.tieneReceta ? producto.stockEstimado : producto.stock}"
+                                            th:data-tiene-receta="${producto.tieneReceta}"
                                             onclick="seleccionarProducto(this)">
                                             <div class="nombre-producto" th:text="${producto.nombre}">Producto</div>
                                             <div class="precio-producto text-success" th:text="'$' + ${#numbers.formatDecimal(producto.precioVenta, 1, 'COMMA', 2, 'POINT')}">$0.00</div>
