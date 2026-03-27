@@ -30,4 +30,7 @@ public interface IngredienteRepository extends JpaRepository<Ingrediente, Long> 
 
     @Query("SELECT COUNT(d) > 0 FROM DetalleReceta d WHERE d.ingrediente.id = :ingredienteId")
     boolean existsByIngredienteEnReceta(@Param("ingredienteId") Long ingredienteId);
+
+    @Query("SELECT i FROM Ingrediente i WHERE i.empresa.id = :tenantId AND i.estaActivo = true AND i.stockDisponible > 0")
+    java.util.List<Ingrediente> findActiveWithStock(@Param("tenantId") Long tenantId);
 }

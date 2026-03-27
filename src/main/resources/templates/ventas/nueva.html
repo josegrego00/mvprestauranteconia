@@ -30,6 +30,28 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
 
+                <!-- Success Modal -->
+                <div th:if="${success}" class="modal fade show" tabindex="-1"
+                    style="display: block; background-color: rgba(0,0,0,0.5);" id="successModal">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header bg-primary text-white">
+                                <h5 class="modal-title"><i class="bi bi-check-circle-fill me-2"></i>Venta Exitosa</h5>
+                            </div>
+                            <div class="modal-body text-center py-4">
+                                <i class="bi bi-check-circle text-primary" style="font-size: 4rem;"></i>
+                                <h4 class="mt-3" th:text="${success}">Venta registrada exitosamente</h4>
+                                <p class="text-muted">Presione ENTER o haga clic en Aceptar para continuar</p>
+                            </div>
+                            <div class="modal-footer justify-content-center">
+                                <a th:href="@{/ventas/nueva}" class="btn btn-primary btn-lg px-5"
+                                    id="btnAceptar">Aceptar</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div th:if="${success}" class="modal-backdrop fade show"></div>
+
                 <form th:action="@{/ventas/guardar}" th:object="${venta}" method="post">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                     <input type="hidden" name="numeroVenta" th:value="${numeroVenta}" />
@@ -42,23 +64,26 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="d-flex flex-wrap gap-2" id="productosGrid">
-                                        <button th:each="producto : ${productos}" type="button" class="btn producto-btn" 
+                                        <button th:each="producto : ${productos}" type="button" class="btn producto-btn"
                                             th:classappend="${(producto.tieneReceta ? (producto.stockEstimado == null or producto.stockEstimado <= 0) : (producto.stock == null or producto.stock <= 0)) ? 'btn-secondary disabled' : 'btn-outline-primary'}"
                                             th:disabled="${(producto.tieneReceta ? (producto.stockEstimado == null or producto.stockEstimado <= 0) : (producto.stock == null or producto.stock <= 0))}"
-                                            th:data-id="${producto.id}" 
-                                            th:data-nombre="${producto.nombre}" 
-                                            th:data-precio="${producto.precioVenta}" 
+                                            th:data-id="${producto.id}" th:data-nombre="${producto.nombre}"
+                                            th:data-precio="${producto.precioVenta}"
                                             th:data-stock="${producto.tieneReceta ? producto.stockEstimado : producto.stock}"
                                             th:data-tiene-receta="${producto.tieneReceta}"
                                             onclick="seleccionarProducto(this)">
                                             <div class="nombre-producto" th:text="${producto.nombre}">Producto</div>
-                                            <div class="precio-producto text-success" th:text="'$' + ${#numbers.formatDecimal(producto.precioVenta, 1, 'COMMA', 2, 'POINT')}">$0.00</div>
+                                            <div class="precio-producto text-success"
+                                                th:text="'$' + ${#numbers.formatDecimal(producto.precioVenta, 1, 'COMMA', 2, 'POINT')}">
+                                                $0.00</div>
                                             <small class="stock-producto text-muted">
                                                 <span th:if="${producto.tieneReceta}">Est: </span>
-                                                <span th:text="${producto.tieneReceta ? (producto.stockEstimado != null ? producto.stockEstimado.intValue() : 0) : (producto.stock != null ? producto.stock.intValue() : 0)}">0</span>
+                                                <span
+                                                    th:text="${producto.tieneReceta ? (producto.stockEstimado != null ? producto.stockEstimado.intValue() : 0) : (producto.stock != null ? producto.stock.intValue() : 0)}">0</span>
                                             </small>
                                         </button>
-                                        <div th:if="${#lists.isEmpty(productos)}" class="col-12 text-center py-4 text-secondary">
+                                        <div th:if="${#lists.isEmpty(productos)}"
+                                            class="col-12 text-center py-4 text-secondary">
                                             <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                             No hay productos disponibles para venta
                                         </div>
@@ -67,9 +92,11 @@
                             </div>
 
                             <div class="card">
-                                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                                <div
+                                    class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0"><i class="bi bi-cart3 me-2"></i>Carrito de Venta</h5>
-                                    <button type="button" class="btn btn-sm btn-outline-light" onclick="limpiarCarrito()">
+                                    <button type="button" class="btn btn-sm btn-outline-light"
+                                        onclick="limpiarCarrito()">
                                         <i class="bi bi-trash"></i> Limpiar
                                     </button>
                                 </div>
@@ -102,12 +129,14 @@
                                 <div class="card-body">
                                     <div class="mb-3">
                                         <label class="form-label text-uppercase small fw-bold">NÚMERO DE VENTA</label>
-                                        <input type="text" class="form-control fw-bold" th:value="${numeroVenta}" readonly>
+                                        <input type="text" class="form-control fw-bold" th:value="${numeroVenta}"
+                                            readonly>
                                     </div>
 
                                     <div class="mb-3">
                                         <label class="form-label text-uppercase small fw-bold">MÉTODO DE PAGO</label>
-                                        <select class="form-select" name="metodoPago" id="metodoPago" onchange="actualizarFormasPago()">
+                                        <select class="form-select" name="metodoPago" id="metodoPago"
+                                            onchange="actualizarFormasPago()">
                                             <option value="EFECTIVO">Efectivo</option>
                                             <option value="TARJETA">Tarjeta</option>
                                             <option value="TRANSFERENCIA">Transferencia</option>
@@ -117,10 +146,14 @@
 
                                     <div id="pagoSimple">
                                         <div class="mb-3" id="pagoSection">
-                                            <label class="form-label text-uppercase small fw-bold">CANTIDAD PAGADA</label>
+                                            <label class="form-label text-uppercase small fw-bold">CANTIDAD
+                                                PAGADA</label>
                                             <div class="input-group">
-                                                <input type="number" class="form-control form-control-lg" name="cantidadPagada" id="cantidadPagada" value="0" step="0.01" min="0" onchange="actualizarCambio()" oninput="actualizarCambio()">
-                                                <button type="button" class="btn btn-outline-success" onclick="pagoExacto()" title="Pago exacto">
+                                                <input type="number" class="form-control form-control-lg"
+                                                    name="cantidadPagada" id="cantidadPagada" value="0" step="0.01"
+                                                    min="0" onchange="actualizarCambio()" oninput="actualizarCambio()">
+                                                <button type="button" class="btn btn-outline-success"
+                                                    onclick="pagoExacto()" title="Pago exacto">
                                                     <i class="bi bi-cash"></i> Exacto
                                                 </button>
                                             </div>
@@ -132,15 +165,24 @@
                                             <div class="row g-2">
                                                 <div class="col-6">
                                                     <label class="form-label small fw-bold">Efectivo</label>
-                                                    <input type="number" class="form-control" name="pagoEfectivo" id="pagoEfectivo" value="0" step="0.01" min="0" onchange="actualizarCambioMixto()" oninput="actualizarCambioMixto()">
+                                                    <input type="number" class="form-control" name="pagoEfectivo"
+                                                        id="pagoEfectivo" value="0" step="0.01" min="0"
+                                                        onchange="actualizarCambioMixto()"
+                                                        oninput="actualizarCambioMixto()">
                                                 </div>
                                                 <div class="col-6">
                                                     <label class="form-label small fw-bold">Tarjeta</label>
-                                                    <input type="number" class="form-control" name="pagoTarjeta" id="pagoTarjeta" value="0" step="0.01" min="0" onchange="actualizarCambioMixto()" oninput="actualizarCambioMixto()">
+                                                    <input type="number" class="form-control" name="pagoTarjeta"
+                                                        id="pagoTarjeta" value="0" step="0.01" min="0"
+                                                        onchange="actualizarCambioMixto()"
+                                                        oninput="actualizarCambioMixto()">
                                                 </div>
                                                 <div class="col-6">
                                                     <label class="form-label small fw-bold">Transferencia</label>
-                                                    <input type="number" class="form-control" name="pagoTransferencia" id="pagoTransferencia" value="0" step="0.01" min="0" onchange="actualizarCambioMixto()" oninput="actualizarCambioMixto()">
+                                                    <input type="number" class="form-control" name="pagoTransferencia"
+                                                        id="pagoTransferencia" value="0" step="0.01" min="0"
+                                                        onchange="actualizarCambioMixto()"
+                                                        oninput="actualizarCambioMixto()">
                                                 </div>
                                             </div>
                                         </div>
@@ -158,7 +200,8 @@
                                     </div>
                                     <div class="d-flex justify-content-between mb-3">
                                         <span class="fw-bold fs-5">TOTAL:</span>
-                                        <span class="fw-bold fs-4 text-success">$<span id="totalDisplay">0.00</span></span>
+                                        <span class="fw-bold fs-4 text-success">$<span
+                                                id="totalDisplay">0.00</span></span>
                                     </div>
 
                                     <div class="d-flex justify-content-between mb-4" id="cambioSection">
@@ -167,7 +210,7 @@
                                     </div>
 
                                     <div class="d-grid gap-2">
-                                        <button type="submit" class="btn btn-success btn-lg" id="btnCobrar">
+                                        <button type="submit" class="btn btn-primary btn-lg" id="btnCobrar">
                                             <i class="bi bi-check-circle me-2"></i>COBRAR
                                         </button>
                                         <a th:href="@{/ventas}" class="btn btn-outline-secondary">
@@ -189,7 +232,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script th:inline="javascript">
-        let productos = /*[[${productos}]]*/ [];
+        let productos = /*[[${productos}]]*/[];
         let itemCount = 0;
 
         const carritoParams = /*[[${carritoParams}]]*/ null;
@@ -201,7 +244,7 @@
                         const idx = match[1];
                         const productoId = carritoParams[key];
                         const cantidad = parseInt(carritoParams['cantidad[' + idx + ']']) || 1;
-                        
+
                         const prod = productos.find(p => p.id == productoId);
                         if (prod) {
                             seleccionarProductoConCantidad(prod, cantidad);
@@ -220,7 +263,7 @@
 
         function seleccionarProductoConCantidad(prod, cantidad) {
             document.getElementById('carritoVacio').style.display = 'none';
-            
+
             const id = prod.id;
             const nombre = prod.nombre;
             const precio = parseFloat(prod.precioVenta);
@@ -232,7 +275,7 @@
             tr.dataset.productoId = id;
             tr.dataset.precio = precio;
             tr.dataset.stock = stock;
-            
+
             tr.innerHTML = `
                 <td>
                     <input type="hidden" name="producto[${itemCount}]" value="${id}">
@@ -253,7 +296,7 @@
                     </button>
                 </td>
             `;
-            
+
             tbody.appendChild(tr);
             itemCount++;
             calcularTotal();
@@ -261,7 +304,7 @@
 
         function seleccionarProducto(element) {
             document.getElementById('carritoVacio').style.display = 'none';
-            
+
             const id = element.dataset.id;
             const nombre = element.dataset.nombre;
             const precio = parseFloat(element.dataset.precio);
@@ -273,7 +316,7 @@
             tr.dataset.productoId = id;
             tr.dataset.precio = precio;
             tr.dataset.stock = stock;
-            
+
             tr.innerHTML = `
                 <td>
                     <input type="hidden" name="producto[${itemCount}]" value="${id}">
@@ -294,7 +337,7 @@
                     </button>
                 </td>
             `;
-            
+
             tbody.appendChild(tr);
             itemCount++;
             calcularTotal();
@@ -316,7 +359,7 @@
             const cantidad = parseInt(row.querySelector('input[name^="cantidad["]').value) || 0;
             const precio = parseFloat(row.dataset.precio);
             const subtotal = cantidad * precio;
-            
+
             row.querySelector('.subtotal-display').textContent = subtotal.toFixed(2);
             calcularTotal();
         }
@@ -324,12 +367,12 @@
         function calcularTotal() {
             const rows = document.querySelectorAll('#carritoBody tr');
             let subtotal = 0;
-            rows.forEach(function(row) {
+            rows.forEach(function (row) {
                 const cantidad = parseInt(row.querySelector('input[name^="cantidad["]').value) || 0;
                 const precio = parseFloat(row.dataset.precio);
                 subtotal += cantidad * precio;
             });
-            
+
             document.getElementById('subtotalDisplay').textContent = subtotal.toFixed(2);
             document.getElementById('totalDisplay').textContent = subtotal.toFixed(2);
             actualizarCambio();
@@ -340,7 +383,7 @@
             const pagoSimple = document.getElementById('pagoSimple');
             const pagoMixto = document.getElementById('pagoMixto');
             const cambioSection = document.getElementById('cambioSection');
-            
+
             if (metodoPago === 'MIXTO') {
                 pagoSimple.style.display = 'none';
                 pagoMixto.style.display = 'block';
@@ -361,12 +404,12 @@
         function actualizarCambioMixto() {
             const total = parseFloat(document.getElementById('totalDisplay').textContent);
             const cambioDisplay = document.getElementById('cambioDisplay');
-            
+
             const efectivo = parseFloat(document.getElementById('pagoEfectivo').value) || 0;
             const tarjeta = parseFloat(document.getElementById('pagoTarjeta').value) || 0;
             const transferencia = parseFloat(document.getElementById('pagoTransferencia').value) || 0;
             const totalPagado = efectivo + tarjeta + transferencia;
-            
+
             if (totalPagado === 0) {
                 cambioDisplay.textContent = '-';
                 cambioDisplay.className = 'fw-bold fs-5';
@@ -386,18 +429,18 @@
             const metodoPago = document.getElementById('metodoPago').value;
             const total = parseFloat(document.getElementById('totalDisplay').textContent);
             const cambioDisplay = document.getElementById('cambioDisplay');
-            
+
             const pagoSection = document.getElementById('pagoSection');
             const cambioSection = document.getElementById('cambioSection');
             const btnCobrar = document.getElementById('btnCobrar');
-            
+
             if (metodoPago === 'EFECTIVO') {
                 pagoSection.style.display = 'block';
                 cambioSection.style.display = 'flex';
                 btnCobrar.disabled = false;
-                
+
                 const cantidadPagada = parseFloat(document.getElementById('cantidadPagada').value) || 0;
-                
+
                 if (cantidadPagada === 0) {
                     cambioDisplay.textContent = '-';
                     cambioDisplay.className = 'fw-bold fs-5';
@@ -429,7 +472,7 @@
             const row = document.getElementById('item-' + id);
             row.remove();
             calcularTotal();
-            
+
             const tbody = document.getElementById('carritoBody');
             if (tbody.children.length === 0) {
                 document.getElementById('carritoVacio').style.display = 'block';
@@ -444,13 +487,13 @@
             calcularTotal();
         }
 
-        document.querySelector('form').addEventListener('submit', function(event) {
+        document.querySelector('form').addEventListener('submit', function (event) {
             const rows = document.querySelectorAll('#carritoBody tr');
             if (rows.length === 0) {
                 event.preventDefault();
                 alert('Debe agregar al menos un producto');
             }
-            
+
             const metodoPago = document.getElementById('metodoPago').value;
             if (metodoPago === 'EFECTIVO') {
                 const cantidadPagada = parseFloat(document.getElementById('cantidadPagada').value) || 0;
@@ -478,6 +521,7 @@
             color: #0d6efd;
             padding: 8px;
         }
+
         .producto-btn .nombre-producto {
             font-size: 0.85rem;
             font-weight: bold;
@@ -486,18 +530,29 @@
             white-space: nowrap;
             max-width: 100%;
         }
+
         .producto-btn .precio-producto {
             font-size: 1rem;
             font-weight: bold;
         }
+
         .producto-btn .stock-producto {
             font-size: 0.75rem;
         }
+
         .producto-btn:hover {
             background-color: #e7f1ff !important;
             border-color: #0d6efd;
             transform: scale(1.03);
         }
+
+        .producto-btn:active {
+            background-color: #0d6efd !important;
+            color: white !important;
+            border-color: #0d6efd;
+            transform: scale(0.98);
+        }
+
         .producto-btn:active {
             background-color: #0d6efd !important;
             color: white !important;
@@ -505,6 +560,31 @@
             transform: scale(0.98);
         }
     </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var successModal = document.getElementById('successModal');
+            if (successModal) {
+                var btn = document.getElementById('btnAceptar');
+                if (btn) {
+                    setTimeout(function() { btn.focus(); }, 100);
+                }
+            }
+        });
+
+        document.onkeydown = function(e) {
+            var successModal = document.getElementById('successModal');
+            if (successModal) {
+                if (e.key === 'Enter' || e.which === 13 || e.keyCode === 13) {
+                    e.preventDefault();
+                    var btn = document.getElementById('btnAceptar');
+                    if (btn) {
+                        window.location.href = btn.getAttribute('href');
+                    }
+                }
+            }
+        };
+    </script>
 
 </body>
 

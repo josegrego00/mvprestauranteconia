@@ -272,6 +272,10 @@ public class VentaService {
     }
 
     private Cliente crearClienteDefault(Long empresaId) {
+        Optional<Cliente> existente = clienteRepository.findByNombreContainingIgnoreCase("Consumidor Final");
+        if (existente.isPresent()) {
+            return existente.get();
+        }
         Cliente cliente = new Cliente();
         cliente.setNombre("Consumidor Final");
         cliente.setEstaActivo(true);
@@ -288,10 +292,24 @@ public class VentaService {
                 .map(venta -> {
                     for (DetalleVenta detalle : venta.getDetallesVenta()) {
                         Producto producto = detalle.getProducto();
-                        Double nuevoStock = (producto.getStock() != null ? producto.getStock() : 0) 
-                                + detalle.getCantidad();
-                        producto.setStock(nuevoStock);
-                        productoRepository.save(producto);
+                        
+                        if (Boolean.TRUE.equals(producto.getTieneReceta())) {
+                            var receta = producto.getReceta();
+                            if (receta != null && receta.getListaIngredientes() != null) {
+                                for (DetalleReceta ingReceta : receta.getListaIngredientes()) {
+                                    Ingrediente ingrediente = ingReceta.getIngrediente();
+                                    Double cantidadDevolver = ingReceta.getCantidadIngrediente() * detalle.getCantidad();
+                                    Double nuevoStock = ingrediente.getStockDisponible() + cantidadDevolver;
+                                    ingrediente.setStockDisponible(nuevoStock);
+                                    ingredienteRepository.save(ingrediente);
+                                }
+                            }
+                        } else {
+                            Double nuevoStock = (producto.getStock() != null ? producto.getStock() : 0) 
+                                    + detalle.getCantidad();
+                            producto.setStock(nuevoStock);
+                            productoRepository.save(producto);
+                        }
                     }
 
                     venta.setEstado("ANULADA");

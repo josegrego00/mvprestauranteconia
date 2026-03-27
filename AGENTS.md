@@ -314,6 +314,27 @@ public class GlobalExceptionHandler {
 | `GET /recetas/stock/{id}` | Retorna unidades disponibles de una receta |
 | `GET /productos/estimado/{id}` | Retorna stock estimado del producto |
 
+## Módulos
+
+### Reportes
+- Dashboard principal (`/dashboard`) con resumen de ventas
+- Ventas: hoy, semana, mes
+- Top 10 productos más vendidos (últimos 30 días)
+- Inventario actual con estado (crítico/bajo/ok)
+
+### Inventario Físico
+- Formulario para contar stock al final del día
+- Lista ingredientes + productos sin receta
+- Input de stock físico
+- Cálculo de diferencia en tiempo real (unidades y dinero)
+- Resumen: total sobrante/faltante
+
+### Reporte de Inventario
+- Historial de inventario por fecha
+- Filtro por rango de fechas
+- Tabla: inventario inicial, consumo, inventario final, diferencia
+- Paginación (20 por página)
+
 ## Testing
 - Tests in `src/test/java/`
 - `@SpringBootTest` for integration

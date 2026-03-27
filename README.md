@@ -60,6 +60,25 @@ Sistema de gestión para restaurantes con soporte multi-empresa (multi-tenant).
 - Filtros por tipo de producto (con/sin receta)
 - Actualización inline de precios de venta
 
+### Dashboard y Reportes
+- Dashboard principal con resumen de ventas (hoy, semana, mes)
+- Top 10 productos más vendidos (últimos 30 días)
+- Inventario actual con estado (crítico/bajo/ok)
+
+### Inventario Físico
+- Formulario para contar stock al final del día
+- Lista de ingredientes y productos sin receta
+- Input de stock físico para cada item
+- Cálculo de diferencia en tiempo real (unidades y dinero)
+- Resumen: total sobrante y faltante
+
+### Reporte de Inventario
+- Historial de inventario por fecha
+- Filtro por rango de fechas
+- Tabla: inventario inicial, consumo, inventario final, diferencia
+- Paginación (20 por página)
+- Diferencia en unidades y dinero
+
 ### Multi-Tenant
 - Aislamiento de datos por empresa
 - Cada empresa tiene su propio subdominio
@@ -131,6 +150,8 @@ export DB_PASSWORD=tu_password
 | `/ventas/nueva` | Punto de venta (caja) |
 | `/ventas/ver/{id}` | Ver detalle de venta |
 | `/ajuste-precios` | Ajuste de precios |
+| `/inventario` | Inventario físico |
+| `/inventario/reporte` | Reporte de inventario |
 
 ## API Endpoints (JSON)
 
@@ -173,6 +194,12 @@ export DB_PASSWORD=tu_password
 3. **Validación**: Bloquea productos con stock 0
 4. **Pago**: Efectivo, Tarjeta, Transferencia o Mixto
 5. **Anulación**: Reversa stock de productos/ingredientes
+6. **Cliente**: "Consumidor Final" se reutiliza si ya existe
+
+### Inventario
+1. **Inventario Físico**: Registro diario del stock real
+2. **Historial**: Se guarda cada registro con fecha
+3. **Reporte**: Muestra flujo por período (inicial, consumo, final, diferencia)
 
 ## Excepciones Personalizadas
 - **BusinessException**: Errores de negocio (validaciones, reglas)
