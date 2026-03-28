@@ -45,6 +45,12 @@ src/main/java/com/mvprestaurante/mvp/
 ### Imports Order
 1. Java stdlib → 2. Spring → 3. Third-party (Lombok, MapStruct, Jakarta Validation) → 4. Project
 
+### Testing
+- Run single test: `./mvnw test -Dtest=ClassName#methodName`
+- Use `@SpringBootTest` for integration tests
+- Use `@DataJpaTest` for repository tests
+- Use `@MockBean` for service mocking
+
 ### Key Patterns
 
 **Controller-Service Separation (CRITICAL)**

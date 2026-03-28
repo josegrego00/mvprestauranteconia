@@ -10,6 +10,7 @@ Sistema de gestión para restaurantes con soporte multi-empresa (multi-tenant).
 - **Template:** Thymeleaf
 - **Security:** Spring Security con BCrypt
 - **UI:** Bootstrap 5 + Bootstrap Icons
+- **Arquitectura:** Multi-tenant por subdominio
 
 ## Características
 
