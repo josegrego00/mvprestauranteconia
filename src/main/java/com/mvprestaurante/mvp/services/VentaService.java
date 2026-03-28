@@ -233,6 +233,7 @@ public class VentaService {
         }
 
         Venta ventaGuardada = ventaRepository.save(venta);
+        System.out.println("[DEBUG VentaService] Venta guardada con ID: " + ventaGuardada.getId());
 
         for (DetalleVenta detalle : detalles) {
             detalle.setVenta(ventaGuardada);
@@ -281,13 +282,16 @@ public class VentaService {
     }
 
     private Cliente crearClienteDefault(Long empresaId) {
-        Optional<Cliente> existente = clienteRepository.findByNombreContainingIgnoreCase("Consumidor Final");
+        Optional<Cliente> existente = clienteRepository.findByNombreContainingIgnoreCaseAndEmpresaId("Consumidor Final", empresaId);
         if (existente.isPresent()) {
             return existente.get();
         }
         Cliente cliente = new Cliente();
         cliente.setNombre("Consumidor Final");
         cliente.setEstaActivo(true);
+        Empresa empresa = new Empresa();
+        empresa.setId(empresaId);
+        cliente.setEmpresa(empresa);
         return clienteRepository.save(cliente);
     }
 

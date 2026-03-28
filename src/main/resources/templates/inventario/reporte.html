@@ -64,6 +64,8 @@
                                         <th class="text-center">Und.</th>
                                         <th class="text-center bg-success bg-opacity-10">Fecha Ini.</th>
                                         <th class="text-center bg-success bg-opacity-10">Inv. Inicial</th>
+                                        <th class="text-center bg-info bg-opacity-10">Compras</th>
+                                        <th class="text-center bg-info bg-opacity-10">Inv. Estimado</th>
                                         <th class="text-center bg-primary bg-opacity-10">Fecha Fin.</th>
                                         <th class="text-center bg-primary bg-opacity-10">Inv. Final</th>
                                         <th class="text-center bg-warning bg-opacity-10">Consumo</th>
@@ -84,6 +86,10 @@
                                         <td class="text-center bg-success bg-opacity-10" th:text="${#temporals.format(item.fechaInicial, 'dd/MM/yyyy')}">-</td>
                                         <td class="text-center bg-success bg-opacity-10 fw-bold" 
                                             th:text="${#numbers.formatDecimal(item.inventarioInicial, 1, 'COMMA', 2, 'POINT')}">0</td>
+                                        <td class="text-center bg-info bg-opacity-10" 
+                                            th:text="${#numbers.formatDecimal(item.compras, 1, 'COMMA', 2, 'POINT')}">0</td>
+                                        <td class="text-center bg-info bg-opacity-10 fw-bold" 
+                                            th:text="${#numbers.formatDecimal(item.inventarioEstimado, 1, 'COMMA', 2, 'POINT')}">0</td>
                                         <td class="text-center bg-primary bg-opacity-10" th:text="${#temporals.format(item.fechaFinal, 'dd/MM/yyyy')}">-</td>
                                         <td class="text-center bg-primary bg-opacity-10 fw-bold" 
                                             th:text="${#numbers.formatDecimal(item.inventarioFinal, 1, 'COMMA', 2, 'POINT')}">0</td>
@@ -101,7 +107,7 @@
                                         </td>
                                     </tr>
                                     <tr th:if="${#lists.isEmpty(reporte)}">
-                                        <td colspan="10" class="text-center text-muted py-4">
+                                        <td colspan="12" class="text-center text-muted py-4">
                                             <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                             No hay datos para el período seleccionado
                                         </td>

@@ -16,8 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +27,7 @@ public class InventarioService {
     private final ProductoRepository productoRepository;
     private final InventarioRegistroRepository inventarioRegistroRepository;
     private final UsuarioRepositorio usuarioRepository;
+    private final MovimientoStockRepository movimientoStockRepository;
 
     private void validarTenant() {
         Long empresaId = TenantContext.getTenantId();
@@ -69,7 +70,8 @@ public class InventarioService {
             items.add(dto);
         }
 
-        Page<Producto> productos = productoRepository.findByTieneRecetaFalseAndEstaActivoTrue(empresaId, Pageable.unpaged());
+        Page<Producto> productos = productoRepository.findByTieneRecetaFalseAndEstaActivoTrue(empresaId,
+                Pageable.unpaged());
         for (Producto prod : productos.getContent()) {
             InventarioItemDTO dto = InventarioItemDTO.builder()
                     .tipo("PRODUCTO")
@@ -96,7 +98,8 @@ public class InventarioService {
 
         LocalDate fechaInventario = LocalDate.now();
 
-        Optional<InventarioRegistro> existente = inventarioRegistroRepository.findByFechaAndTenantId(empresaId, fechaInventario);
+        Optional<InventarioRegistro> existente = inventarioRegistroRepository.findByFechaAndTenantId(empresaId,
+                fechaInventario);
         InventarioRegistro registro;
 
         if (existente.isPresent()) {
@@ -188,7 +191,8 @@ public class InventarioService {
         for (InventarioRegistro reg : registros) {
             Map<String, InventarioDetalle> mapaItems = new HashMap<>();
             for (InventarioDetalle det : reg.getDetalles()) {
-                String key = det.getTipo() + "_" + (det.getIngrediente() != null ? det.getIngrediente().getId() : det.getProducto().getId());
+                String key = det.getTipo() + "_"
+                        + (det.getIngrediente() != null ? det.getIngrediente().getId() : det.getProducto().getId());
                 mapaItems.put(key, det);
             }
             mapaPorFecha.put(reg.getFecha(), mapaItems);
@@ -224,9 +228,25 @@ public class InventarioService {
             if (primerDetalle != null && ultimoDetalle != null) {
                 double stockInicial = primerDetalle.getStock() != null ? primerDetalle.getStock() : 0.0;
                 double stockFinal = ultimoDetalle.getStock() != null ? ultimoDetalle.getStock() : 0.0;
-                double consumo = stockInicial - stockFinal;
                 double diferencia = stockFinal - stockInicial;
                 double precio = primerDetalle.getPrecioUnitario() != null ? primerDetalle.getPrecioUnitario() : 0.0;
+
+                Long itemId = primerDetalle.getIngrediente() != null ? primerDetalle.getIngrediente().getId()
+                        : primerDetalle.getProducto().getId();
+                String tipoItem = primerDetalle.getTipo();
+
+                LocalDateTime fechaInicioDateTime = fechaPrimerRegistro.atStartOfDay();
+                LocalDateTime fechaFinDateTime = fechaUltimoRegistro.atTime(LocalTime.MAX);
+
+                Integer consumoFromVentas = movimientoStockRepository.sumConsumoByItem(
+                        empresaId, tipoItem, itemId, fechaInicioDateTime, fechaFinDateTime);
+                double consumo = consumoFromVentas != null ? consumoFromVentas : 0.0;
+
+                Integer comprasFromProveedor = movimientoStockRepository.sumComprasByItem(
+                        empresaId, tipoItem, itemId, fechaInicioDateTime, fechaFinDateTime);
+                double compras = comprasFromProveedor != null ? comprasFromProveedor : 0.0;
+
+                double inventarioEstimado = stockInicial + compras + consumo;
 
                 InventarioReporteDTO dto = InventarioReporteDTO.builder()
                         .nombre(primerDetalle.getNombre())
@@ -234,6 +254,8 @@ public class InventarioService {
                         .unidadMedida(primerDetalle.getUnidadMedida())
                         .fechaInicial(fechaPrimerRegistro)
                         .inventarioInicial(stockInicial)
+                        .compras(compras)
+                        .inventarioEstimado(inventarioEstimado)
                         .fechaFinal(fechaUltimoRegistro)
                         .inventarioFinal(stockFinal)
                         .consumo(consumo)

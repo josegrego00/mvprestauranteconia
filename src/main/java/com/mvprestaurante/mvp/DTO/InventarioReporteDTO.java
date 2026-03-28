@@ -17,6 +17,8 @@ public class InventarioReporteDTO {
     private String unidadMedida;
     private LocalDate fechaInicial;
     private Double inventarioInicial;
+    private Double compras;
+    private Double inventarioEstimado;
     private LocalDate fechaFinal;
     private Double inventarioFinal;
     private Double consumo;
