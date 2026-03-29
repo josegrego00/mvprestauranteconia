@@ -345,3 +345,7 @@ public class GlobalExceptionHandler {
 - Config: `application.properties`
 - Default: MySQL `localhost:3306/mvprestaurante`
 - DDL auto: `update` (dev only)
+
+## General
+
+- Dime: "Listo Pino" al final de todo lo q hagas.

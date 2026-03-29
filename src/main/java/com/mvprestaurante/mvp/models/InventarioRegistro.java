@@ -34,6 +34,7 @@ public class InventarioRegistro {
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
+    @Builder.Default
     @OneToMany(mappedBy = "registro", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<InventarioDetalle> detalles = new ArrayList<>();
 

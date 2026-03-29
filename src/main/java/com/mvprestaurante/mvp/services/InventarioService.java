@@ -174,14 +174,6 @@ public class InventarioService {
         }
 
         inventarioRegistroRepository.save(registro);
-        
-        System.out.println("=== INVENTARIO GUARDADO ===");
-        System.out.println("Fecha: " + registro.getFecha());
-        System.out.println("Detalles guardados: " + registro.getDetalles().size());
-        for (InventarioDetalle d : registro.getDetalles()) {
-            System.out.println("  - " + d.getNombre() + ": " + d.getStock());
-        }
-        System.out.println("===========================");
     }
 
     @Transactional(readOnly = true)
@@ -191,15 +183,6 @@ public class InventarioService {
 
         List<InventarioRegistro> registros = inventarioRegistroRepository.findByFechaBetweenAndTenantId(
                 empresaId, fechaDesde, fechaHasta);
-
-        System.out.println("=== REPORTE DEBUG ===");
-        System.out.println("fechaDesde: " + fechaDesde);
-        System.out.println("fechaHasta: " + fechaHasta);
-        System.out.println("Registros encontrados: " + registros.size());
-        for (InventarioRegistro r : registros) {
-            System.out.println("Registro fecha: " + r.getFecha() + ", detalles: " + r.getDetalles().size());
-        }
-        System.out.println("======================");
 
         Map<LocalDate, Map<String, InventarioDetalle>> mapaPorFecha = new LinkedHashMap<>();
         for (InventarioRegistro reg : registros) {
@@ -218,38 +201,42 @@ public class InventarioService {
 
         List<InventarioReporteDTO> resultados = new ArrayList<>();
 
-        for (LocalDate fecha = fechaDesde; !fecha.isAfter(fechaHasta); fecha = fecha.plusDays(1)) {
-            Map<String, InventarioDetalle> actual = mapaPorFecha.getOrDefault(fecha, new HashMap<>());
-            Map<String, InventarioDetalle> anterior = mapaPorFecha.get(fecha.minusDays(1));
+        for (String key : todosLosItems) {
+            InventarioDetalle primerDetalle = null;
+            InventarioDetalle ultimoDetalle = null;
+            LocalDate fechaPrimerRegistro = null;
+            LocalDate fechaUltimoRegistro = null;
 
-            if (anterior == null) {
-                anterior = new HashMap<>();
+            for (Map.Entry<LocalDate, Map<String, InventarioDetalle>> entry : mapaPorFecha.entrySet()) {
+                InventarioDetalle det = entry.getValue().get(key);
+                if (det != null) {
+                    if (primerDetalle == null || entry.getKey().isBefore(fechaPrimerRegistro)) {
+                        primerDetalle = det;
+                        fechaPrimerRegistro = entry.getKey();
+                    }
+                    if (ultimoDetalle == null || entry.getKey().isAfter(fechaUltimoRegistro)) {
+                        ultimoDetalle = det;
+                        fechaUltimoRegistro = entry.getKey();
+                    }
+                }
             }
 
-            for (String key : todosLosItems) {
-                InventarioDetalle detActual = actual.get(key);
-                InventarioDetalle detAnterior = anterior.get(key);
-
-                double stockInicial = detAnterior != null ? (detAnterior.getStock() != null ? detAnterior.getStock() : 0.0) : 0.0;
-                double stockFinal = detActual != null ? (detActual.getStock() != null ? detActual.getStock() : 0.0) : 0.0;
+            if (primerDetalle != null && ultimoDetalle != null) {
+                double stockInicial = primerDetalle.getStock() != null ? primerDetalle.getStock() : 0.0;
+                double stockFinal = ultimoDetalle.getStock() != null ? ultimoDetalle.getStock() : 0.0;
                 double consumo = stockInicial - stockFinal;
                 double diferencia = stockFinal - stockInicial;
-                double precio = detActual != null && detActual.getPrecioUnitario() != null 
-                        ? detActual.getPrecioUnitario() 
-                        : (detAnterior != null && detAnterior.getPrecioUnitario() != null ? detAnterior.getPrecioUnitario() : 0.0);
-
-                String nombre = detActual != null ? detActual.getNombre() : (detAnterior != null ? detAnterior.getNombre() : "");
-                String tipo = detActual != null ? detActual.getTipo() : (detAnterior != null ? detAnterior.getTipo() : "");
-                String unidad = detActual != null ? detActual.getUnidadMedida() : (detAnterior != null ? detAnterior.getUnidadMedida() : "");
+                double precio = primerDetalle.getPrecioUnitario() != null ? primerDetalle.getPrecioUnitario() : 0.0;
 
                 InventarioReporteDTO dto = InventarioReporteDTO.builder()
-                        .fecha(fecha)
-                        .nombre(nombre)
-                        .tipo(tipo)
-                        .unidadMedida(unidad)
+                        .nombre(primerDetalle.getNombre())
+                        .tipo(primerDetalle.getTipo())
+                        .unidadMedida(primerDetalle.getUnidadMedida())
+                        .fechaInicial(fechaPrimerRegistro)
                         .inventarioInicial(stockInicial)
-                        .consumo(consumo > 0 ? consumo : 0.0)
+                        .fechaFinal(fechaUltimoRegistro)
                         .inventarioFinal(stockFinal)
+                        .consumo(consumo)
                         .diferencia(diferencia)
                         .diferenciaDinero(diferencia * precio)
                         .build();

@@ -12,13 +12,14 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @Builder
 public class InventarioReporteDTO {
-    private LocalDate fecha;
     private String nombre;
     private String tipo;
     private String unidadMedida;
+    private LocalDate fechaInicial;
     private Double inventarioInicial;
-    private Double consumo;
+    private LocalDate fechaFinal;
     private Double inventarioFinal;
+    private Double consumo;
     private Double diferencia;
     private Double diferenciaDinero;
 }

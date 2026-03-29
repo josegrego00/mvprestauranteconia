@@ -59,20 +59,20 @@
                             <table class="table table-hover mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th class="px-3">Fecha</th>
                                         <th>Nombre</th>
                                         <th class="text-center">Tipo</th>
                                         <th class="text-center">Und.</th>
+                                        <th class="text-center bg-success bg-opacity-10">Fecha Ini.</th>
                                         <th class="text-center bg-success bg-opacity-10">Inv. Inicial</th>
-                                        <th class="text-center bg-warning bg-opacity-10">Consumo</th>
+                                        <th class="text-center bg-primary bg-opacity-10">Fecha Fin.</th>
                                         <th class="text-center bg-primary bg-opacity-10">Inv. Final</th>
+                                        <th class="text-center bg-warning bg-opacity-10">Consumo</th>
                                         <th class="text-center">Diferencia</th>
                                         <th class="text-end px-3">Diferencia $</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr th:each="item : ${reporte}">
-                                        <td class="px-3" th:text="${#temporals.format(item.fecha, 'dd/MM/yyyy')}">01/01/2024</td>
                                         <td>
                                             <span class="fw-medium" th:text="${item.nombre}">Nombre</span>
                                         </td>
@@ -81,12 +81,14 @@
                                             <span th:if="${item.tipo == 'PRODUCTO'}" class="badge bg-warning text-dark">Prod.</span>
                                         </td>
                                         <td class="text-center" th:text="${item.unidadMedida}">UND</td>
+                                        <td class="text-center bg-success bg-opacity-10" th:text="${#temporals.format(item.fechaInicial, 'dd/MM/yyyy')}">-</td>
                                         <td class="text-center bg-success bg-opacity-10 fw-bold" 
                                             th:text="${#numbers.formatDecimal(item.inventarioInicial, 1, 'COMMA', 2, 'POINT')}">0</td>
-                                        <td class="text-center bg-warning bg-opacity-10" 
-                                            th:text="${#numbers.formatDecimal(item.consumo, 1, 'COMMA', 2, 'POINT')}">0</td>
+                                        <td class="text-center bg-primary bg-opacity-10" th:text="${#temporals.format(item.fechaFinal, 'dd/MM/yyyy')}">-</td>
                                         <td class="text-center bg-primary bg-opacity-10 fw-bold" 
                                             th:text="${#numbers.formatDecimal(item.inventarioFinal, 1, 'COMMA', 2, 'POINT')}">0</td>
+                                        <td class="text-center bg-warning bg-opacity-10" 
+                                            th:text="${#numbers.formatDecimal(item.consumo, 1, 'COMMA', 2, 'POINT')}">0</td>
                                         <td class="text-center">
                                             <span th:if="${item.diferencia > 0}" class="text-success fw-bold" th:text="'+' + ${#numbers.formatDecimal(item.diferencia, 1, 'COMMA', 2, 'POINT')}">+0</span>
                                             <span th:if="${item.diferencia < 0}" class="text-danger fw-bold" th:text="${#numbers.formatDecimal(item.diferencia, 1, 'COMMA', 2, 'POINT')}">-0</span>
@@ -99,7 +101,7 @@
                                         </td>
                                     </tr>
                                     <tr th:if="${#lists.isEmpty(reporte)}">
-                                        <td colspan="9" class="text-center text-muted py-4">
+                                        <td colspan="10" class="text-center text-muted py-4">
                                             <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                             No hay datos para el período seleccionado
                                         </td>
