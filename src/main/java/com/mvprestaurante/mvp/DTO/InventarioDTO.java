@@ -16,5 +16,5 @@ public class InventarioDTO {
     private Double stockActual;
     private Double consumoPromedio;
     private Double diasRestantes;
-    private Integer estado; // 0: crítico, 1: bajo, 2: normal
+    private Integer estado;
 }

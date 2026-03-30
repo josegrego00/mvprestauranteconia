@@ -63,7 +63,7 @@ public class ReporteService {
         List<InventarioDTO> topProductosSinReceta = obtenerTopProductosSinReceta(empresaId);
         List<InventarioDTO> topIngredientes = obtenerTopIngredientes(empresaId);
 
-        Map<String, Double> ventasPorDia = obtenerVentasPorDia(empresaId, inicioMes, finHoy);
+        Map<String, Double> ventasPorDia = new HashMap<>();
 
         return ReporteDashboardDTO.builder()
                 .ventasHoy(ventasHoy != null ? ventasHoy : 0.0)
@@ -165,19 +165,5 @@ public class ReporteService {
                 .sorted((a, b) -> Double.compare(a.getDiasRestantes(), b.getDiasRestantes()))
                 .limit(5)
                 .collect(Collectors.toList());
-    }
-
-    private Map<String, Double> obtenerVentasPorDia(Long empresaId, LocalDateTime inicio, LocalDateTime fin) {
-        List<Object[]> resultados = detalleVentaRepository.findTopProductosByVentasBetween(empresaId, inicio, fin);
-
-        Map<String, Double> ventasPorDia = new HashMap<>();
-
-        LocalDate fecha = inicio.toLocalDate();
-        while (!fecha.isAfter(fin.toLocalDate())) {
-            ventasPorDia.put(fecha.toString(), 0.0);
-            fecha = fecha.plusDays(1);
-        }
-
-        return ventasPorDia;
     }
 }
