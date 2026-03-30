@@ -10,26 +10,23 @@ Sistema de gestión para restaurantes con soporte multi-empresa (multi-tenant).
 - **Template:** Thymeleaf
 - **Security:** Spring Security con BCrypt
 - **UI:** Bootstrap 5 + Bootstrap Icons
+- **Reportes:** Apache POI (Excel)
 - **Arquitectura:** Multi-tenant por subdominio
 
 ## Características
 
 ### Punto de Venta (Caja)
-- Interfaz rápida para cajeros
-- Productos visualizados como botones para selección rápida
+- Interfaz rápida para cajeros con botones de productos
+- Productos visualizados para selección rápida
 - **Stock estimado**: Productos con receta muestran disponibilidad desde ingredientes
 - **Validación de stock**: Bloquea productos con stock 0
-- **Pagos mixtos**: Efectivo, Tarjeta, Transferencia o combinación
+- **Pagos**: Efectivo, Tarjeta, Transferencia o Mixto (combinación)
 - **Botón Pago Exacto**: Autocompleta el monto total
 - **Cambio visual**: Rojo si falta pagar, azul si está completo
 - **Redirect automático**: Después de venta exitosa, nueva venta lista
-- Persistencia del carrito en errores de validación
-
-### Gestión de Compras
-- Registro de compras de ingredientes y productos
-- Actualización automática de stock al registrar
-- Anulación de compras con reversa de stock
-- Validación de número de factura único por empresa
+- **Carrito persistente**: Persistencia del carrito en errores de validación
+- **Bloqueo por cierre**: No permite ventas después de cierre Z del día
+- **Anulación de ventas**: Reversa stock de productos/ingredientes
 
 ### Gestión de Productos
 - Productos con y sin receta
@@ -37,6 +34,8 @@ Sistema de gestión para restaurantes con soporte multi-empresa (multi-tenant).
 - Precio de compra y venta con margen automático
 - **Stock estimado**: Cálculo dinámico basado en ingredientes (productos con receta)
 - Asociación de recetas existentes o creación de nuevas desde el producto
+- Nombre único por empresa
+- Eliminación lógica (desactivación)
 
 ### Gestión de Recetas
 - Recetas asociadas a productos (1:1)
@@ -51,20 +50,38 @@ Sistema de gestión para restaurantes con soporte multi-empresa (multi-tenant).
 - Control de stock disponible
 - Precio de compra por unidad
 - Eliminación lógica protegida (no se elimina si está en alguna receta)
-- Validaciones: nombre único, unidad de medida obligatoria
+- Validaciones: nombre único por empresa, unidad de medida obligatoria
+
+### Gestión de Compras
+- Registro de compras de ingredientes
+- Soporte para comprar productos sin receta
+- Actualización automática de stock al registrar
+- Anulación de compras con reversa de stock
+- Validación de número de factura único por empresa
 
 ### Gestión de Clientes
-- Registro de clientes
+- Registro de clientes (nombre, teléfono, email opcional)
 - Cliente default "Consumidor Final" para ventas rápidas
+- Reutilización de cliente existente
+
+### Cierre X y Cierre Z
+- **Cierre X**: Reporte de ventas parcial del día sin cerrar
+- **Cierre Z**: Cierre diario que bloquea ventas posteriores
+- Resumen por método de pago
+- Total de ventas, cantidad de transacciones
+- Registro en historial de cierres
 
 ### Ajuste de Precios
 - Filtros por tipo de producto (con/sin receta)
 - Actualización inline de precios de venta
+- Vista rápida de todos los productos
 
-### Dashboard y Reportes
-- Dashboard principal con resumen de ventas (hoy, semana, mes)
+### Dashboard
+- Ventas del día, semana y mes (monto y cantidad)
 - Top 10 productos más vendidos (últimos 30 días)
-- Inventario actual con estado (crítico/bajo/ok)
+- Inventario de productos sin receta (stock bajo/crítico)
+- Inventario de ingredientes (stock bajo/crítico)
+- Estado del inventario: crítico (<5), bajo (<15), ok
 
 ### Inventario Físico
 - Formulario para contar stock al final del día
@@ -72,6 +89,7 @@ Sistema de gestión para restaurantes con soporte multi-empresa (multi-tenant).
 - Input de stock físico para cada item
 - Cálculo de diferencia en tiempo real (unidades y dinero)
 - Resumen: total sobrante y faltante
+- **Descarga de plantilla Excel**: Para facilitar conteo
 
 ### Reporte de Inventario
 - Historial de inventario por fecha
@@ -79,24 +97,33 @@ Sistema de gestión para restaurantes con soporte multi-empresa (multi-tenant).
 - Tabla: inventario inicial, consumo, inventario final, diferencia
 - Paginación (20 por página)
 - Diferencia en unidades y dinero
+- **Exportación Excel**: Descarga de plantilla para conteo
+
+### Gestión de Usuarios
+- Roles: ADMIN, CAJERO, COCINERO, INVENTARIO
+- Contraseña encriptada con BCrypt
+- Eliminación lógica
 
 ### Multi-Tenant
 - Aislamiento de datos por empresa
 - Cada empresa tiene su propio subdominio
+- Dominio producción: mibombay.com
+- Dominio desarrollo: localhost / 127.0.0.1
 
 ## Estructura del Proyecto
 
 ```
 src/main/java/com/mvprestaurante/mvp/
-├── controllers/    # Controladores REST/Thymeleaf
-├── services/       # Lógica de negocio
-├── repositories/   # Repositorios JPA
-├── models/         # Entidades JPA
-├── DTO/            # Objetos de transferencia de datos
-├── mapper/         # Mapeadores MapStruct
-├── exceptions/     # Excepciones personalizadas (BusinessException, DuplicateResourceException)
-├── config/         # Configuración
-└── multitenant/    # Contexto y filtros de tenants
+├── controllers/       # Controladores Thymeleaf
+├── services/         # Lógica de negocio
+├── repositories/     # Repositorios JPA
+├── models/           # Entidades JPA
+├── DTO/              # Objetos de transferencia de datos
+├── mapper/           # Mapeadores MapStruct
+├── exceptions/       # Excepciones personalizadas
+├── config/          # Configuración
+├── security/        # Seguridad Spring
+└── multitenant/     # Contexto y filtros de tenants
 ```
 
 ## Configuración
@@ -131,6 +158,10 @@ export DB_PASSWORD=tu_password
 
 # Tests
 ./mvnw test
+
+# Test específico
+./mvnw test -Dtest=ClassName
+./mvnw test -Dtest=ClassName#methodName
 ```
 
 ## Rutas Principales
@@ -138,21 +169,33 @@ export DB_PASSWORD=tu_password
 | Ruta | Descripción |
 |------|-------------|
 | `/` | Login |
+| `/registro` | Registro de empresa y usuario admin |
 | `/dashboard` | Dashboard principal |
 | `/productos` | Lista de productos |
 | `/productos/nuevo` | Nuevo producto |
 | `/productos/editar/{id}` | Editar producto |
+| `/productos/ver/{id}` | Ver producto |
 | `/recetas` | Lista de recetas |
 | `/recetas/nueva` | Nueva receta |
+| `/recetas/ver/{id}` | Ver receta |
+| `/recetas/ingredientes/{id}` | Gestionar ingredientes de receta |
 | `/ingredientes` | Lista de ingredientes |
-| `/compras` | Lista de compras |
-| `/compras/nueva` | Nueva compra |
-| `/ventas` | Dashboard de ventas |
+| `/ingredientes/nuevo` | Nuevo ingrediente |
+| `/ingredientes/ver/{id}` | Ver ingrediente |
+| `/ventas` | Lista de ventas |
 | `/ventas/nueva` | Punto de venta (caja) |
 | `/ventas/ver/{id}` | Ver detalle de venta |
-| `/ajuste-precios` | Ajuste de precios |
+| `/ventas/anular/{id}` | Anular venta |
+| `/ventas/cierre-x` | Reporte cierre X |
+| `/ventas/cierre-z` | Cierre Z (cierra el día) |
+| `/compras` | Lista de compras |
+| `/compras/nueva` | Nueva compra |
+| `/compras/ver/{id}` | Ver compra |
+| `/compras/anular/{id}` | Anular compra |
+| `/ajuste-precios` | Ajuste masivo de precios |
 | `/inventario` | Inventario físico |
 | `/inventario/reporte` | Reporte de inventario |
+| `/inventario/descargar-plantilla` | Descargar Excel para conteo |
 
 ## API Endpoints (JSON)
 
@@ -160,6 +203,7 @@ export DB_PASSWORD=tu_password
 |---------|-------------|
 | `GET /recetas/stock/{id}` | Retorna unidades disponibles de una receta |
 | `GET /productos/estimado/{id}` | Retorna stock estimado del producto |
+| `GET /ventas/dia-cerrado` | Verifica si el día está cerrado |
 
 ## Reglas de Negocio
 
@@ -196,13 +240,16 @@ export DB_PASSWORD=tu_password
 4. **Pago**: Efectivo, Tarjeta, Transferencia o Mixto
 5. **Anulación**: Reversa stock de productos/ingredientes
 6. **Cliente**: "Consumidor Final" se reutiliza si ya existe
+7. **Día cerrado**: No permite ventas después de cierre Z
 
 ### Inventario
 1. **Inventario Físico**: Registro diario del stock real
 2. **Historial**: Se guarda cada registro con fecha
 3. **Reporte**: Muestra flujo por período (inicial, consumo, final, diferencia)
+4. **Plantilla Excel**: Descarga para facilitar conteo
 
 ## Excepciones Personalizadas
+
 - **BusinessException**: Errores de negocio (validaciones, reglas)
 - **DuplicateResourceException**: Recursos duplicados
 - **GlobalExceptionHandler**: Manejo centralizado de excepciones con redirección a página anterior
