@@ -42,6 +42,7 @@ public class CompraService {
     private final ProductoRepository productoRepository;
     private final UsuarioRepositorio usuarioRepository;
     private final EmpresaRepositorio empresaRepository;
+    private final MovimientoStockService movimientoStockService;
 
     private void validarTenant() {
         Long empresaId = TenantContext.getTenantId();
@@ -190,22 +191,28 @@ public class CompraService {
                 Optional<Ingrediente> ingredienteOpt = ingredienteRepository.findById(ingredienteId);
                 if (ingredienteOpt.isPresent()) {
                     Ingrediente ingrediente = ingredienteOpt.get();
-                    Double nuevoStock = (ingrediente.getStockDisponible() != null ? ingrediente.getStockDisponible() : 0) 
-                            + detalle.getCantidad();
+                    Double stockAnterior = ingrediente.getStockDisponible() != null ? ingrediente.getStockDisponible() : 0.0;
+                    Double nuevoStock = stockAnterior + detalle.getCantidad();
                     ingrediente.setStockDisponible(nuevoStock);
                     ingrediente.setPrecioCompra(detalle.getPrecioUnitarioCompra());
                     ingredienteRepository.save(ingrediente);
+                    
+                    movimientoStockService.registrarMovimiento(
+                            ingrediente, stockAnterior, detalle.getCantidad().doubleValue(), "ENTRADA", "COMPRA", compraGuardada, compraGuardada.getEmpresa(), usuario);
                 }
             } else if ("PRODUCTO".equals(detalle.getTipoItem()) && detalle.getProducto() != null) {
                 Long productoId = detalle.getProducto().getId();
                 Optional<Producto> productoOpt = productoRepository.findById(productoId);
                 if (productoOpt.isPresent()) {
                     Producto producto = productoOpt.get();
-                    Double nuevoStock = (producto.getStock() != null ? producto.getStock() : 0) 
-                            + detalle.getCantidad();
+                    Double stockAnterior = producto.getStock() != null ? producto.getStock() : 0.0;
+                    Double nuevoStock = stockAnterior + detalle.getCantidad();
                     producto.setStock(nuevoStock);
                     producto.setPrecioCompra(detalle.getPrecioUnitarioCompra());
                     productoRepository.save(producto);
+                    
+                    movimientoStockService.registrarMovimiento(
+                            producto, stockAnterior, detalle.getCantidad().doubleValue(), "ENTRADA", "COMPRA", compraGuardada, compraGuardada.getEmpresa(), usuario);
                 }
             }
         }
@@ -216,6 +223,7 @@ public class CompraService {
     @Transactional
     public Optional<Compra> anular(Long id) {
         validarTenant();
+        Usuario usuario = getUsuarioActual();
 
         return compraRepository.findById(id)
                 .filter(compra -> compra.getEmpresa().getId().equals(TenantContext.getTenantId()))
@@ -224,18 +232,24 @@ public class CompraService {
                     for (DetalleCompra detalle : compra.getDetallesCompra()) {
                         if ("INGREDIENTE".equals(detalle.getTipoItem()) && detalle.getIngrediente() != null) {
                             Ingrediente ingrediente = detalle.getIngrediente();
-                            Double nuevoStock = (ingrediente.getStockDisponible() != null ? ingrediente.getStockDisponible() : 0) 
-                                    - detalle.getCantidad();
+                            Double stockAnterior = ingrediente.getStockDisponible() != null ? ingrediente.getStockDisponible() : 0.0;
+                            Double nuevoStock = stockAnterior - detalle.getCantidad();
                             if (nuevoStock < 0) nuevoStock = 0.0;
                             ingrediente.setStockDisponible(nuevoStock);
                             ingredienteRepository.save(ingrediente);
+                            
+                            movimientoStockService.registrarMovimiento(
+                                    ingrediente, stockAnterior, -detalle.getCantidad().doubleValue(), "SALIDA", "ANULACION_COMPRA", compra, compra.getEmpresa(), usuario);
                         } else if ("PRODUCTO".equals(detalle.getTipoItem()) && detalle.getProducto() != null) {
                             Producto producto = detalle.getProducto();
-                            Double nuevoStock = (producto.getStock() != null ? producto.getStock() : 0) 
-                                    - detalle.getCantidad();
+                            Double stockAnterior = producto.getStock() != null ? producto.getStock() : 0.0;
+                            Double nuevoStock = stockAnterior - detalle.getCantidad();
                             if (nuevoStock < 0) nuevoStock = 0.0;
                             producto.setStock(nuevoStock);
                             productoRepository.save(producto);
+                            
+                            movimientoStockService.registrarMovimiento(
+                                    producto, stockAnterior, -detalle.getCantidad().doubleValue(), "SALIDA", "ANULACION_COMPRA", compra, compra.getEmpresa(), usuario);
                         }
                     }
 

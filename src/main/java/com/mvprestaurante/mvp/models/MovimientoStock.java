@@ -21,6 +21,10 @@ public class MovimientoStock {
     @Column(nullable = false)
     private LocalDateTime fechaMovimiento;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "empresa_id", nullable = false)
+    private Empresa empresa;
+
     // Qué ítem se movió (puede ser ingrediente O producto)
     @ManyToOne
     @JoinColumn(name = "ingrediente_id")

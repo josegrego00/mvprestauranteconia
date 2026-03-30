@@ -4,9 +4,11 @@ import com.mvprestaurante.mvp.DTO.InventarioDTO;
 import com.mvprestaurante.mvp.DTO.ProductoVendidoDTO;
 import com.mvprestaurante.mvp.DTO.ReporteDashboardDTO;
 import com.mvprestaurante.mvp.models.Ingrediente;
+import com.mvprestaurante.mvp.models.Producto;
 import com.mvprestaurante.mvp.multitenant.TenantContext;
 import com.mvprestaurante.mvp.repositories.DetalleVentaRepository;
 import com.mvprestaurante.mvp.repositories.IngredienteRepository;
+import com.mvprestaurante.mvp.repositories.ProductoRepository;
 import com.mvprestaurante.mvp.repositories.VentaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,7 @@ public class ReporteService {
     private final VentaRepository ventaRepository;
     private final DetalleVentaRepository detalleVentaRepository;
     private final IngredienteRepository ingredienteRepository;
+    private final ProductoRepository productoRepository;
 
     private void validarTenant() {
         Long empresaId = TenantContext.getTenantId();
@@ -57,8 +60,8 @@ public class ReporteService {
         Integer countMes = ventaRepository.countByFechaBetween(empresaId, inicioMes, finHoy);
 
         List<ProductoVendidoDTO> topProductos = obtenerTopProductos(empresaId, inicioMes, finHoy);
-
-        List<InventarioDTO> inventario = obtenerInventario(empresaId);
+        List<InventarioDTO> topProductosSinReceta = obtenerTopProductosSinReceta(empresaId);
+        List<InventarioDTO> topIngredientes = obtenerTopIngredientes(empresaId);
 
         Map<String, Double> ventasPorDia = obtenerVentasPorDia(empresaId, inicioMes, finHoy);
 
@@ -70,7 +73,8 @@ public class ReporteService {
                 .ventasCountSemana(countSemana != null ? countSemana : 0)
                 .ventasCountMes(countMes != null ? countMes : 0)
                 .topProductos(topProductos)
-                .inventario(inventario)
+                .topProductosSinReceta(topProductosSinReceta)
+                .topIngredientes(topIngredientes)
                 .ventasPorDia(ventasPorDia)
                 .build();
     }
@@ -89,7 +93,44 @@ public class ReporteService {
                 .collect(Collectors.toList());
     }
 
-    private List<InventarioDTO> obtenerInventario(Long empresaId) {
+    private List<InventarioDTO> obtenerTopProductosSinReceta(Long empresaId) {
+        List<Producto> productos = productoRepository.findByTieneRecetaFalseAndEstaActivoTrue(empresaId, null).getContent();
+
+        List<InventarioDTO> inventario = new ArrayList<>();
+
+        for (Producto prod : productos) {
+            InventarioDTO dto = InventarioDTO.builder()
+                    .ingredienteId(prod.getId())
+                    .ingredienteNombre(prod.getNombre())
+                    .unidadMedida("UND")
+                    .stockActual(prod.getStock())
+                    .build();
+
+            double stock = prod.getStock() != null ? prod.getStock() : 0.0;
+            if (stock <= 0) {
+                dto.setDiasRestantes(0.0);
+                dto.setEstado(0);
+            } else if (stock < 5) {
+                dto.setDiasRestantes(stock);
+                dto.setEstado(0);
+            } else if (stock < 15) {
+                dto.setDiasRestantes(stock);
+                dto.setEstado(1);
+            } else {
+                dto.setDiasRestantes(stock);
+                dto.setEstado(2);
+            }
+
+            inventario.add(dto);
+        }
+
+        return inventario.stream()
+                .sorted((a, b) -> Double.compare(a.getDiasRestantes(), b.getDiasRestantes()))
+                .limit(5)
+                .collect(Collectors.toList());
+    }
+
+    private List<InventarioDTO> obtenerTopIngredientes(Long empresaId) {
         List<Ingrediente> ingredientes = ingredienteRepository.findActiveWithStock(empresaId);
 
         List<InventarioDTO> inventario = new ArrayList<>();
@@ -122,6 +163,7 @@ public class ReporteService {
 
         return inventario.stream()
                 .sorted((a, b) -> Double.compare(a.getDiasRestantes(), b.getDiasRestantes()))
+                .limit(5)
                 .collect(Collectors.toList());
     }
 

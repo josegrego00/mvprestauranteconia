@@ -31,4 +31,18 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
             "GROUP BY dv.producto.id, dv.producto.nombre " +
             "ORDER BY SUM(dv.cantidad) DESC")
     List<Object[]> findTopProductosAll(@Param("tenantId") Long tenantId);
+
+    @Query("SELECT dv.producto.id, dv.producto.nombre, SUM(dv.cantidad), SUM(dv.subtotal) " +
+            "FROM DetalleVenta dv " +
+            "JOIN dv.venta v " +
+            "JOIN dv.producto p " +
+            "WHERE v.empresa.id = :tenantId AND v.estado = 'COMPLETADA' " +
+            "AND p.tieneReceta = false " +
+            "AND v.fechaVenta BETWEEN :fechaInicio AND :fechaFin " +
+            "GROUP BY dv.producto.id, dv.producto.nombre " +
+            "ORDER BY SUM(dv.cantidad) DESC")
+    List<Object[]> findTopProductosSinRecetaByVentasBetween(
+            @Param("tenantId") Long tenantId,
+            @Param("fechaInicio") LocalDateTime fechaInicio,
+            @Param("fechaFin") LocalDateTime fechaFin);
 }

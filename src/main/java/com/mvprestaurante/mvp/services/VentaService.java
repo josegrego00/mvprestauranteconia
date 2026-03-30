@@ -47,6 +47,7 @@ public class VentaService {
     private final EmpresaRepositorio empresaRepository;
     private final RecetaRepository recetaRepository;
     private final IngredienteRepository ingredienteRepository;
+    private final MovimientoStockService movimientoStockService;
 
     private void validarTenant() {
         Long empresaId = TenantContext.getTenantId();
@@ -245,17 +246,25 @@ public class VentaService {
                     for (DetalleReceta ingReceta : receta.getListaIngredientes()) {
                         Ingrediente ingrediente = ingReceta.getIngrediente();
                         Double cantidadDescontar = ingReceta.getCantidadIngrediente() * detalle.getCantidad();
-                        Double nuevoStock = ingrediente.getStockDisponible() - cantidadDescontar;
+                        Double stockAnterior = ingrediente.getStockDisponible() != null ? ingrediente.getStockDisponible() : 0.0;
+                        Double nuevoStock = stockAnterior - cantidadDescontar;
                         if (nuevoStock < 0) nuevoStock = 0.0;
                         ingrediente.setStockDisponible(nuevoStock);
                         ingredienteRepository.save(ingrediente);
+                        
+                        movimientoStockService.registrarMovimiento(
+                                ingrediente, stockAnterior, -cantidadDescontar, "SALIDA", "VENTA", ventaGuardada, ventaGuardada.getEmpresa(), usuario);
                     }
                 }
             } else {
-                Double nuevoStock = producto.getStock() - detalle.getCantidad();
+                Double stockAnterior = producto.getStock() != null ? producto.getStock() : 0.0;
+                Double nuevoStock = stockAnterior - detalle.getCantidad();
                 if (nuevoStock < 0) nuevoStock = 0.0;
                 producto.setStock(nuevoStock);
                 productoRepository.save(producto);
+                
+                movimientoStockService.registrarMovimiento(
+                        producto, stockAnterior, -detalle.getCantidad().doubleValue(), "SALIDA", "VENTA", ventaGuardada, ventaGuardada.getEmpresa(), usuario);
             }
         }
 
@@ -285,6 +294,7 @@ public class VentaService {
     @Transactional
     public Optional<Venta> anular(Long id) {
         validarTenant();
+        Usuario usuario = getUsuarioActual();
 
         return ventaRepository.findByIdWithDetails(id)
                 .filter(venta -> venta.getEmpresa().getId().equals(TenantContext.getTenantId()))
@@ -299,16 +309,23 @@ public class VentaService {
                                 for (DetalleReceta ingReceta : receta.getListaIngredientes()) {
                                     Ingrediente ingrediente = ingReceta.getIngrediente();
                                     Double cantidadDevolver = ingReceta.getCantidadIngrediente() * detalle.getCantidad();
-                                    Double nuevoStock = ingrediente.getStockDisponible() + cantidadDevolver;
+                                    Double stockAnterior = ingrediente.getStockDisponible() != null ? ingrediente.getStockDisponible() : 0.0;
+                                    Double nuevoStock = stockAnterior + cantidadDevolver;
                                     ingrediente.setStockDisponible(nuevoStock);
                                     ingredienteRepository.save(ingrediente);
+                                    
+                                    movimientoStockService.registrarMovimiento(
+                                            ingrediente, stockAnterior, cantidadDevolver, "ENTRADA", "ANULACION_VENTA", venta, venta.getEmpresa(), usuario);
                                 }
                             }
                         } else {
-                            Double nuevoStock = (producto.getStock() != null ? producto.getStock() : 0) 
-                                    + detalle.getCantidad();
+                            Double stockAnterior = producto.getStock() != null ? producto.getStock() : 0.0;
+                            Double nuevoStock = stockAnterior + detalle.getCantidad();
                             producto.setStock(nuevoStock);
                             productoRepository.save(producto);
+                            
+                            movimientoStockService.registrarMovimiento(
+                                    producto, stockAnterior, detalle.getCantidad().doubleValue(), "ENTRADA", "ANULACION_VENTA", venta, venta.getEmpresa(), usuario);
                         }
                     }
 

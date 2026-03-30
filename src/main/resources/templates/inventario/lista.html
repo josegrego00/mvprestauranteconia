@@ -55,98 +55,50 @@
                         <div class="card-body p-0">
                             <div class="table-responsive">
                                 <table class="table table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th class="px-3">Tipo</th>
-                                        <th>Nombre</th>
-                                        <th class="text-center">Unidad</th>
-                                        <th class="text-center bg-success bg-opacity-10">Stock Sistema</th>
-                                        <th class="text-center bg-primary bg-opacity-10">Stock Físico</th>
-                                        <th class="text-center">Diferencia</th>
-                                        <th class="text-end px-3">Diferencia $</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr th:each="item : ${items}">
-                                        <td class="px-3">
-                                            <span th:if="${item.tipo == 'INGREDIENTE'}" class="badge bg-info">Ing.</span>
-                                            <span th:if="${item.tipo == 'PRODUCTO'}" class="badge bg-warning text-dark">Prod.</span>
-                                        </td>
-                                        <td>
-                                            <span class="fw-medium" th:text="${item.nombre}">Nombre</span>
-                                        </td>
-                                        <td class="text-center" th:text="${item.unidadMedida}">UND</td>
-                                        <td class="text-center bg-success bg-opacity-10 fw-bold" 
-                                            th:text="${#numbers.formatDecimal(item.stockSistema, 1, 'COMMA', 2, 'POINT')}">0</td>
-                                        <td class="text-center bg-primary bg-opacity-10">
-                                            <input type="number" 
-                                                   class="form-control text-center stock-input" 
-                                                   style="width: 100px; display: inline-block;"
-                                                   th:name="${'stock_' + item.tipo + '_' + item.itemId}"
-                                                   th:id="${'stock_' + item.tipo + '_' + item.itemId}"
-                                                   value="0"
-                                                   step="0.01"
-                                                   min="0"
-                                                   onchange="calcularDiferencia(this)"
-                                                   oninput="calcularDiferencia(this)">
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="diferencia-badge fw-bold">0</span>
-                                        </td>
-                                        <td class="text-end px-3">
-                                            <span class="diferencia-dinero fw-bold">$0</span>
-                                        </td>
-                                    </tr>
-                                    <tr th:if="${#lists.isEmpty(items)}">
-                                        <td colspan="7" class="text-center text-muted py-4">
-                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                            No hay ingredientes ni productos para inventariar
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="px-3">Tipo</th>
+                                            <th>Nombre</th>
+                                            <th class="text-center">Unidad</th>
+                                            <th class="text-center bg-success bg-opacity-10">Stock Sistema</th>
+                                            <th class="text-center bg-primary bg-opacity-10">Stock Físico</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="item : ${items}">
+                                            <td class="px-3">
+                                                <span th:if="${item.tipo == 'INGREDIENTE'}" class="badge bg-info">Ing.</span>
+                                                <span th:if="${item.tipo == 'PRODUCTO'}" class="badge bg-warning text-dark">Prod.</span>
+                                            </td>
+                                            <td>
+                                                <span class="fw-medium" th:text="${item.nombre}">Nombre</span>
+                                            </td>
+                                            <td class="text-center" th:text="${item.unidadMedida}">UND</td>
+                                            <td class="text-center bg-success bg-opacity-10 fw-bold" 
+                                                th:text="${#numbers.formatDecimal(item.stockSistema, 1, 'COMMA', 2, 'POINT')}">0</td>
+                                            <td class="text-center bg-primary bg-opacity-10">
+                                                <input type="number" 
+                                                       class="form-control text-center" 
+                                                       style="width: 100px; display: inline-block;"
+                                                       th:name="${'stock_' + item.tipo + '_' + item.itemId}"
+                                                       th:id="${'stock_' + item.tipo + '_' + item.itemId}"
+                                                       value="0"
+                                                       step="0.01"
+                                                       min="0">
+                                            </td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(items)}">
+                                            <td colspan="5" class="text-center text-muted py-4">
+                                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                                No hay ingredientes ni productos para inventariar
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                </div>
                 </form>
-
-                <!-- Resumen -->
-                <div class="row mt-4" th:if="${not #lists.isEmpty(items)}">
-                    <div class="col-md-6">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-body">
-                                <h6 class="text-muted text-uppercase">Total Sobrante</h6>
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <h4 class="mb-0 fw-bold text-success" id="totalSobrante">0</h4>
-                                        <small class="text-muted">unidades</small>
-                                    </div>
-                                    <div class="text-end">
-                                        <h4 class="mb-0 fw-bold text-success" id="totalSobranteDinero">$0</h4>
-                                        <small class="text-muted">valor</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-body">
-                                <h6 class="text-muted text-uppercase">Total Faltante</h6>
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <h4 class="mb-0 fw-bold text-danger" id="totalFaltante">0</h4>
-                                        <small class="text-muted">unidades</small>
-                                    </div>
-                                    <div class="text-end">
-                                        <h4 class="mb-0 fw-bold text-danger" id="totalFaltanteDinero">$0</h4>
-                                        <small class="text-muted">valor</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <div th:replace="~{fragments/footer :: footer}"></div>
 
@@ -155,79 +107,6 @@
     </div>
 
     <div th:replace="~{fragments/scripts :: scripts}"></div>
-
-    <script th:if="${not #lists.isEmpty(items)}">
-        const itemsData = /*[[${items}]]*/ [];
-
-        function calcularDiferencia(input) {
-            const row = input.closest('tr');
-            const itemId = input.id;
-            const stockSistema = parseFloat(row.cells[3].textContent.replace(',', '')) || 0;
-            const stockFisico = parseFloat(input.value) || 0;
-            const diferencia = stockFisico - stockSistema;
-
-            const diferenciaCell = row.querySelector('.diferencia-badge');
-            const dineroCell = row.querySelector('.diferencia-dinero');
-
-            diferenciaCell.textContent = (diferencia > 0 ? '+' : '') + diferencia.toFixed(2);
-
-            const item = itemsData.find(i => 'stock_' + i.tipo + '_' + i.itemId === itemId);
-            const precio = item ? item.precioUnitario : 0;
-            const diferenciaDinero = diferencia * precio;
-
-            dineroCell.textContent = (diferenciaDinero > 0 ? '+$' : '-$') + Math.abs(diferenciaDinero).toFixed(2);
-
-            if (diferencia > 0) {
-                diferenciaCell.className = 'diferencia-badge fw-bold text-success';
-                dineroCell.className = 'diferencia-dinero fw-bold text-success';
-            } else if (diferencia < 0) {
-                diferenciaCell.className = 'diferencia-badge fw-bold text-danger';
-                dineroCell.className = 'diferencia-dinero fw-bold text-danger';
-            } else {
-                diferenciaCell.className = 'diferencia-badge fw-bold text-muted';
-                dineroCell.className = 'diferencia-dinero fw-bold text-muted';
-            }
-
-            calcularTotales();
-        }
-
-        function calcularTotales() {
-            let sobrante = 0;
-            let faltante = 0;
-            let sobranteDinero = 0;
-            let faltanteDinero = 0;
-
-            document.querySelectorAll('tr[data-index]').forEach(row => {
-                // This would need proper data attributes
-            });
-
-            // Recalculate from inputs
-            const inputs = document.querySelectorAll('.stock-input');
-            inputs.forEach(input => {
-                const row = input.closest('tr');
-                const stockSistema = parseFloat(row.cells[3].textContent.replace(',', '')) || 0;
-                const stockFisico = parseFloat(input.value) || 0;
-                const diferencia = stockFisico - stockSistema;
-
-                const itemId = input.id;
-                const item = itemsData.find(i => 'stock_' + i.tipo + '_' + i.itemId === itemId);
-                const precio = item ? item.precioUnitario : 0;
-
-                if (diferencia > 0) {
-                    sobrante += diferencia;
-                    sobranteDinero += diferencia * precio;
-                } else if (diferencia < 0) {
-                    faltante += Math.abs(diferencia);
-                    faltanteDinero += Math.abs(diferencia) * precio;
-                }
-            });
-
-            document.getElementById('totalSobrante').textContent = sobrante.toFixed(2);
-            document.getElementById('totalSobranteDinero').textContent = '$' + sobranteDinero.toFixed(2);
-            document.getElementById('totalFaltante').textContent = faltante.toFixed(2);
-            document.getElementById('totalFaltanteDinero').textContent = '$' + faltanteDinero.toFixed(2);
-        }
-    </script>
 
 </body>
 </html>

@@ -77,15 +77,15 @@
                 </div>
 
                 <div class="row">
-                    <!-- Top Productos -->
+                    <!-- Top Productos Sin Receta -->
                     <div class="col-md-6 mb-4">
                         <div class="card border-0 shadow-sm">
                             <div class="card-header bg-white border-0 py-3">
                                 <h5 class="mb-0 fw-bold">
-                                    <i class="bi bi-trophy text-warning me-2"></i>
-                                    Top 10 Productos
+                                    <i class="bi bi-box text-warning me-2"></i>
+                                    Top 5 Productos Sin Receta
                                 </h5>
-                                <small class="text-muted">Últimos 30 días</small>
+                                <small class="text-muted">Con menos stock</small>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
@@ -94,25 +94,29 @@
                                             <tr>
                                                 <th class="px-3">#</th>
                                                 <th>Producto</th>
-                                                <th class="text-center">Cantidad</th>
-                                                <th class="text-end px-3">Monto</th>
+                                                <th class="text-center">Stock</th>
+                                                <th class="text-center px-3">Estado</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr th:each="producto, iter : ${dashboard.topProductos}">
+                                            <tr th:each="producto, iter : ${dashboard.topProductosSinReceta}">
                                                 <td class="px-3 text-muted" th:text="${iter.index + 1}">1</td>
                                                 <td>
-                                                    <span class="fw-medium" th:text="${producto.productoNombre}">Producto</span>
+                                                    <span class="fw-medium" th:text="${producto.ingredienteNombre}">Producto</span>
                                                 </td>
                                                 <td class="text-center">
-                                                    <span class="badge bg-primary rounded-pill" th:text="${producto.cantidadTotal}">0</span>
+                                                    <span th:text="${#numbers.formatDecimal(producto.stockActual, 1, 'COMMA', 0, 'POINT')} + ' ' + ${producto.unidadMedida}">0</span>
                                                 </td>
-                                                <td class="text-end px-3 fw-bold" th:text="'$' + ${#numbers.formatDecimal(producto.montoTotal, 1, 'COMMA', 0, 'POINT')}">$0</td>
+                                                <td class="text-center px-3">
+                                                    <span th:if="${producto.estado == 0}" class="badge bg-danger">Crítico</span>
+                                                    <span th:if="${producto.estado == 1}" class="badge bg-warning text-dark">Bajo</span>
+                                                    <span th:if="${producto.estado == 2}" class="badge bg-success">OK</span>
+                                                </td>
                                             </tr>
-                                            <tr th:if="${#lists.isEmpty(dashboard.topProductos)}">
+                                            <tr th:if="${#lists.isEmpty(dashboard.topProductosSinReceta)}">
                                                 <td colspan="4" class="text-center text-muted py-4">
                                                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                                    No hay ventas aún
+                                                    No hay productos sin receta
                                                 </td>
                                             </tr>
                                         </tbody>
@@ -122,29 +126,31 @@
                         </div>
                     </div>
 
-                    <!-- Inventario -->
+                    <!-- Top Ingredientes -->
                     <div class="col-md-6 mb-4">
                         <div class="card border-0 shadow-sm">
                             <div class="card-header bg-white border-0 py-3">
                                 <h5 class="mb-0 fw-bold">
                                     <i class="bi bi-box-seam text-info me-2"></i>
-                                    Inventario
+                                    Top 5 Ingredientes
                                 </h5>
-                                <small class="text-muted">Stock disponible</small>
+                                <small class="text-muted">Con menos stock</small>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
                                     <table class="table table-hover mb-0">
                                         <thead class="table-light">
                                             <tr>
-                                                <th class="px-3">Ingrediente</th>
+                                                <th class="px-3">#</th>
+                                                <th>Ingrediente</th>
                                                 <th class="text-center">Stock</th>
                                                 <th class="text-center px-3">Estado</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr th:each="item : ${dashboard.inventario}">
-                                                <td class="px-3">
+                                            <tr th:each="item, iter : ${dashboard.topIngredientes}">
+                                                <td class="px-3 text-muted" th:text="${iter.index + 1}">1</td>
+                                                <td>
                                                     <span class="fw-medium" th:text="${item.ingredienteNombre}">Ingrediente</span>
                                                 </td>
                                                 <td class="text-center">
@@ -156,8 +162,8 @@
                                                     <span th:if="${item.estado == 2}" class="badge bg-success">OK</span>
                                                 </td>
                                             </tr>
-                                            <tr th:if="${#lists.isEmpty(dashboard.inventario)}">
-                                                <td colspan="3" class="text-center text-muted py-4">
+                                            <tr th:if="${#lists.isEmpty(dashboard.topIngredientes)}">
+                                                <td colspan="4" class="text-center text-muted py-4">
                                                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                                     No hay ingredientes
                                                 </td>

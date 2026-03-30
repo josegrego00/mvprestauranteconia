@@ -20,6 +20,7 @@ public class ReporteDashboardDTO {
     private Integer ventasCountSemana;
     private Integer ventasCountMes;
     private List<ProductoVendidoDTO> topProductos;
-    private List<InventarioDTO> inventario;
+    private List<InventarioDTO> topProductosSinReceta;
+    private List<InventarioDTO> topIngredientes;
     private Map<String, Double> ventasPorDia;
 }
