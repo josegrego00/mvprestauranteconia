@@ -17,6 +17,7 @@ import com.mvprestaurante.mvp.repositories.ProductoRepository;
 import com.mvprestaurante.mvp.repositories.UsuarioRepositorio;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +35,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CompraService {
 
     private final CompraRepository compraRepository;
@@ -224,16 +226,35 @@ public class CompraService {
     public Optional<Compra> anular(Long id) {
         validarTenant();
         Usuario usuario = getUsuarioActual();
+        Long empresaId = TenantContext.getTenantId();
+
+        log.info("========== INICIO ANULACION COMPRA ==========");
+        log.info("ID Compra: {}, Empresa: {}", id, empresaId);
 
         return compraRepository.findById(id)
-                .filter(compra -> compra.getEmpresa().getId().equals(TenantContext.getTenantId()))
-                .filter(compra -> "COMPLETADA".equals(compra.getEstado()))
+                .filter(compra -> {
+                    log.info("Compra encontrada: {}, Estado: {}", compra.getNumeroCompra(), compra.getEstado());
+                    return compra.getEmpresa().getId().equals(empresaId);
+                })
+                .filter(compra -> {
+                    log.info("Verificando estado COMPLETADA: {}", compra.getEstado());
+                    return "COMPLETADA".equals(compra.getEstado());
+                })
                 .map(compra -> {
+                    log.info("Iniciando anulacion para compra: {}, Detalles: {}", compra.getNumeroCompra(), compra.getDetallesCompra().size());
+                    
                     for (DetalleCompra detalle : compra.getDetallesCompra()) {
+                        log.info("Detalle - Tipo: {}, Item: {}, Cantidad: {}", 
+                            detalle.getTipoItem(), 
+                            detalle.getTipoItem().equals("INGREDIENTE") ? detalle.getIngrediente().getNombre() : detalle.getProducto().getNombre(),
+                            detalle.getCantidad());
+                            
                         if ("INGREDIENTE".equals(detalle.getTipoItem()) && detalle.getIngrediente() != null) {
                             Ingrediente ingrediente = detalle.getIngrediente();
                             Double stockAnterior = ingrediente.getStockDisponible() != null ? ingrediente.getStockDisponible() : 0.0;
                             Double nuevoStock = stockAnterior - detalle.getCantidad();
+                            log.info("INGREDIENTE: {} - Stock anterior: {}, Resta: {}, Nuevo stock: {}", 
+                                ingrediente.getNombre(), stockAnterior, detalle.getCantidad(), nuevoStock);
                             if (nuevoStock < 0) nuevoStock = 0.0;
                             ingrediente.setStockDisponible(nuevoStock);
                             ingredienteRepository.save(ingrediente);
@@ -244,6 +265,8 @@ public class CompraService {
                             Producto producto = detalle.getProducto();
                             Double stockAnterior = producto.getStock() != null ? producto.getStock() : 0.0;
                             Double nuevoStock = stockAnterior - detalle.getCantidad();
+                            log.info("PRODUCTO: {} - Stock anterior: {}, Resta: {}, Nuevo stock: {}", 
+                                producto.getNombre(), stockAnterior, detalle.getCantidad(), nuevoStock);
                             if (nuevoStock < 0) nuevoStock = 0.0;
                             producto.setStock(nuevoStock);
                             productoRepository.save(producto);
@@ -254,6 +277,7 @@ public class CompraService {
                     }
 
                     compra.setEstado("ANULADA");
+                    log.info("Compra {} anulada exitosamente", compra.getNumeroCompra());
                     return compraRepository.save(compra);
                 });
     }

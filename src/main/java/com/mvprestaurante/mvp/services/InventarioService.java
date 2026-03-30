@@ -228,7 +228,6 @@ public class InventarioService {
             if (primerDetalle != null && ultimoDetalle != null) {
                 double stockInicial = primerDetalle.getStock() != null ? primerDetalle.getStock() : 0.0;
                 double stockFinal = ultimoDetalle.getStock() != null ? ultimoDetalle.getStock() : 0.0;
-                double diferencia = stockFinal - stockInicial;
                 double precio = primerDetalle.getPrecioUnitario() != null ? primerDetalle.getPrecioUnitario() : 0.0;
 
                 Long itemId = primerDetalle.getIngrediente() != null ? primerDetalle.getIngrediente().getId()
@@ -247,6 +246,7 @@ public class InventarioService {
                 double compras = comprasFromProveedor != null ? comprasFromProveedor : 0.0;
 
                 double inventarioEstimado = stockInicial + compras + consumo;
+                double diferencia = stockFinal - inventarioEstimado;
 
                 InventarioReporteDTO dto = InventarioReporteDTO.builder()
                         .nombre(primerDetalle.getNombre())

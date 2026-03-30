@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subdominio no encontrado - MVP Restaurante</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .error-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            max-width: 500px;
+        }
+        .error-icon {
+            font-size: 4rem;
+            color: #dc3545;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 30px;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="error-card p-5 text-center">
+                    <div class="mb-4">
+                        <i class="bi bi-exclamation-triangle-fill error-icon"></i>
+                    </div>
+                    
+                    <h2 class="fw-bold mb-3">¡Ups! Subdominio no encontrado</h2>
+                    
+                    <p class="text-muted mb-4">
+                        El subdominio <strong th:text="${subdominio}">subdominio</strong> 
+                        no existe en nuestro sistema.
+                    </p>
+                    
+                    <div class="alert alert-light border mb-4">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>¿Qué puedes hacer?</strong>
+                        <ul class="mb-0 mt-2 text-start">
+                            <li>Verifica que el nombre del subdominio esté correcto</li>
+                            <li>Contacta al administrador del sistema</li>
+                            <li>Si eres el propietario, registra tu empresa</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-flex gap-3 justify-content-center">
+                        <a href="http://localhost:8080" class="btn btn-primary">
+                            <i class="bi bi-house-door me-2"></i>
+                            Ir al inicio
+                        </a>
+                        <a href="http://localhost:8080/registro" class="btn btn-outline-secondary">
+                            <i class="bi bi-person-plus me-2"></i>
+                            Registrar Empresa
+                        </a>
+                    </div>
+                </div>
+                
+                <p class="text-center text-white mt-4 small opacity-75">
+                    © 2026 MVP Restaurante - Sistema de Gestión
+                </p>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

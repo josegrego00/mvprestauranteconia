@@ -42,7 +42,7 @@ public class SecurityConfig {
                                                 UsernamePasswordAuthenticationFilter.class)
                                 .authorizeHttpRequests(authz -> authz
                                                 .requestMatchers("/", "/registro", "/empresa/guardar", "/css/**",
-                                                                "/js/**")
+                                                                "/js/**", "/error/**")
                                                 .permitAll()
                                                 .requestMatchers("/login").permitAll()
                                                 .anyRequest().authenticated())

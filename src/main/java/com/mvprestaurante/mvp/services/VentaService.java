@@ -11,12 +11,15 @@ import com.mvprestaurante.mvp.models.Ingrediente;
 import com.mvprestaurante.mvp.models.Producto;
 import com.mvprestaurante.mvp.models.Usuario;
 import com.mvprestaurante.mvp.models.Venta;
+import com.mvprestaurante.mvp.models.CierreDia;
 import com.mvprestaurante.mvp.multitenant.TenantContext;
+import com.mvprestaurante.mvp.repositories.CierreDiaRepository;
 import com.mvprestaurante.mvp.repositories.ClienteRepositorio;
 import com.mvprestaurante.mvp.repositories.CompraRepository;
 import com.mvprestaurante.mvp.repositories.DetalleVentaRepository;
 import com.mvprestaurante.mvp.repositories.EmpresaRepositorio;
 import com.mvprestaurante.mvp.repositories.IngredienteRepository;
+import com.mvprestaurante.mvp.repositories.InventarioRegistroRepository;
 import com.mvprestaurante.mvp.repositories.ProductoRepository;
 import com.mvprestaurante.mvp.repositories.RecetaRepository;
 import com.mvprestaurante.mvp.repositories.UsuarioRepositorio;
@@ -54,6 +57,8 @@ public class VentaService {
     private final IngredienteRepository ingredienteRepository;
     private final MovimientoStockService movimientoStockService;
     private final CompraRepository compraRepository;
+    private final CierreDiaRepository cierreDiaRepository;
+    private final InventarioRegistroRepository inventarioRegistroRepository;
 
     private void validarTenant() {
         Long empresaId = TenantContext.getTenantId();
@@ -470,28 +475,37 @@ public class VentaService {
                 .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
         
         LocalDate hoy = LocalDate.now();
-        if (empresa.getDiaCerrado() != null && empresa.getDiaCerrado() && 
-            empresa.getFechaCierre() != null && empresa.getFechaCierre().equals(hoy)) {
+        
+        boolean tieneInventarioFisico = inventarioRegistroRepository.findByFechaAndTenantId(empresaId, hoy).isPresent();
+        if (!tieneInventarioFisico) {
+            throw new BusinessException("Debe cargar el inventario físico antes de generar el Reporte Z.");
+        }
+        
+        if (cierreDiaRepository.existsByEmpresaIdAndFechaAndTipo(empresaId, hoy, "Z")) {
             throw new BusinessException("El día ya ha sido cerrado. No se puede generar otro Reporte Z.");
         }
         
-        empresa.setDiaCerrado(true);
-        empresa.setFechaCierre(hoy);
-        empresaRepository.save(empresa);
+        ReporteCierreDTO reporte = generarReporteCierreX(fecha);
         
-        return generarReporteCierreX(fecha);
+        CierreDia cierreDia = CierreDia.builder()
+                .empresa(empresa)
+                .fecha(hoy)
+                .tipo("Z")
+                .totalVentas(reporte.getTotalVentas())
+                .totalCompras(reporte.getTotalCompras())
+                .balance(reporte.getBalance())
+                .fechaCierre(LocalDateTime.now())
+                .build();
+        cierreDiaRepository.save(cierreDia);
+        
+        return reporte;
     }
 
     @Transactional(readOnly = true)
     public boolean isDiaCerrado() {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
-        
-        Empresa empresa = empresaRepository.findById(empresaId)
-                .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
-        
         LocalDate hoy = LocalDate.now();
-        return empresa.getDiaCerrado() != null && empresa.getDiaCerrado() && 
-               empresa.getFechaCierre() != null && empresa.getFechaCierre().equals(hoy);
+        return cierreDiaRepository.existsByEmpresaIdAndFechaAndTipo(empresaId, hoy, "Z");
     }
 }

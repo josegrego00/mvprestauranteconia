@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -55,7 +57,8 @@ public class TenanFilter extends OncePerRequestFilter {
                 path.startsWith("/registro") ||
                 path.startsWith("/css") ||
                 path.startsWith("/js") ||
-                path.startsWith("/images");
+                path.startsWith("/images") ||
+                path.startsWith("/error");
     }
 
     @Override
@@ -75,24 +78,29 @@ public class TenanFilter extends OncePerRequestFilter {
         String subdominio = extractor.extract(host);
 
         if (subdominio == null || subdominio.isEmpty()) {
-            response.sendRedirect("http://mibombay.com");
+            response.sendRedirect("http://localhost:8080/registro");
             return;
         }
 
-        Long tenantId = resolver.resolveTenantId(subdominio);
-        TenantContext.setTenantId(tenantId);
-
-        System.out.println("===== TENANT FILTER =====");
-        System.out.println("Host: " + host);
-        System.out.println("Subdominio extraído: " + subdominio);
-        System.out.println("Tenant ID: " + tenantId);
-        System.out.println("=========================");
+        Long tenantId;
         try {
-
+            tenantId = resolver.resolveTenantId(subdominio);
+            TenantContext.setTenantId(tenantId);
+            
+            System.out.println("===== TENANT FILTER =====");
+            System.out.println("Host: " + host);
+            System.out.println("Subdominio extraído: " + subdominio);
+            System.out.println("Tenant ID: " + tenantId);
+            System.out.println("=========================");
+            
             filterChain.doFilter(request, response);
-
-        } finally {
-
+            
+        } catch (ResponseStatusException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                response.sendRedirect("http://localhost:8080/error/subdominio-no-encontrado?subdominio=" + subdominio);
+                return;
+            }
+            throw e;
         }
     }
 }

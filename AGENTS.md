@@ -23,15 +23,78 @@
 src/main/java/com/mvprestaurante/mvp/
 ├── controllers/   # @Controller - SOLO delegar a servicios
 ├── services/      # @Service - toda la lógica de negocio
-├── repositories/ # JpaRepository interfaces
+├── repositories/  # JpaRepository interfaces
 ├── models/        # JPA entities con Lombok
 ├── DTO/           # Data Transfer Objects con validaciones
 ├── mapper/        # MapStruct interfaces
 ├── exceptions/    # Custom exceptions + @ControllerAdvice
-├── config/        # @Configuration classes
-├── security/      # Custom UserDetailsService
-└── multitenant/   # TenantContext, filters
+├── config/        # @Configuration classes (SecurityConfig)
+├── security/      # CustomUserDetails, CustomUserDetailsService
+└── multitenant/   # TenantContext, TenanFilter, TenantResolverService
 ```
+
+### Templates (src/main/resources/templates/)
+```
+templates/
+├── login.html
+├── registro.html
+├── index.html
+├── inicio.html (dashboard)
+├── productos/     # lista, formulario, ver
+├── ingredientes/  # lista, formulario, ver
+├── recetas/       # lista, formulario, ver, ingredientes
+├── ventas/        # lista, nueva, ver, cierre-x, cierre-z
+├── compras/       # lista, formulario, ver
+├── inventario/    # lista, reporte
+├── ajuste-precios/# lista
+├── usuario/       # registro
+└── fragments/     # head, navbar, sidebar, footer, scripts
+```
+
+## Entities (Models)
+
+| Entity | Description | Relationships |
+|--------|-------------|---------------|
+| **Empresa** | Tenant (subdomain, name, plan) | OneToMany: Usuario, Ingrediente, Receta, Producto |
+| **Usuario** | Users with role (ADMIN, CAJERO, COCINERO, etc.) | ManyToOne: Empresa |
+| **Producto** | Menu items (name, price, stock, tieneReceta) | ManyToOne: Empresa, OneToOne: Receta |
+| **Ingrediente** | Raw materials (name, stock, unidadMedida) | ManyToOne: Empresa, OneToMany: DetalleReceta |
+| **Receta** | Product recipes (name, precioBruto, precioVenta) | ManyToOne: Empresa, OneToOne: Producto, OneToMany: DetalleReceta |
+| **DetalleReceta** | Recipe ingredients (cantidad) | ManyToOne: Receta, Ingrediente |
+| **Venta** | Sales (numeroVenta, fecha, method payment) | ManyToOne: Empresa, Cliente, Usuario, OneToMany: DetalleVenta |
+| **DetalleVenta** | Products sold in a sale | ManyToOne: Venta, Producto |
+| **Compra** | Ingredient purchases | ManyToOne: Empresa |
+| **DetalleCompra** | Ingredients purchased | ManyToOne: Compra, Ingrediente |
+| **Cliente** | Customers | ManyToOne: Empresa |
+| **MovimientoStock** | Inventory movements | ManyToOne: Empresa, Ingrediente |
+| **InventarioRegistro** | Inventory records | ManyToOne: Empresa |
+| **CierreDia** | Z/X closures | ManyToOne: Empresa, Usuario |
+
+## Services
+- **ProductoService** - CRUD, estimated stock, search
+- **IngredienteService** - CRUD ingredients
+- **RecetaService** - CRUD recipes, ingredient management
+- **DetalleRecetaService** - Recipe details
+- **VentaService** - Sales, Z/X closures
+- **CompraService** - Inventory purchases
+- **InventarioService** - Inventory and reports
+- **MovimientoStockService** - Stock movements
+- **UsuarioService** - User management
+- **EmpresaService** - Company management
+- **ClienteService** - Customer management
+- **ReporteService** - Dashboard reports
+
+## Controllers
+- **IndexController** - Root "/"
+- **ProductoController** - "/productos"
+- **IngredienteController** - "/ingredientes"
+- **RecetaController** - "/recetas"
+- **VentaController** - "/ventas"
+- **CompraController** - "/compras"
+- **InventarioController** - "/inventario"
+- **UsuarioController** - "/usuario"
+- **EmpresaController** - "/empresa"
+- **AjustePreciosController** - "/ajuste-precios"
 
 ## Code Style
 
@@ -51,20 +114,26 @@ src/main/java/com/mvprestaurante/mvp/
 - Use `@DataJpaTest` for repository tests
 - Use `@MockBean` for service mocking
 
-### Key Patterns
+## Key Patterns
 
-**Controller-Service Separation (CRITICAL)**
+### Controller-Service Separation (CRITICAL)
 - Controllers: SOLO reciben requests, llaman a servicios, pasan model/redirect attributes
 - Services: TODA la lógica de negocio, validaciones, parsing de parámetros
 
-**Multi-Tenant**
+### Multi-Tenant
 - Get tenant via `TenantContext.getTenantId()`
 - Validate with `validarTenant()` in every service method
 - Throw `BusinessException` if no tenant
+- Domains: "mibombay.com" (production), "localhost" (development)
+- Subdomain resolution via `TenanFilter` before authentication
 
-**Transaction Management**
+### Transaction Management
 - Use `@Transactional` on all service methods
 - Use `readOnly = true` for read operations
+
+### Soft Deletes
+- Entities use `estaActivo = false` for deletion
+- Protected entities check before delete (e.g., ingredients in recipes)
 
 ## Code Templates
 
@@ -181,18 +250,56 @@ public class GlobalExceptionHandler {
 ## Business Rules
 
 ### Productos
-- **Con receta**: Sin stock directo, se calcula desde ingredientes
+- **Con receta**: Sin stock directo, se calcula desde ingredientes (min(stock_ingrediente / cantidad_necesaria))
 - **Sin receta**: Manejan stock directamente
 - Eliminación lógica (`estaActivo = false`)
+- Nombre único por empresa
 
 ### Recetas
-- Relación 1:1 con producto
+- Relación 1:1 con producto (un producto puede tener una receta)
 - Mínimo un ingrediente, sin duplicados, cantidad > 0
 - Stock disponible: `min(stock_ingrediente / cantidad_necesaria)`
+- Cálculo de precio bruto desde ingredientes
 
 ### Ingredientes
 - Nombre único por empresa
+- Unidad de medida configurable
 - Eliminación lógica protegida si está en receta
+- Movimientos de stock registrados
+
+### Ventas
+- Número de venta secuencial por empresa
+- Métodos de pago: EFECTIVO, TRANSFERENCIA, TARJETA, MIXTO
+- Actualiza stock de productos (sin receta) y ingredients (recetas)
+- Genera DetalleVenta por cada producto
+- Soporta cierre X (parcial) y cierre Z (diario)
+
+### Compras
+- Registro de compras de ingredientes
+- Actualiza stock del ingrediente
+- Genera DetalleCompra
+- Fecha y proveedor registrado
+
+### Inventario
+- MovimientoStock registra entradas y salidas
+- InventarioRegistro para snapshots periódicos
+- Reportes de stock actual vs mínimo
+
+### Clientes
+- Nombre, teléfono, email (opcional)
+- Historial de ventas asociadas
+
+### Usuarios
+- Roles: ADMIN, CAJERO, COCINERO, INVENTARIO
+- Contraseña encriptada con BCrypt
+- Eliminación lógica (`estaActivo = false`)
+
+### Multi-Tenant (Subdomain)
+- Dominio producción: mibombay.com
+- Dominio desarrollo: localhost / 127.0.0.1
+- Cada empresa tiene subdominio único
+- TenanFilter extrae subdominio antes de autenticación
+- TenantResolverService resuelve empresa desde subdominio
 
 ## Testing
 - `@SpringBootTest` for integration
@@ -203,3 +310,16 @@ public class GlobalExceptionHandler {
 - Config: `application.properties`
 - MySQL `localhost:3306/mvprestaurante`
 - DDL auto: `update` (dev only)
+
+## Dependencies (pom.xml)
+- Spring Boot 3.5.11
+- spring-boot-starter-data-jpa
+- spring-boot-starter-validation
+- spring-boot-starter-security
+- spring-boot-starter-thymeleaf
+- spring-boot-starter-web
+- thymeleaf-extras-springsecurity6
+- mysql-connector-j
+- lombok
+- mapstruct 1.6.3
+- poi-ooxml 5.2.5 (Excel reports)
