@@ -1,41 +1,93 @@
 package com.mvprestaurante.mvp.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mvprestaurante.mvp.DTO.EmpresaDTO;
-
+import com.mvprestaurante.mvp.exceptions.BusinessException;
 import com.mvprestaurante.mvp.mapper.EmpresaMapper;
 import com.mvprestaurante.mvp.models.Empresa;
 import com.mvprestaurante.mvp.repositories.EmpresaRepositorio;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class EmpresaService {
 
-    @Autowired
-    private EmpresaRepositorio empresaRepositorio;
-    @Autowired
-    private UsuarioService usuarioService;
+    private final EmpresaRepositorio empresaRepositorio;
+    private final UsuarioService usuarioService;
+    private final EmpresaMapper empresaMapper;
 
-    @Autowired
-    private EmpresaMapper empresaMapper;
+    @Transactional(readOnly = true)
+    public List<Empresa> listarTodas() {
+        return empresaRepositorio.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public Empresa buscarPorId(Long id) {
+        return empresaRepositorio.findById(id)
+                .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
+    }
 
     @Transactional
     public EmpresaDTO registrarEmpresa(EmpresaDTO dto) {
-
-        // Validar que el subdominio no exista
         if (empresaRepositorio.existsBySubdominio(dto.getSubdominio())) {
-            throw new RuntimeException("El subdominio '" + dto.getSubdominio() + "' ya está en uso");
+            throw new BusinessException("El subdominio '" + dto.getSubdominio() + "' ya está en uso");
         }
 
-        // 1. Guardar la empresa
         Empresa empresa = empresaMapper.toEntity(dto);
+        empresa.setActiva(false);
         Empresa empresaGuardada = empresaRepositorio.save(empresa);
         usuarioService.crearUsuarioAdmin(empresa);
 
-        // 5. Convertir a DTO de respuesta
         return empresaMapper.toResponse(empresaGuardada);
     }
 
+    @Transactional
+    public Empresa guardar(Empresa empresa) {
+        if (empresa.getSubdominio() == null || empresa.getSubdominio().trim().isEmpty()) {
+            throw new BusinessException("El subdominio es obligatorio");
+        }
+        
+        if (empresaRepositorio.findBySubdominio(empresa.getSubdominio().toLowerCase()).isPresent()) {
+            throw new BusinessException("El subdominio ya existe");
+        }
+        
+        empresa.setSubdominio(empresa.getSubdominio().toLowerCase().trim());
+        
+        empresa.setActiva(false);
+        
+        return empresaRepositorio.save(empresa);
+    }
+
+    @Transactional
+    public Empresa actualizar(Long id, Empresa empresaActualizada) {
+        Empresa empresa = empresaRepositorio.findById(id)
+                .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
+        
+        empresa.setNombreEmpresa(empresaActualizada.getNombreEmpresa());
+        empresa.setEmail(empresaActualizada.getEmail());
+        empresa.setTelefono(empresaActualizada.getTelefono());
+        empresa.setPlan(empresaActualizada.getPlan());
+        empresa.setActiva(empresaActualizada.getActiva());
+        
+        return empresaRepositorio.save(empresa);
+    }
+
+    @Transactional
+    public void eliminar(Long id) {
+        Empresa empresa = empresaRepositorio.findById(id)
+                .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
+        
+        empresa.setActiva(false);
+        empresaRepositorio.save(empresa);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existeSubdominio(String subdominio) {
+        return empresaRepositorio.findBySubdominio(subdominio.toLowerCase()).isPresent();
+    }
 }

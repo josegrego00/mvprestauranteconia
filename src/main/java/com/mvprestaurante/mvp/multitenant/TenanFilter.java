@@ -26,6 +26,9 @@ public class TenanFilter extends OncePerRequestFilter {
             "localhost",
             "127.0.0.1");
 
+    // Subdominio especial para superadmin
+    private final String superAdminSubdomain = "bombaydev";
+
     public TenanFilter(SubdomainExtractor extractor,
             TenantResolverService resolver) {
         this.extractor = extractor;
@@ -47,12 +50,19 @@ public class TenanFilter extends OncePerRequestFilter {
             return true;
         }
 
-        // ✅ 2. Verificar si es un subdominio de localhost (ej: empanadas.localhost)
+        // ✅ 2. Verificar si es el subdominio de superadmin (bombaydev)
+        String subdominio = extractor.extract(host);
+        if (superAdminSubdomain.equals(subdominio)) {
+            System.out.println("SuperAdmin detectado: " + host + " - Sin filtro tenant");
+            return true;
+        }
+
+        // ✅ 3. Verificar si es un subdominio de localhost (ej: empanadas.localhost)
         if (host.endsWith(".localhost")) {
             return false; // NO es dominio principal, debe aplicar filtro
         }
 
-        // ✅ 3. Rutas públicas
+        // ✅ 4. Rutas públicas
         return path.equals("/") ||
                 path.startsWith("/registro") ||
                 path.startsWith("/css") ||

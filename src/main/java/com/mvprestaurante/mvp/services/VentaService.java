@@ -29,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -92,7 +93,7 @@ public class VentaService {
     @Transactional(readOnly = true)
     public Page<Venta> buscar(String search, String fechaInicio, String fechaFin, Pageable pageable) {
         validarTenant();
-        
+
         if (search != null && !search.isEmpty()) {
             return ventaRepository.findByNumeroContainingIgnoreCase(TenantContext.getTenantId(), search, pageable);
         } else if (fechaInicio != null && !fechaInicio.isEmpty() && fechaFin != null && !fechaFin.isEmpty()) {
@@ -105,6 +106,7 @@ public class VentaService {
     }
 
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAnyRole('ADMIN', 'CAJERO')")
     public Optional<Venta> obtenerPorId(Long id) {
         validarTenant();
         return ventaRepository.findByIdWithDetails(id)
@@ -112,6 +114,7 @@ public class VentaService {
     }
 
     @Transactional
+    @PreAuthorize("hasAnyRole('ADMIN', 'CAJERO')")
     public Venta guardarDesdeFormulario(Venta venta, Map<String, String> allParams) {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
@@ -123,14 +126,15 @@ public class VentaService {
                 String index = key.substring(9, key.length() - 1);
                 String productoValue = allParams.get(key);
                 String cantidadParam = "cantidad[" + index + "]";
-                
-                if (productoValue != null && !productoValue.isEmpty() && 
-                    allParams.containsKey(cantidadParam)) {
-                    
+
+                if (productoValue != null && !productoValue.isEmpty() &&
+                        allParams.containsKey(cantidadParam)) {
+
                     Long productoId = Long.parseLong(productoValue);
                     Integer cantidad = Integer.parseInt(allParams.get(cantidadParam));
-                    
-                    if (cantidad == null || cantidad <= 0) continue;
+
+                    if (cantidad == null || cantidad <= 0)
+                        continue;
 
                     Optional<Producto> productoOpt = productoRepository.findById(productoId);
                     if (productoOpt.isEmpty()) {
@@ -138,9 +142,9 @@ public class VentaService {
                     }
 
                     Producto producto = productoOpt.get();
-                    
+
                     Double stockEstimado = 0.0;
-                    
+
                     if (Boolean.TRUE.equals(producto.getTieneReceta())) {
                         var recetaOpt = producto.getReceta();
                         if (recetaOpt != null) {
@@ -149,10 +153,11 @@ public class VentaService {
                     } else {
                         stockEstimado = producto.getStock() != null ? producto.getStock() : 0.0;
                     }
-                    
+
                     if (stockEstimado < cantidad) {
                         String tipoStock = Boolean.TRUE.equals(producto.getTieneReceta()) ? "Stock estimado" : "Stock";
-                        throw new BusinessException("Stock insuficiente para '" + producto.getNombre() + "'. " + tipoStock + " actual: " + stockEstimado.intValue());
+                        throw new BusinessException("Stock insuficiente para '" + producto.getNombre() + "'. "
+                                + tipoStock + " actual: " + stockEstimado.intValue());
                     }
 
                     DetalleVenta detalle = new DetalleVenta();
@@ -191,6 +196,7 @@ public class VentaService {
     }
 
     @Transactional
+    @PreAuthorize("hasAnyRole('ADMIN', 'CAJERO')")
     public Venta guardar(Venta venta, List<DetalleVenta> detalles, Map<String, String> allParams) {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
@@ -206,19 +212,19 @@ public class VentaService {
         Cliente cliente = obtenerOClienteDefault(allParams.get("clienteId"), empresaId);
 
         String metodoPago = allParams.get("metodoPago");
-        
+
         Double efectivo = parseDoubleSafe(allParams.get("pagoEfectivo"));
         Double tarjeta = parseDoubleSafe(allParams.get("pagoTarjeta"));
         Double transferencia = parseDoubleSafe(allParams.get("pagoTransferencia"));
         Double cantidadPagada = efectivo + tarjeta + transferencia;
-        
+
         venta.setPagoEfectivo(efectivo);
         venta.setPagoTarjeta(tarjeta);
         venta.setPagoTransferencia(transferencia);
 
         Double total = detalles.stream().mapToDouble(DetalleVenta::getSubtotal).sum();
         Double cambio = cantidadPagada - total;
-        
+
         if (cantidadPagada < total) {
             throw new BusinessException("La cantidad pagada debe ser mayor o igual al total");
         }
@@ -246,32 +252,38 @@ public class VentaService {
             detalleVentaRepository.save(detalle);
 
             Producto producto = detalle.getProducto();
-            
+
             if (Boolean.TRUE.equals(producto.getTieneReceta())) {
                 var receta = producto.getReceta();
                 if (receta != null && receta.getListaIngredientes() != null) {
                     for (DetalleReceta ingReceta : receta.getListaIngredientes()) {
                         Ingrediente ingrediente = ingReceta.getIngrediente();
                         Double cantidadDescontar = ingReceta.getCantidadIngrediente() * detalle.getCantidad();
-                        Double stockAnterior = ingrediente.getStockDisponible() != null ? ingrediente.getStockDisponible() : 0.0;
+                        Double stockAnterior = ingrediente.getStockDisponible() != null
+                                ? ingrediente.getStockDisponible()
+                                : 0.0;
                         Double nuevoStock = stockAnterior - cantidadDescontar;
-                        if (nuevoStock < 0) nuevoStock = 0.0;
+                        if (nuevoStock < 0)
+                            nuevoStock = 0.0;
                         ingrediente.setStockDisponible(nuevoStock);
                         ingredienteRepository.save(ingrediente);
-                        
+
                         movimientoStockService.registrarMovimiento(
-                                ingrediente, stockAnterior, -cantidadDescontar, "SALIDA", "VENTA", ventaGuardada, ventaGuardada.getEmpresa(), usuario);
+                                ingrediente, stockAnterior, -cantidadDescontar, "SALIDA", "VENTA", ventaGuardada,
+                                ventaGuardada.getEmpresa(), usuario);
                     }
                 }
             } else {
                 Double stockAnterior = producto.getStock() != null ? producto.getStock() : 0.0;
                 Double nuevoStock = stockAnterior - detalle.getCantidad();
-                if (nuevoStock < 0) nuevoStock = 0.0;
+                if (nuevoStock < 0)
+                    nuevoStock = 0.0;
                 producto.setStock(nuevoStock);
                 productoRepository.save(producto);
-                
+
                 movimientoStockService.registrarMovimiento(
-                        producto, stockAnterior, -detalle.getCantidad().doubleValue(), "SALIDA", "VENTA", ventaGuardada, ventaGuardada.getEmpresa(), usuario);
+                        producto, stockAnterior, -detalle.getCantidad().doubleValue(), "SALIDA", "VENTA", ventaGuardada,
+                        ventaGuardada.getEmpresa(), usuario);
             }
         }
 
@@ -288,7 +300,8 @@ public class VentaService {
     }
 
     private Cliente crearClienteDefault(Long empresaId) {
-        Optional<Cliente> existente = clienteRepository.findByNombreContainingIgnoreCaseAndEmpresaId("Consumidor Final", empresaId);
+        Optional<Cliente> existente = clienteRepository.findByNombreContainingIgnoreCaseAndEmpresaId("Consumidor Final",
+                empresaId);
         if (existente.isPresent()) {
             return existente.get();
         }
@@ -302,6 +315,7 @@ public class VentaService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public Optional<Venta> anular(Long id) {
         validarTenant();
         Usuario usuario = getUsuarioActual();
@@ -312,20 +326,24 @@ public class VentaService {
                 .map(venta -> {
                     for (DetalleVenta detalle : venta.getDetallesVenta()) {
                         Producto producto = detalle.getProducto();
-                        
+
                         if (Boolean.TRUE.equals(producto.getTieneReceta())) {
                             var receta = producto.getReceta();
                             if (receta != null && receta.getListaIngredientes() != null) {
                                 for (DetalleReceta ingReceta : receta.getListaIngredientes()) {
                                     Ingrediente ingrediente = ingReceta.getIngrediente();
-                                    Double cantidadDevolver = ingReceta.getCantidadIngrediente() * detalle.getCantidad();
-                                    Double stockAnterior = ingrediente.getStockDisponible() != null ? ingrediente.getStockDisponible() : 0.0;
+                                    Double cantidadDevolver = ingReceta.getCantidadIngrediente()
+                                            * detalle.getCantidad();
+                                    Double stockAnterior = ingrediente.getStockDisponible() != null
+                                            ? ingrediente.getStockDisponible()
+                                            : 0.0;
                                     Double nuevoStock = stockAnterior + cantidadDevolver;
                                     ingrediente.setStockDisponible(nuevoStock);
                                     ingredienteRepository.save(ingrediente);
-                                    
+
                                     movimientoStockService.registrarMovimiento(
-                                            ingrediente, stockAnterior, cantidadDevolver, "ENTRADA", "ANULACION_VENTA", venta, venta.getEmpresa(), usuario);
+                                            ingrediente, stockAnterior, cantidadDevolver, "ENTRADA", "ANULACION_VENTA",
+                                            venta, venta.getEmpresa(), usuario);
                                 }
                             }
                         } else {
@@ -333,9 +351,10 @@ public class VentaService {
                             Double nuevoStock = stockAnterior + detalle.getCantidad();
                             producto.setStock(nuevoStock);
                             productoRepository.save(producto);
-                            
+
                             movimientoStockService.registrarMovimiento(
-                                    producto, stockAnterior, detalle.getCantidad().doubleValue(), "ENTRADA", "ANULACION_VENTA", venta, venta.getEmpresa(), usuario);
+                                    producto, stockAnterior, detalle.getCantidad().doubleValue(), "ENTRADA",
+                                    "ANULACION_VENTA", venta, venta.getEmpresa(), usuario);
                         }
                     }
 
@@ -347,12 +366,12 @@ public class VentaService {
     public String generarNumeroVenta() {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
-        
+
         String fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String prefix = "VT-" + fecha + "-";
-        
+
         Optional<String> maxNumero = ventaRepository.findMaxNumeroVentaByPrefix(empresaId, prefix);
-        
+
         int siguienteNumero = 1;
         if (maxNumero.isPresent()) {
             String numeroActual = maxNumero.get();
@@ -363,7 +382,7 @@ public class VentaService {
                 siguienteNumero = 1;
             }
         }
-        
+
         return prefix + String.format("%04d", siguienteNumero);
     }
 
@@ -395,31 +414,40 @@ public class VentaService {
         Empresa empresa = empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
 
-        String nombreEmpresa = empresa.getNombreEmpresa() != null ? empresa.getNombreEmpresa() : empresa.getSubdominio();
+        String nombreEmpresa = empresa.getNombreEmpresa() != null ? empresa.getNombreEmpresa()
+                : empresa.getSubdominio();
 
         Double totalVentas = ventaRepository.sumTotalByFechaBetween(empresaId, inicioDia, finDia);
-        if (totalVentas == null) totalVentas = 0.0;
+        if (totalVentas == null)
+            totalVentas = 0.0;
 
         Integer cantidadVentas = ventaRepository.countByFechaBetween(empresaId, inicioDia, finDia);
-        if (cantidadVentas == null) cantidadVentas = 0;
+        if (cantidadVentas == null)
+            cantidadVentas = 0;
 
         Double totalEfectivo = ventaRepository.sumEfectivoByFechaBetween(empresaId, inicioDia, finDia);
-        if (totalEfectivo == null) totalEfectivo = 0.0;
+        if (totalEfectivo == null)
+            totalEfectivo = 0.0;
 
         Double totalTarjeta = ventaRepository.sumTarjetaByFechaBetween(empresaId, inicioDia, finDia);
-        if (totalTarjeta == null) totalTarjeta = 0.0;
+        if (totalTarjeta == null)
+            totalTarjeta = 0.0;
 
         Double totalTransferencia = ventaRepository.sumTransferenciaByFechaBetween(empresaId, inicioDia, finDia);
-        if (totalTransferencia == null) totalTransferencia = 0.0;
+        if (totalTransferencia == null)
+            totalTransferencia = 0.0;
 
         Integer ventasAnuladas = ventaRepository.countAnuladasByFechaBetween(empresaId, inicioDia, finDia);
-        if (ventasAnuladas == null) ventasAnuladas = 0;
+        if (ventasAnuladas == null)
+            ventasAnuladas = 0;
 
         Double totalCompras = compraRepository.sumTotalByFechaBetween(empresaId, inicioDia, finDia);
-        if (totalCompras == null) totalCompras = 0.0;
+        if (totalCompras == null)
+            totalCompras = 0.0;
 
         Integer cantidadCompras = compraRepository.countByFechaBetween(empresaId, inicioDia, finDia);
-        if (cantidadCompras == null) cantidadCompras = 0;
+        if (cantidadCompras == null)
+            cantidadCompras = 0;
 
         List<Venta> ventasDelDia = ventaRepository.findVentasDelDia(empresaId, inicioDia, finDia);
 
@@ -470,23 +498,23 @@ public class VentaService {
     public ReporteCierreDTO generarReporteCierreZ(LocalDateTime fecha) {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
-        
+
         Empresa empresa = empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
-        
+
         LocalDate hoy = LocalDate.now();
-        
+
         boolean tieneInventarioFisico = inventarioRegistroRepository.findByFechaAndTenantId(empresaId, hoy).isPresent();
         if (!tieneInventarioFisico) {
             throw new BusinessException("Debe cargar el inventario físico antes de generar el Reporte Z.");
         }
-        
+
         if (cierreDiaRepository.existsByEmpresaIdAndFechaAndTipo(empresaId, hoy, "Z")) {
             throw new BusinessException("El día ya ha sido cerrado. No se puede generar otro Reporte Z.");
         }
-        
+
         ReporteCierreDTO reporte = generarReporteCierreX(fecha);
-        
+
         CierreDia cierreDia = CierreDia.builder()
                 .empresa(empresa)
                 .fecha(hoy)
@@ -497,7 +525,7 @@ public class VentaService {
                 .fechaCierre(LocalDateTime.now())
                 .build();
         cierreDiaRepository.save(cierreDia);
-        
+
         return reporte;
     }
 

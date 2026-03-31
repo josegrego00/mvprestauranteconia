@@ -177,7 +177,7 @@
                                             <a th:href="@{/ventas/ver/{id}(id=${venta.id})}" class="btn btn-sm btn-outline-primary">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <form th:if="${venta.estado == 'COMPLETADA'}" th:action="@{/ventas/anular/{id}(id=${venta.id})}" method="post" style="display:inline;">
+                                            <form sec:authorize="hasRole('ADMIN')" th:if="${venta.estado == 'COMPLETADA'}" th:action="@{/ventas/anular/{id}(id=${venta.id})}" method="post" style="display:inline;">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Está seguro de anular esta venta?')">
                                                     <i class="bi bi-x-circle"></i>
                                                 </button>

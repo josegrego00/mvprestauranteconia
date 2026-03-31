@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.lang.Nullable;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.mvprestaurante.mvp.models.Usuario;
@@ -16,13 +17,15 @@ public class CustomUserDetails implements UserDetails {
     private String contrasenna;
     private String rol;
     private String email;
+    private boolean activo;
 
     public CustomUserDetails(Usuario usuario) {
-        this.nombreUsuario = usuario.getNombre();
+        this.nombreUsuario = usuario.getNombreUsuario();
         this.id = usuario.getId();
         this.contrasenna = usuario.getContrasenna();
         this.email = usuario.getEmail();
         this.rol = usuario.getRol();
+        this.activo = usuario.getEstaActivo() != null && usuario.getEstaActivo();
     }
 
     public Long getId() {
@@ -39,7 +42,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        return List.of(new SimpleGrantedAuthority("ROLE_" + rol));
     }
 
     @Override
@@ -54,26 +57,22 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isAccountNonExpired() {
-
         return true;
     }
 
     @Override
     public boolean isAccountNonLocked() {
-
         return true;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-
         return true;
     }
 
     @Override
     public boolean isEnabled() {
-
-        return true;
+        return activo;
     }
 
 }

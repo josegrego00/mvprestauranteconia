@@ -1,10 +1,13 @@
 package com.mvprestaurante.mvp.services;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.mvprestaurante.mvp.DTO.UsuarioDTORequest;
+import com.mvprestaurante.mvp.exceptions.BusinessException;
 import com.mvprestaurante.mvp.mapper.EmpresaMapper;
 import com.mvprestaurante.mvp.mapper.UsuarioMapper;
 import com.mvprestaurante.mvp.models.Empresa;
@@ -28,50 +31,104 @@ public class UsuarioService {
     private final PasswordEncoder passwordEncoder;
     private final UsuarioMapper usuarioMapper;
 
+    private void validarTenant() {
+        Long empresaId = TenantContext.getTenantId();
+        if (empresaId == null) {
+            throw new BusinessException("No se ha identificado la empresa");
+        }
+    }
+
+    private void validarUsuarioActivo(Usuario usuario) {
+        if (usuario == null) {
+            throw new BusinessException("Usuario no encontrado");
+        }
+        if (usuario.getEstaActivo() == null || !usuario.getEstaActivo()) {
+            throw new BusinessException("El usuario está inactivo");
+        }
+    }
+
+    public List<Usuario> listarUsuarios() {
+        validarTenant();
+        Long empresaId = TenantContext.getTenantId();
+        return usuarioRepositorio.findByEmpresaId(empresaId);
+    }
+
+    public Usuario buscarPorId(Long id) {
+        validarTenant();
+        Long empresaId = TenantContext.getTenantId();
+        Usuario usuario = usuarioRepositorio.findByIdAndEmpresaId(id, empresaId)
+                .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
+        return usuario;
+    }
+
+    @Transactional
     public void guardarUsuario(UsuarioDTORequest usuario) {
+        validarTenant();
         Long empresaId = TenantContext.getTenantId();
 
-        System.out.println("🔍 [guardarUsuario] INICIO - Guardando usuario: " + usuario.getNombreUsuario());
-        System.out.println("🔍 [guardarUsuario] INICIO - Usuario: " + usuario.getNombreUsuario());
-        System.out.println("🏢 [guardarUsuario] Tenant ID: " + empresaId);
-
-        Empresa empresa = empresaRepositorio.findById(empresaId)
-                .orElseThrow(() -> new RuntimeException("Empresa no encontrada con ID: " + empresaId));
-
-        // Encriptar la contraseña antes de guardar
-        String contraseñaEncriptada = passwordEncoder.encode(usuario.getContrasenna());
-        usuario.setContrasenna(contraseñaEncriptada);
-        System.out.println("🔐 [guardarUsuario] Contraseña encriptada correctamente");
-
-        if (usuario.getRol().equalsIgnoreCase("administrador")) {
-            usuario.setRol("ADMIN");
-            System.out.println("👑 [guardarUsuario] Rol asignado: ADMIN");
-        } else {
-            usuario.setRol("CAJERO");
-            System.out.println("🧑‍💼 [guardarUsuario] Rol asignado: CAJERO");
+        if (!usuario.getRol().equals("ADMIN") && !usuario.getRol().equals("CAJERO")) {
+            throw new BusinessException("Rol inválido. Solo se permiten ADMIN o CAJERO");
         }
 
+        Empresa empresa = empresaRepositorio.findById(empresaId)
+                .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
+
+        String contraseñaEncriptada = passwordEncoder.encode(usuario.getContrasenna());
+        usuario.setContrasenna(contraseñaEncriptada);
+
         Usuario entidad = usuarioMapper.toEntity(usuario);
-        System.out.println("🔄 [guardarUsuario] Mapper convertido a entidad");
         entidad.setEmpresa(empresa);
+        entidad.setEstaActivo(true);
         usuarioRepositorio.save(entidad);
-        System.out.println("✅ [guardarUsuario] Usuario guardado exitosamente en BD");
+    }
+
+    @Transactional
+    public void actualizarUsuario(Long id, UsuarioDTORequest usuario) {
+        validarTenant();
+        Long empresaId = TenantContext.getTenantId();
+        
+        Usuario usuarioExistente = usuarioRepositorio.findByIdAndEmpresaId(id, empresaId)
+                .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
+
+        usuarioExistente.setNombre(usuario.getNombre());
+        usuarioExistente.setNombreUsuario(usuario.getNombreUsuario());
+        usuarioExistente.setEmail(usuario.getEmail());
+        usuarioExistente.setRol(usuario.getRol());
+        usuarioExistente.setEstaActivo(usuario.getEstaActivo());
+
+        if (usuario.getContrasenna() != null && !usuario.getContrasenna().isEmpty()) {
+            usuarioExistente.setContrasenna(passwordEncoder.encode(usuario.getContrasenna()));
+        }
+
+        usuarioRepositorio.save(usuarioExistente);
+    }
+
+    @Transactional
+    public void eliminarUsuario(Long id) {
+        validarTenant();
+        Long empresaId = TenantContext.getTenantId();
+        
+        Usuario usuario = usuarioRepositorio.findByIdAndEmpresaId(id, empresaId)
+                .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
+
+        validarUsuarioActivo(usuario);
+
+        usuario.setEstaActivo(false);
+        usuarioRepositorio.save(usuario);
     }
 
     @Transactional
     public void crearUsuarioAdmin(Empresa empresa) {
         System.out.println("\n🔍 [crearUsuarioAdmin] ========== INICIO ==========");
 
-        // 1. Obtener tenantId del contexto
         Long tenantId = empresa.getId();
         System.out.println("🏢 [crearUsuarioAdmin] Tenant ID obtenido: " + tenantId);
 
         if (tenantId == null) {
             System.err.println("❌ [crearUsuarioAdmin] ERROR: Tenant ID es NULL");
-            throw new RuntimeException("No hay tenant en el contexto");
+            throw new BusinessException("No hay tenant en el contexto");
         }
 
-        // 2. Buscar empresa por ID
         System.out.println("🔎 [crearUsuarioAdmin] Buscando empresa con ID: " + tenantId);
 
         System.out.println("✅ [crearUsuarioAdmin] Empresa encontrada:");
@@ -80,7 +137,6 @@ public class UsuarioService {
         System.out.println("   - Nombre: " + empresa.getNombreEmpresa());
         System.out.println("   - Email: " + empresa.getEmail());
 
-        // 3. Crear usuario admin
         System.out.println("👤 [crearUsuarioAdmin] Creando usuario administrador");
 
         Usuario admin = new Usuario();
@@ -100,7 +156,6 @@ public class UsuarioService {
         System.out.println("   - Email: " + admin.getEmail());
         System.out.println("   - empresa: " + (admin.getEmpresa() != null ? admin.getEmpresa().getId() : "null"));
 
-        // 4. Guardar en BD
         System.out.println("💾 [crearUsuarioAdmin] Guardando usuario en BD...");
         Usuario usuarioGuardado = usuarioRepositorio.save(admin);
 

@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,6 +77,7 @@ public class RecetaService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public Receta crearRecetaConIngredientes(Receta receta, Long[] ingredientesIds, Double[] cantidades) {
         validarTenant();
 
@@ -189,6 +191,7 @@ public class RecetaService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public Receta actualizarConIngredientes(Long id, Receta recetaActualizada, Long[] ingredientesIds,
             Double[] cantidades) {
         validarTenant();
@@ -275,6 +278,7 @@ public class RecetaService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public boolean eliminarLogico(Long id) {
         validarTenant();
 

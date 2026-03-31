@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+
+<head th:replace="~{fragments/head :: head}"></head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <div class="container-fluid">
+        <div class="row">
+
+            <!-- SIDEBAR -->
+            <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+            <!-- CONTENIDO PRINCIPAL -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+
+                <!-- Header con título -->
+                <div class="welcome-section mt-4 mb-4">
+                    <h1 class="welcome-title">
+                        <i class="bi bi-person-plus me-2" th:if="${usuario.id == null}"></i>
+                        <i class="bi bi-pencil-square me-2" th:if="${usuario.id != null}"></i>
+                        <span th:text="${usuario.id == null} ? 'Nuevo Usuario' : 'Editar Usuario'"></span>
+                    </h1>
+                    <p class="welcome-subtitle"
+                        th:text="${usuario.id == null} ? 'Registra un nuevo usuario' : 'Modifica los datos del usuario'">
+                        Registra un nuevo usuario
+                    </p>
+                </div>
+
+                <!-- Formulario -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="card-body">
+
+                            <!-- MENSAJE DE ERROR -->
+                            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <span th:text="${error}"></span>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+
+                            <form th:action="${usuario.id == null} ? @{/usuarios/guardar} : @{/usuarios/actualizar/{id}(id=${usuario.id})}" th:object="${usuarioDTO}" method="post"
+                                class="needs-validation" novalidate>
+
+                                <input type="hidden" name="id" th:value="${usuario.id}">
+
+                                <div class="row">
+                                    <!-- Nombre -->
+                                    <div class="col-md-6 mb-4">
+                                        <label class="form-label text-uppercase small fw-bold">
+                                            <i class="bi bi-person me-1"></i>
+                                            NOMBRE COMPLETO
+                                        </label>
+                                        <input type="text" class="form-control" name="nombre" th:value="${usuario.nombre}"
+                                            placeholder="Ej: Juan Pérez" required>
+                                    </div>
+
+                                    <!-- Nombre de Usuario -->
+                                    <div class="col-md-6 mb-4">
+                                        <label class="form-label text-uppercase small fw-bold">
+                                            <i class="bi bi-person-badge me-1"></i>
+                                            NOMBRE DE USUARIO
+                                        </label>
+                                        <input type="text" class="form-control" name="nombreUsuario" th:value="${usuario.nombreUsuario}"
+                                            placeholder="Ej: juan.perez" required>
+                                    </div>
+
+                                    <!-- Contraseña -->
+                                    <div class="col-md-6 mb-4">
+                                        <label class="form-label text-uppercase small fw-bold">
+                                            <i class="bi bi-lock me-1"></i>
+                                            CONTRASEÑA
+                                        </label>
+                                        <input type="password" class="form-control" name="contrasenna"
+                                            placeholder="Contraseña" th:required="${usuario.id == null}">
+                                        <small class="text-secondary" th:if="${usuario.id != null}">
+                                            Dejar vacío para mantener la contraseña actual
+                                        </small>
+                                    </div>
+
+                                    <!-- Email -->
+                                    <div class="col-md-6 mb-4">
+                                        <label class="form-label text-uppercase small fw-bold">
+                                            <i class="bi bi-envelope me-1"></i>
+                                            EMAIL
+                                        </label>
+                                        <input type="email" class="form-control" name="email" th:value="${usuario.email}"
+                                            placeholder="correo@ejemplo.com" required>
+                                    </div>
+
+                                    <!-- Rol -->
+                                    <div class="col-md-6 mb-4">
+                                        <label class="form-label text-uppercase small fw-bold">
+                                            <i class="bi bi-tag me-1"></i>
+                                            ROL
+                                        </label>
+                                        <select class="form-select" name="rol" required>
+                                            <option value="">Seleccionar rol...</option>
+                                            <option value="ADMIN" th:selected="${usuario.rol == 'ADMIN'}">Administrador</option>
+                                            <option value="CAJERO" th:selected="${usuario.rol == 'CAJERO'}">Cajero</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Estado (solo para edición) -->
+                                    <div class="col-md-6 mb-4" th:if="${usuario.id != null}">
+                                        <label class="form-label text-uppercase small fw-bold">
+                                            <i class="bi bi-toggle-on me-1"></i>
+                                            ESTADO
+                                        </label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="estaActivo"
+                                                name="estaActivo" th:checked="${usuario.estaActivo}" />
+                                            <label class="form-check-label">
+                                                Usuario activo
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Acciones -->
+                                <div class="d-flex gap-2 mt-4">
+                                    <button type="submit" class="btn btn-primary px-5">
+                                        <i class="bi bi-check-circle me-2"></i>
+                                        Guardar
+                                    </button>
+                                    <a th:href="@{/usuarios}" class="btn btn-outline-secondary px-5">
+                                        <i class="bi bi-x-circle me-2"></i>
+                                        Cancelar
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- FOOTER -->
+                    <div th:replace="~{fragments/footer :: footer}"></div>
+
+            </main>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Bootstrap validation
+        (function () {
+            'use strict'
+            var forms = document.querySelectorAll('.needs-validation')
+            Array.prototype.slice.call(forms).forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+        })()
+    </script>
+
+</body>
+
+</html>

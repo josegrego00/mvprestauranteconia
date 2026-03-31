@@ -2,6 +2,7 @@ package com.mvprestaurante.mvp.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -16,6 +17,7 @@ import com.mvprestaurante.mvp.security.CustomUserDetailsService;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
         private final CustomUserDetailsService userDetailsService;
@@ -45,6 +47,7 @@ public class SecurityConfig {
                                                                 "/js/**", "/error/**")
                                                 .permitAll()
                                                 .requestMatchers("/login").permitAll()
+                                                .requestMatchers("/superadmin/**").permitAll()
                                                 .anyRequest().authenticated())
                                 .formLogin(form -> form
                                                 .loginPage("/login")

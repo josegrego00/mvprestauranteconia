@@ -18,15 +18,15 @@
                 </a>
             </li>
 
-            <!-- SECCIÓN: INVENTARIO -->
-            <li class="nav-item mt-3">
+            <!-- SECCIÓN: INVENTARIO - Solo ADMIN -->
+            <li class="nav-item mt-3" sec:authorize="hasRole('ADMIN')">
                 <small class="px-3 text-secondary text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">
                     <i class="bi bi-box-seam me-1"></i>
                     INVENTARIO
                 </small>
             </li>
 
-            <li class="nav-item">
+            <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                 <a class="nav-link" th:href="@{/ingredientes}">
                     <i class="bi bi-basket me-2"></i>
                     Ingredientes
@@ -40,21 +40,21 @@
                 </a>
             </li>
 
-            <li class="nav-item">
+            <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                 <a class="nav-link" th:href="@{/recetas}">
                     <i class="bi bi-journal-bookmark-fill me-2"></i>
                     Recetas
                 </a>
             </li>
 
-            <li class="nav-item">
+            <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                 <a class="nav-link" th:href="@{/inventario}">
                     <i class="bi bi-clipboard-data me-2"></i>
                     Inventario Físico
                 </a>
             </li>
 
-            <li class="nav-item">
+            <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                 <a class="nav-link" th:href="@{/inventario/reporte}">
                     <i class="bi bi-file-earmark-bar-graph me-2"></i>
                     Reporte Inventario
@@ -69,7 +69,7 @@
                 </small>
             </li>
 
-            <li class="nav-item">
+            <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                 <a class="nav-link" th:href="@{/compras}">
                     <i class="bi bi-cart me-2"></i>
                     Compras
@@ -83,44 +83,22 @@
                 </a>
             </li>
 
-            <li class="nav-item">
+            <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                 <a class="nav-link" th:href="@{/ajuste-precios}">
                     <i class="bi bi-pencil-square me-2"></i>
                     Ajuste de Precios
                 </a>
             </li>
 
-            <!-- SECCIÓN: INTELIGENCIA -->
-            <li class="nav-item mt-3">
-                <small class="px-3 text-secondary text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">
-                    <i class="bi bi-cpu me-1"></i>
-                    INTELIGENCIA
-                </small>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link" href="#">
-                    <i class="bi bi-chat-dots me-2"></i>
-                    Chat IA
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link" href="#">
-                    <i class="bi bi-robot me-2"></i>
-                    Reportes IA
-                </a>
-            </li>
-
-            <!-- ADMINISTRACIÓN -->
-            <li class="nav-item mt-3">
+            <!-- ADMINISTRACIÓN - Solo ADMIN -->
+            <li class="nav-item mt-3" sec:authorize="hasRole('ADMIN')">
                 <small class="px-3 text-secondary text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">
                     <i class="bi bi-gear me-1"></i>
                     ADMINISTRACIÓN
                 </small>
             </li>
 
-            <li class="nav-item">
+            <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                 <a class="nav-link" th:href="@{/usuarios}">
                     <i class="bi bi-people me-2"></i>
                     Usuarios
