@@ -1,6 +1,7 @@
 package com.mvprestaurante.mvp.controllers;
 
 import com.mvprestaurante.mvp.DTO.ProductoVentaDTO;
+import com.mvprestaurante.mvp.DTO.ReporteCierreDTO;
 import com.mvprestaurante.mvp.DTO.VentaDTO;
 import com.mvprestaurante.mvp.mapper.ProductoVentaMapper;
 import com.mvprestaurante.mvp.mapper.VentaMapper;
@@ -72,7 +73,12 @@ public class VentaController {
     }
 
     @GetMapping("/nueva")
-    public String nueva(Model model) {
+    public String nueva(Model model, RedirectAttributes ra) {
+        if (ventaService.isDiaCerrado()) {
+            ra.addFlashAttribute("error", "El día ha sido cerrado. No se pueden realizar más ventas.");
+            return "redirect:/ventas";
+        }
+        
         model.addAttribute("venta", new Venta());
         
         List<ProductoVentaDTO> productos = productoService.listarActivos(PageRequest.of(0, 100))
@@ -156,5 +162,30 @@ public class VentaController {
             ra.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/ventas";
+    }
+
+    @GetMapping("/cierre-x")
+    public String reporteCierreX(Model model) {
+        ReporteCierreDTO reporte = ventaService.generarReporteCierreX(java.time.LocalDateTime.now());
+        model.addAttribute("reporte", reporte);
+        return "ventas/cierre-x";
+    }
+
+    @GetMapping("/cierre-z")
+    public String reporteCierreZ(Model model, RedirectAttributes ra) {
+        try {
+            ReporteCierreDTO reporte = ventaService.generarReporteCierreZ(java.time.LocalDateTime.now());
+            model.addAttribute("reporte", reporte);
+            return "ventas/cierre-z";
+        } catch (RuntimeException e) {
+            ra.addFlashAttribute("error", e.getMessage());
+            return "redirect:/ventas";
+        }
+    }
+
+    @GetMapping("/dia-cerrado")
+    @ResponseBody
+    public boolean verificarDiaCerrado() {
+        return ventaService.isDiaCerrado();
     }
 }

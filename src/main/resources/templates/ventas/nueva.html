@@ -53,7 +53,6 @@
                 <div th:if="${success}" class="modal-backdrop fade show"></div>
 
                 <form th:action="@{/ventas/guardar}" th:object="${venta}" method="post">
-                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                     <input type="hidden" name="numeroVenta" th:value="${numeroVenta}" />
 
                     <div class="row">
@@ -135,48 +134,46 @@
 
                                     <div class="mb-3">
                                         <label class="form-label text-uppercase small fw-bold">MÉTODO DE PAGO</label>
-                                        <select class="form-select" name="metodoPago" id="metodoPago"
-                                            onchange="actualizarFormasPago()">
-                                            <option value="EFECTIVO">Efectivo</option>
-                                            <option value="TARJETA">Tarjeta</option>
-                                            <option value="TRANSFERENCIA">Transferencia</option>
-                                            <option value="MIXTO">Mixto (Multiples formas)</option>
+                                        <select class="form-select" name="metodoPago" id="metodoPago">
+                                            <option value="MIXTO" selected>Mixto (Efectivo, Tarjeta, Transferencia)</option>
                                         </select>
                                     </div>
 
-                                    <div id="pagoSimple">
-                                        <div class="mb-3" id="pagoSection">
-                                            <label class="form-label text-uppercase small fw-bold">CANTIDAD
-                                                PAGADA</label>
-                                            <div class="input-group">
-                                                <input type="number" class="form-control form-control-lg"
-                                                    name="cantidadPagada" id="cantidadPagada" value="0" step="0.01"
-                                                    min="0" onchange="actualizarCambio()" oninput="actualizarCambio()">
-                                                <button type="button" class="btn btn-outline-success"
-                                                    onclick="pagoExacto()" title="Pago exacto">
-                                                    <i class="bi bi-cash"></i> Exacto
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <div id="pagoSimple" style="display: none;"></div>
 
-                                    <div id="pagoMixto" style="display: none;">
+                                    <div id="pagoMixto">
                                         <div class="mb-3">
                                             <div class="row g-2">
-                                                <div class="col-6">
+                                                <div class="col-4">
                                                     <label class="form-label small fw-bold">Efectivo</label>
                                                     <input type="number" class="form-control" name="pagoEfectivo"
                                                         id="pagoEfectivo" value="0" step="0.01" min="0"
                                                         onchange="actualizarCambioMixto()"
                                                         oninput="actualizarCambioMixto()">
                                                 </div>
-                                                <div class="col-6">
+                                                <div class="col-4">
                                                     <label class="form-label small fw-bold">Tarjeta</label>
                                                     <input type="number" class="form-control" name="pagoTarjeta"
                                                         id="pagoTarjeta" value="0" step="0.01" min="0"
                                                         onchange="actualizarCambioMixto()"
                                                         oninput="actualizarCambioMixto()">
                                                 </div>
+                                                <div class="col-4">
+                                                    <label class="form-label small fw-bold">Transferencia</label>
+                                                    <input type="number" class="form-control" name="pagoTransferencia"
+                                                        id="pagoTransferencia" value="0" step="0.01" min="0"
+                                                        onchange="actualizarCambioMixto()"
+                                                        oninput="actualizarCambioMixto()">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <button type="button" class="btn btn-outline-success w-100"
+                                                onclick="pagoExactoMixto()" title="Pago exacto">
+                                                <i class="bi bi-cash"></i> Pago Exacto
+                                            </button>
+                                        </div>
                                                 <div class="col-6">
                                                     <label class="form-label small fw-bold">Transferencia</label>
                                                     <input type="number" class="form-control" name="pagoTransferencia"
@@ -375,30 +372,7 @@
 
             document.getElementById('subtotalDisplay').textContent = subtotal.toFixed(2);
             document.getElementById('totalDisplay').textContent = subtotal.toFixed(2);
-            actualizarCambio();
-        }
-
-        function actualizarFormasPago() {
-            const metodoPago = document.getElementById('metodoPago').value;
-            const pagoSimple = document.getElementById('pagoSimple');
-            const pagoMixto = document.getElementById('pagoMixto');
-            const cambioSection = document.getElementById('cambioSection');
-
-            if (metodoPago === 'MIXTO') {
-                pagoSimple.style.display = 'none';
-                pagoMixto.style.display = 'block';
-                cambioSection.style.display = 'flex';
-                actualizarCambioMixto();
-            } else if (metodoPago === 'EFECTIVO') {
-                pagoSimple.style.display = 'block';
-                pagoMixto.style.display = 'none';
-                cambioSection.style.display = 'flex';
-                actualizarCambio();
-            } else {
-                pagoSimple.style.display = 'none';
-                pagoMixto.style.display = 'none';
-                cambioSection.style.display = 'none';
-            }
+            actualizarCambioMixto();
         }
 
         function actualizarCambioMixto() {
@@ -425,47 +399,12 @@
             }
         }
 
-        function actualizarCambio() {
-            const metodoPago = document.getElementById('metodoPago').value;
+        function pagoExactoMixto() {
             const total = parseFloat(document.getElementById('totalDisplay').textContent);
-            const cambioDisplay = document.getElementById('cambioDisplay');
-
-            const pagoSection = document.getElementById('pagoSection');
-            const cambioSection = document.getElementById('cambioSection');
-            const btnCobrar = document.getElementById('btnCobrar');
-
-            if (metodoPago === 'EFECTIVO') {
-                pagoSection.style.display = 'block';
-                cambioSection.style.display = 'flex';
-                btnCobrar.disabled = false;
-
-                const cantidadPagada = parseFloat(document.getElementById('cantidadPagada').value) || 0;
-
-                if (cantidadPagada === 0) {
-                    cambioDisplay.textContent = '-';
-                    cambioDisplay.className = 'fw-bold fs-5';
-                } else {
-                    const cambio = cantidadPagada - total;
-                    if (cambio >= 0) {
-                        cambioDisplay.textContent = '$' + cambio.toFixed(2);
-                        cambioDisplay.className = 'fw-bold fs-5 text-primary';
-                    } else {
-                        cambioDisplay.textContent = '$' + Math.abs(cambio).toFixed(2);
-                        cambioDisplay.className = 'fw-bold fs-5 text-danger';
-                    }
-                }
-            } else {
-                pagoSection.style.display = 'none';
-                cambioSection.style.display = 'none';
-                cambioDisplay.textContent = '-';
-                cambioDisplay.className = 'fw-bold fs-5';
-            }
-        }
-
-        function pagoExacto() {
-            const total = parseFloat(document.getElementById('totalDisplay').textContent);
-            document.getElementById('cantidadPagada').value = total.toFixed(2);
-            actualizarCambio();
+            document.getElementById('pagoEfectivo').value = total.toFixed(2);
+            document.getElementById('pagoTarjeta').value = '0.00';
+            document.getElementById('pagoTransferencia').value = '0.00';
+            actualizarCambioMixto();
         }
 
         function eliminarItem(id) {
@@ -482,7 +421,10 @@
         function limpiarCarrito() {
             document.getElementById('carritoBody').innerHTML = '';
             document.getElementById('carritoVacio').style.display = 'block';
-            document.getElementById('cantidadPagada').value = 0;
+            document.getElementById('pagoEfectivo').value = 0;
+            document.getElementById('pagoTarjeta').value = 0;
+            document.getElementById('pagoTransferencia').value = 0;
+            document.getElementById('cambioDisplay').textContent = '-';
             itemCount = 0;
             calcularTotal();
         }
@@ -494,14 +436,15 @@
                 alert('Debe agregar al menos un producto');
             }
 
-            const metodoPago = document.getElementById('metodoPago').value;
-            if (metodoPago === 'EFECTIVO') {
-                const cantidadPagada = parseFloat(document.getElementById('cantidadPagada').value) || 0;
-                const total = parseFloat(document.getElementById('totalDisplay').textContent);
-                if (cantidadPagada < total) {
-                    event.preventDefault();
-                    alert('La cantidad pagada debe ser mayor o igual al total');
-                }
+            const efectivo = parseFloat(document.getElementById('pagoEfectivo').value) || 0;
+            const tarjeta = parseFloat(document.getElementById('pagoTarjeta').value) || 0;
+            const transferencia = parseFloat(document.getElementById('pagoTransferencia').value) || 0;
+            const totalPagado = efectivo + tarjeta + transferencia;
+            const total = parseFloat(document.getElementById('totalDisplay').textContent);
+            
+            if (totalPagado < total) {
+                event.preventDefault();
+                alert('El total pagado debe ser mayor o igual al total de la venta');
             }
         });
     </script>

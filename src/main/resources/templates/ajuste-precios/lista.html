@@ -75,7 +75,6 @@
 
                     <!-- Formulario de guardado -->
                     <form th:action="@{/ajuste-precios/guardar}" method="post" id="formPrecios">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 
                     <!-- Tabla de productos -->
                     <div class="card">
@@ -232,8 +231,6 @@
             });
 
             // Guardar precio individual con AJAX
-            const csrfToken = '[[${_csrf.token}]]';
-            const csrfParam = '[[${_csrf.parameterName}]]';
 
             document.querySelectorAll('.btn-guardar-precio').forEach(function(btn) {
                 btn.addEventListener('click', function() {

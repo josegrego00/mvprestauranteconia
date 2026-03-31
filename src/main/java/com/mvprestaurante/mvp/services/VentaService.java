@@ -1,5 +1,7 @@
 package com.mvprestaurante.mvp.services;
 
+import com.mvprestaurante.mvp.DTO.ProductoVendidoDTO;
+import com.mvprestaurante.mvp.DTO.ReporteCierreDTO;
 import com.mvprestaurante.mvp.exceptions.BusinessException;
 import com.mvprestaurante.mvp.models.Cliente;
 import com.mvprestaurante.mvp.models.DetalleReceta;
@@ -11,6 +13,7 @@ import com.mvprestaurante.mvp.models.Usuario;
 import com.mvprestaurante.mvp.models.Venta;
 import com.mvprestaurante.mvp.multitenant.TenantContext;
 import com.mvprestaurante.mvp.repositories.ClienteRepositorio;
+import com.mvprestaurante.mvp.repositories.CompraRepository;
 import com.mvprestaurante.mvp.repositories.DetalleVentaRepository;
 import com.mvprestaurante.mvp.repositories.EmpresaRepositorio;
 import com.mvprestaurante.mvp.repositories.IngredienteRepository;
@@ -28,9 +31,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,6 +53,7 @@ public class VentaService {
     private final RecetaRepository recetaRepository;
     private final IngredienteRepository ingredienteRepository;
     private final MovimientoStockService movimientoStockService;
+    private final CompraRepository compraRepository;
 
     private void validarTenant() {
         Long empresaId = TenantContext.getTenantId();
@@ -195,25 +201,20 @@ public class VentaService {
         Cliente cliente = obtenerOClienteDefault(allParams.get("clienteId"), empresaId);
 
         String metodoPago = allParams.get("metodoPago");
-        Double cantidadPagada = 0.0;
         
-        if ("MIXTO".equals(metodoPago)) {
-            Double efectivo = parseDoubleSafe(allParams.get("pagoEfectivo"));
-            Double tarjeta = parseDoubleSafe(allParams.get("pagoTarjeta"));
-            Double transferencia = parseDoubleSafe(allParams.get("pagoTransferencia"));
-            cantidadPagada = efectivo + tarjeta + transferencia;
-            
-            venta.setPagoEfectivo(efectivo);
-            venta.setPagoTarjeta(tarjeta);
-            venta.setPagoTransferencia(transferencia);
-        } else if (allParams.containsKey("cantidadPagada") && allParams.get("cantidadPagada") != null) {
-            cantidadPagada = Double.parseDouble(allParams.get("cantidadPagada"));
-        }
+        Double efectivo = parseDoubleSafe(allParams.get("pagoEfectivo"));
+        Double tarjeta = parseDoubleSafe(allParams.get("pagoTarjeta"));
+        Double transferencia = parseDoubleSafe(allParams.get("pagoTransferencia"));
+        Double cantidadPagada = efectivo + tarjeta + transferencia;
+        
+        venta.setPagoEfectivo(efectivo);
+        venta.setPagoTarjeta(tarjeta);
+        venta.setPagoTransferencia(transferencia);
 
         Double total = detalles.stream().mapToDouble(DetalleVenta::getSubtotal).sum();
         Double cambio = cantidadPagada - total;
         
-        if (cambio < 0) {
+        if (cantidadPagada < total) {
             throw new BusinessException("La cantidad pagada debe ser mayor o igual al total");
         }
 
@@ -376,5 +377,121 @@ public class VentaService {
             return ventaRepository.sumTotalByFechaBetween(TenantContext.getTenantId(), inicio, fin);
         }
         return obtenerTotalVentas();
+    }
+
+    @Transactional(readOnly = true)
+    public ReporteCierreDTO generarReporteCierreX(LocalDateTime fecha) {
+        validarTenant();
+        Long empresaId = TenantContext.getTenantId();
+
+        LocalDateTime inicioDia = fecha.toLocalDate().atStartOfDay();
+        LocalDateTime finDia = fecha.toLocalDate().atTime(23, 59, 59);
+
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
+
+        String nombreEmpresa = empresa.getNombreEmpresa() != null ? empresa.getNombreEmpresa() : empresa.getSubdominio();
+
+        Double totalVentas = ventaRepository.sumTotalByFechaBetween(empresaId, inicioDia, finDia);
+        if (totalVentas == null) totalVentas = 0.0;
+
+        Integer cantidadVentas = ventaRepository.countByFechaBetween(empresaId, inicioDia, finDia);
+        if (cantidadVentas == null) cantidadVentas = 0;
+
+        Double totalEfectivo = ventaRepository.sumEfectivoByFechaBetween(empresaId, inicioDia, finDia);
+        if (totalEfectivo == null) totalEfectivo = 0.0;
+
+        Double totalTarjeta = ventaRepository.sumTarjetaByFechaBetween(empresaId, inicioDia, finDia);
+        if (totalTarjeta == null) totalTarjeta = 0.0;
+
+        Double totalTransferencia = ventaRepository.sumTransferenciaByFechaBetween(empresaId, inicioDia, finDia);
+        if (totalTransferencia == null) totalTransferencia = 0.0;
+
+        Integer ventasAnuladas = ventaRepository.countAnuladasByFechaBetween(empresaId, inicioDia, finDia);
+        if (ventasAnuladas == null) ventasAnuladas = 0;
+
+        Double totalCompras = compraRepository.sumTotalByFechaBetween(empresaId, inicioDia, finDia);
+        if (totalCompras == null) totalCompras = 0.0;
+
+        Integer cantidadCompras = compraRepository.countByFechaBetween(empresaId, inicioDia, finDia);
+        if (cantidadCompras == null) cantidadCompras = 0;
+
+        List<Venta> ventasDelDia = ventaRepository.findVentasDelDia(empresaId, inicioDia, finDia);
+
+        Map<Long, ProductoVendidoDTO> productosMap = new LinkedHashMap<>();
+        double totalAnulado = 0.0;
+
+        for (Venta venta : ventasDelDia) {
+            for (DetalleVenta detalle : venta.getDetallesVenta()) {
+                Long productoId = detalle.getProducto().getId();
+                String productoNombre = detalle.getProducto().getNombre();
+
+                if (productosMap.containsKey(productoId)) {
+                    ProductoVendidoDTO dto = productosMap.get(productoId);
+                    dto.setCantidadTotal(dto.getCantidadTotal() + detalle.getCantidad());
+                    dto.setMontoTotal(dto.getMontoTotal() + detalle.getSubtotal());
+                } else {
+                    productosMap.put(productoId, ProductoVendidoDTO.builder()
+                            .productoId(productoId)
+                            .productoNombre(productoNombre)
+                            .cantidadTotal(detalle.getCantidad())
+                            .montoTotal(detalle.getSubtotal())
+                            .build());
+                }
+            }
+        }
+
+        List<ProductoVendidoDTO> productosVendidos = new ArrayList<>(productosMap.values());
+        productosVendidos.sort((a, b) -> Double.compare(b.getMontoTotal(), a.getMontoTotal()));
+
+        return ReporteCierreDTO.builder()
+                .fecha(fecha.toLocalDate())
+                .nombreEmpresa(nombreEmpresa)
+                .totalVentas(totalVentas)
+                .cantidadVentas(cantidadVentas)
+                .totalEfectivo(totalEfectivo)
+                .totalTarjeta(totalTarjeta)
+                .totalTransferencia(totalTransferencia)
+                .ventasAnuladas(ventasAnuladas)
+                .totalAnulado(totalAnulado)
+                .totalCompras(totalCompras)
+                .cantidadCompras(cantidadCompras)
+                .balance(totalVentas - totalCompras)
+                .productosVendidos(productosVendidos)
+                .build();
+    }
+
+    @Transactional
+    public ReporteCierreDTO generarReporteCierreZ(LocalDateTime fecha) {
+        validarTenant();
+        Long empresaId = TenantContext.getTenantId();
+        
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
+        
+        LocalDate hoy = LocalDate.now();
+        if (empresa.getDiaCerrado() != null && empresa.getDiaCerrado() && 
+            empresa.getFechaCierre() != null && empresa.getFechaCierre().equals(hoy)) {
+            throw new BusinessException("El día ya ha sido cerrado. No se puede generar otro Reporte Z.");
+        }
+        
+        empresa.setDiaCerrado(true);
+        empresa.setFechaCierre(hoy);
+        empresaRepository.save(empresa);
+        
+        return generarReporteCierreX(fecha);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isDiaCerrado() {
+        validarTenant();
+        Long empresaId = TenantContext.getTenantId();
+        
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
+        
+        LocalDate hoy = LocalDate.now();
+        return empresa.getDiaCerrado() != null && empresa.getDiaCerrado() && 
+               empresa.getFechaCierre() != null && empresa.getFechaCierre().equals(hoy);
     }
 }

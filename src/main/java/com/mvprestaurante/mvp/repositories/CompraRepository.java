@@ -41,4 +41,12 @@ public interface CompraRepository extends JpaRepository<Compra, Long> {
     boolean existsByNumeroCompraAndEmpresaId(String numeroCompra, Long empresaId);
 
     boolean existsByNumeroCompraAndEmpresaIdAndIdNot(String numeroCompra, Long empresaId, Long id);
+
+    @Query("SELECT COALESCE(SUM(c.total), 0) FROM Compra c WHERE c.empresa.id = :tenantId AND c.estado = 'COMPLETADA' " +
+            "AND c.fechaCompra BETWEEN :fechaInicio AND :fechaFin")
+    Double sumTotalByFechaBetween(@Param("tenantId") Long tenantId, @Param("fechaInicio") LocalDateTime fechaInicio, @Param("fechaFin") LocalDateTime fechaFin);
+
+    @Query("SELECT COUNT(c) FROM Compra c WHERE c.empresa.id = :tenantId AND c.estado = 'COMPLETADA' " +
+            "AND c.fechaCompra BETWEEN :fechaInicio AND :fechaFin")
+    Integer countByFechaBetween(@Param("tenantId") Long tenantId, @Param("fechaInicio") LocalDateTime fechaInicio, @Param("fechaFin") LocalDateTime fechaFin);
 }

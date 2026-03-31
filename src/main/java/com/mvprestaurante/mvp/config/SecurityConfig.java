@@ -37,7 +37,7 @@ public class SecurityConfig {
         @Bean
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                 http
-
+                                .csrf(csrf -> csrf.disable())
                                 .addFilterBefore(new TenanFilter(extractor, resolver),
                                                 UsernamePasswordAuthenticationFilter.class)
                                 .authorizeHttpRequests(authz -> authz
@@ -58,7 +58,6 @@ public class SecurityConfig {
                                                 .requireExplicitSave(false))
 
                                 .userDetailsService(userDetailsService);
-                ;
 
                 return http.build();
         }

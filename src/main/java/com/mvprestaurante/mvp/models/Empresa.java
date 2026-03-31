@@ -1,5 +1,6 @@
 package com.mvprestaurante.mvp.models;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import jakarta.persistence.Column;
@@ -31,6 +32,9 @@ public class Empresa {
     private String email;
     private String telefono;
     private String plan;
+    
+    private Boolean diaCerrado;
+    private LocalDate fechaCierre;
 
     @OneToMany(mappedBy = "empresa")
     private List<Usuario> listaUsuario;
@@ -41,7 +45,6 @@ public class Empresa {
     @OneToMany(mappedBy = "empresa")
     private List<Receta> listaRecetas;
     
-    // ADD THIS
     @OneToMany(mappedBy = "empresa")
     private List<Producto> listaProductos;
 }

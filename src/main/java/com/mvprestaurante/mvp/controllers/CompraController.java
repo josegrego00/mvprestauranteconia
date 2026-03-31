@@ -10,6 +10,7 @@ import com.mvprestaurante.mvp.models.Compra;
 import com.mvprestaurante.mvp.services.CompraService;
 import com.mvprestaurante.mvp.services.IngredienteService;
 import com.mvprestaurante.mvp.services.ProductoService;
+import com.mvprestaurante.mvp.services.VentaService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -32,6 +33,9 @@ public class CompraController {
 
     @Autowired
     private CompraService compraService;
+
+    @Autowired
+    private VentaService ventaService;
 
     @Autowired
     private IngredienteService ingredienteService;
@@ -79,7 +83,12 @@ public class CompraController {
     }
 
     @GetMapping("/nueva")
-    public String nueva(Model model) {
+    public String nueva(Model model, RedirectAttributes ra) {
+        if (ventaService.isDiaCerrado()) {
+            ra.addFlashAttribute("error", "El día ha sido cerrado. No se pueden realizar más compras.");
+            return "redirect:/compras";
+        }
+        
         model.addAttribute("compra", new Compra());
         
         List<IngredienteDTO> ingredientesDTO = ingredienteService.listarActivos(PageRequest.of(0, 100))

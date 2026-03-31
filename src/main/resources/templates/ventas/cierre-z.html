@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+
+<head th:replace="~{fragments/head :: head}"></head>
+
+<body>
+
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <div class="container-fluid">
+        <div class="row">
+
+            <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+
+                <div class="welcome-section mt-4 mb-4">
+                    <h1 class="welcome-title text-danger">
+                        <i class="bi bi-file-earmark-ruled me-2"></i>
+                        Reporte Z - CIERRE DEFINITIVO DEL DÍA
+                    </h1>
+                    <p class="welcome-subtitle">
+                        Cierre de caja del día [[${#temporals.format(reporte.fecha, 'dd/MM/yyyy')}]]
+                    </p>
+                </div>
+
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>ATENCIÓN:</strong> Este es el cierre definitivo del día. No se podrán realizar más ventas ni compras después de este reporte.
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <a th:href="@{/logout}" class="btn btn-outline-secondary">
+                        <i class="bi bi-box-arrow-left me-2"></i>Salir
+                    </a>
+                    <button class="btn btn-danger" onclick="window.print()">
+                        <i class="bi bi-printer me-2"></i>Imprimir
+                    </button>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0"><i class="bi bi-shop me-2"></i>[[${reporte.nombreEmpresa}]]</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-4">
+                                <h6 class="text-muted text-uppercase">Fecha</h6>
+                                <h4 th:text="${#temporals.format(reporte.fecha, 'dd/MM/yyyy')}"></h4>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="text-muted text-uppercase">Tipo Reporte</h6>
+                                <h4 class="text-danger">REPORTE Z</h4>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="text-muted text-uppercase">Hora Impresión</h6>
+                                <h4 id="horaImpresion"></h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-2">
+                        <div class="card bg-success text-white">
+                            <div class="card-body">
+                                <h6 class="card-title text-uppercase small"><i class="bi bi-cash me-2"></i>Total Ventas</h6>
+                                <h4 class="mb-0">$<span th:text="${#numbers.formatDecimal(reporte.totalVentas, 1, 'COMMA', 2, 'POINT')}">0.00</span></h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card bg-info text-white">
+                            <div class="card-body">
+                                <h6 class="card-title text-uppercase small"><i class="bi bi-receipt me-2"></i>Ventas</h6>
+                                <h4 class="mb-0" th:text="${reporte.cantidadVentas}">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card bg-danger text-white">
+                            <div class="card-body">
+                                <h6 class="card-title text-uppercase small"><i class="bi bi-cart me-2"></i>Total Compras</h6>
+                                <h4 class="mb-0">$<span th:text="${#numbers.formatDecimal(reporte.totalCompras, 1, 'COMMA', 2, 'POINT')}">0.00</span></h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card bg-warning text-dark">
+                            <div class="card-body">
+                                <h6 class="card-title text-uppercase small"><i class="bi bi-cart-check me-2"></i>Compras</h6>
+                                <h4 class="mb-0" th:text="${reporte.cantidadCompras}">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card bg-warning text-dark">
+                            <div class="card-body">
+                                <h6 class="card-title text-uppercase small"><i class="bi bi-x-circle me-2"></i>Anuladas</h6>
+                                <h4 class="mb-0" th:text="${reporte.ventasAnuladas}">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body">
+                                <h6 class="card-title text-uppercase small"><i class="bi bi-graph-up me-2"></i>Balance</h6>
+                                <h4 class="mb-0">$<span th:text="${#numbers.formatDecimal(reporte.balance, 1, 'COMMA', 2, 'POINT')}">0.00</span></h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="bi bi-credit-card me-2"></i>Desglose por Método de Pago</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Método de Pago</th>
+                                        <th class="text-end">Monto</th>
+                                        <th class="text-end">Porcentaje</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><i class="bi bi-cash me-2"></i>Efectivo</td>
+                                        <td class="text-end fw-bold">$<span th:text="${#numbers.formatDecimal(reporte.totalEfectivo, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+                                        <td class="text-end" th:with="pct=${reporte.totalVentas > 0 ? (reporte.totalEfectivo / reporte.totalVentas) * 100 : 0}">
+                                            <span th:text="${#numbers.formatDecimal(pct, 1, 'COMMA', 1, 'POINT')}">0</span>%
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><i class="bi bi-credit-card me-2"></i>Tarjeta</td>
+                                        <td class="text-end fw-bold">$<span th:text="${#numbers.formatDecimal(reporte.totalTarjeta, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+                                        <td class="text-end" th:with="pct=${reporte.totalVentas > 0 ? (reporte.totalTarjeta / reporte.totalVentas) * 100 : 0}">
+                                            <span th:text="${#numbers.formatDecimal(pct, 1, 'COMMA', 1, 'POINT')}">0</span>%
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><i class="bi bi-bank me-2"></i>Transferencia</td>
+                                        <td class="text-end fw-bold">$<span th:text="${#numbers.formatDecimal(reporte.totalTransferencia, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+                                        <td class="text-end" th:with="pct=${reporte.totalVentas > 0 ? (reporte.totalTransferencia / reporte.totalVentas) * 100 : 0}">
+                                            <span th:text="${#numbers.formatDecimal(pct, 1, 'COMMA', 1, 'POINT')}">0</span>%
+                                        </td>
+                                    </tr>
+                                    <tr class="table-dark">
+                                        <td class="fw-bold">TOTAL</td>
+                                        <td class="text-end fw-bold">$<span th:text="${#numbers.formatDecimal(reporte.totalVentas, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+                                        <td class="text-end">100%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-box-seam me-2"></i>Productos Vendidos</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Producto</th>
+                                        <th class="text-center">Cantidad</th>
+                                        <th class="text-end">Monto</th>
+                                        <th class="text-end">% Ventas</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="producto, iter : ${reporte.productosVendidos}">
+                                        <td th:text="${iter.count}"></td>
+                                        <td th:text="${producto.productoNombre}"></td>
+                                        <td class="text-center" th:text="${producto.cantidadTotal}"></td>
+                                        <td class="text-end fw-bold">$<span th:text="${#numbers.formatDecimal(producto.montoTotal, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+                                        <td class="text-end" th:with="pct=${reporte.totalVentas > 0 ? (producto.montoTotal / reporte.totalVentas) * 100 : 0}">
+                                            <span th:text="${#numbers.formatDecimal(pct, 1, 'COMMA', 1, 'POINT')}">0</span>%
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(reporte.productosVendidos)}">
+                                        <td colspan="5" class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                            No hay productos vendidos en esta fecha
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4 mb-4 text-muted">
+                    <small>Reporte Z generado el [[${#temporals.format(reporte.fecha, 'dd/MM/yyyy')}]] a las <span id="horaFooter"></span></small>
+                </div>
+
+                <div th:replace="~{fragments/footer :: footer}"></div>
+
+            </main>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/scripts :: scripts}"></div>
+
+    <script>
+        function actualizarHora() {
+            const ahora = new Date();
+            const hora = String(ahora.getHours()).padStart(2, '0');
+            const minuto = String(ahora.getMinutes()).padStart(2, '0');
+            const segundo = String(ahora.getSeconds()).padStart(2, '0');
+            const horaCompleta = hora + ':' + minuto + ':' + segundo;
+            document.getElementById('horaImpresion').textContent = horaCompleta;
+            document.getElementById('horaFooter').textContent = horaCompleta;
+        }
+        actualizarHora();
+        setInterval(actualizarHora, 1000);
+    </script>
+
+</body>
+
+</html>
