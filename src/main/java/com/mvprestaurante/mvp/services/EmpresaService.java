@@ -41,7 +41,6 @@ public class EmpresaService {
         Empresa empresa = empresaMapper.toEntity(dto);
         empresa.setActiva(false);
         Empresa empresaGuardada = empresaRepositorio.save(empresa);
-        usuarioService.crearUsuarioAdmin(empresa);
 
         return empresaMapper.toResponse(empresaGuardada);
     }
@@ -89,5 +88,10 @@ public class EmpresaService {
     @Transactional(readOnly = true)
     public boolean existeSubdominio(String subdominio) {
         return empresaRepositorio.findBySubdominio(subdominio.toLowerCase()).isPresent();
+    }
+
+    @Transactional(readOnly = true)
+    public Empresa buscarPorSubdominio(String subdominio) {
+        return empresaRepositorio.findBySubdominio(subdominio.toLowerCase()).orElse(null);
     }
 }

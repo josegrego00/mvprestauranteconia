@@ -44,8 +44,11 @@ public class Usuario {
 
     private String email;
 
+    @Column(name = "es_superadmin")
+    private Boolean esSuperadmin;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "empresa_id", nullable = false)
+    @JoinColumn(name = "empresa_id", nullable = true)
     private Empresa empresa;
 
 }

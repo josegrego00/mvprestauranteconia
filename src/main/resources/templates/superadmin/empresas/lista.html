@@ -3,19 +3,33 @@
 
 <head th:replace="~{fragments/head :: head}"></head>
 
-<body>
+<body class="bg-light">
 
-    <!-- NAVBAR -->
-    <div th:replace="~{fragments/navbar :: navbar}"></div>
+    <!-- NAVBAR SIMPLE -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="bi bi-shield-lock me-2"></i>
+                Panel Superadmin
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="text-light me-3">
+                    <i class="bi bi-person-circle me-1"></i>
+                    <span th:text="${#authentication.name}">joseKLMora</span>
+                </span>
+                <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#cambiarPasswordModal">
+                    <i class="bi bi-key me-1"></i>
+                    Cambiar Contraseña
+                </button>
+                <a th:href="@{/logout}" class="btn btn-danger btn-sm ms-2">
+                    <i class="bi bi-box-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
 
-    <div class="container-fluid">
-        <div class="row">
-
-            <!-- SIDEBAR -->
-            <div th:replace="~{fragments/sidebar :: sidebar}"></div>
-
-            <!-- CONTENIDO PRINCIPAL -->
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="container py-4">
 
                 <!-- Header con título y botón nuevo -->
                 <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
@@ -120,10 +134,47 @@
                 </div>
 
                 <!-- FOOTER -->
-                <div th:replace="~{fragments/footer :: footer}"></div>
+                <div class="text-center text-muted py-4">
+                    <small>&copy; 2026 MVP Restaurante</small>
+                </div>
 
             </main>
 
+        </div>
+    </div>
+
+    <!-- MODAL CAMBIAR CONTRASEÑA -->
+    <div class="modal fade" id="cambiarPasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-key me-2"></i>
+                        Cambiar Contraseña
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form th:action="@{/superadmin/cambiar-password}" method="post">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Contraseña Actual</label>
+                            <input type="password" name="passwordActual" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nueva Contraseña</label>
+                            <input type="password" name="nuevaPassword" class="form-control" required minlength="6">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Confirmar Contraseña</label>
+                            <input type="password" name="confirmarPassword" class="form-control" required minlength="6">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 

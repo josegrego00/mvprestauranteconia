@@ -110,6 +110,19 @@ Sistema de gestión para restaurantes con soporte multi-empresa (multi-tenant).
 - Dominio producción: mibombay.com
 - Dominio desarrollo: localhost / 127.0.0.1
 
+### Superadmin
+- Panel de administración del sistema
+- Login separado en `/superadmin/login`
+- Gestión de empresas (activar/desactivar)
+- Creación de usuarios admin al activar empresas
+- Demo company "restamodelo" con datos de ejemplo
+
+### Registro de Empresas
+- Registro público en `/registro`
+- Empresas se crean inactivas (esperan activación)
+- Página de espera `/empresa/espera-activacion`
+- Admin usuario se crea solo cuando superadmin activa la empresa
+
 ## Estructura del Proyecto
 
 ```
@@ -168,9 +181,15 @@ export DB_PASSWORD=tu_password
 
 | Ruta | Descripción |
 |------|-------------|
-| `/` | Login |
-| `/registro` | Registro de empresa y usuario admin |
+| `/` | Login empresas |
+| `/superadmin/login` | Login superadmin |
+| `/registro` | Registro de empresa (crea empresa inactiva) |
+| `/empresa/espera-activacion` | Página de espera para empresas inactivas |
 | `/dashboard` | Dashboard principal |
+| `/superadmin/empresas` | Panel superadmin - lista empresas |
+| `/superadmin/empresas/activar/{id}` | Activar empresa (crea admin) |
+| `/superadmin/empresas/desactivar/{id}` | Desactivar empresa |
+| `/productos` | Lista de productos |
 | `/productos` | Lista de productos |
 | `/productos/nuevo` | Nuevo producto |
 | `/productos/editar/{id}` | Editar producto |
@@ -247,6 +266,17 @@ export DB_PASSWORD=tu_password
 2. **Historial**: Se guarda cada registro con fecha
 3. **Reporte**: Muestra flujo por período (inicial, consumo, final, diferencia)
 4. **Plantilla Excel**: Descarga para facilitar conteo
+
+### Superadmin
+1. **Login separado**: `/superadmin/login` con credenciales propias
+2. **Usuario**: `esSuperadmin = true`, sin empresa asignada
+3. **Activación**: Al activar empresa, se crea el usuario admin
+4. **Demo**: Empresa "restamodelo" precargada con datos de ejemplo
+
+### Empresas
+1. **Registro**: Se crean inactivas, esperan activación
+2. **Activación**: Solo superadmin puede activar
+3. **Subdominio**: Único por empresa, usado como tenant
 
 ## Excepciones Personalizadas
 

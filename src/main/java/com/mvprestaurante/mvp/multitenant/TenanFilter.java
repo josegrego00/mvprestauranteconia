@@ -65,6 +65,7 @@ public class TenanFilter extends OncePerRequestFilter {
         // ✅ 4. Rutas públicas
         return path.equals("/") ||
                 path.startsWith("/registro") ||
+                path.startsWith("/empresa/") ||
                 path.startsWith("/css") ||
                 path.startsWith("/js") ||
                 path.startsWith("/images") ||
@@ -108,6 +109,10 @@ public class TenanFilter extends OncePerRequestFilter {
         } catch (ResponseStatusException e) {
             if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
                 response.sendRedirect("http://localhost:8080/error/subdominio-no-encontrado?subdominio=" + subdominio);
+                return;
+            }
+            if (e.getStatusCode() == HttpStatus.FORBIDDEN) {
+                response.sendRedirect("http://localhost:8080/empresa/espera-activacion?subdominio=" + subdominio);
                 return;
             }
             throw e;

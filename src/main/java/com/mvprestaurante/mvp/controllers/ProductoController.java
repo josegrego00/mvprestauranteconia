@@ -34,7 +34,7 @@ public class ProductoController {
     public String listar(@RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) boolean soloConReceta,
+            @RequestParam(defaultValue = "false") boolean soloConReceta,
             Model model) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("nombre").ascending());

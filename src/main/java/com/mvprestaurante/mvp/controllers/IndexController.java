@@ -24,6 +24,11 @@ public class IndexController {
         return "login";
     }
 
+    @GetMapping("/superadmin/login")
+    public String loginSuperadmin() {
+        return "login-superadmin";
+    }
+
     @GetMapping("dashboard")
     public String dashboard(Model model) {
         try {

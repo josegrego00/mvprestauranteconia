@@ -95,8 +95,7 @@
                                     <span th:if="${receta.precioBruto != null and receta.precioVenta != null and receta.precioBruto > 0}"
                                           th:text="${#numbers.formatDecimal((receta.precioVenta - receta.precioBruto) / receta.precioBruto * 100, 1, 2)} + '%'"
                                           class="badge"
-                                          th:classappend="${(receta.precioVenta - receta.precioBruto) / receta.precioBruto > 0.3} ? 'bg-success' : 
-                                                           ((receta.precioVenta - receta.precioBruto) / receta.precioBruto > 0.1) ? 'bg-warning text-dark' : 'bg-danger'">
+                                          th:classappend="${(receta.precioVenta - receta.precioBruto) / receta.precioBruto > 0.3} ? 'bg-success' : (${(receta.precioVenta - receta.precioBruto) / receta.precioBruto > 0.1} ? 'bg-warning text-dark' : 'bg-danger')">
                                         0%
                                     </span>
                                 </dd>

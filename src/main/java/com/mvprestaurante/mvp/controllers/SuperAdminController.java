@@ -1,16 +1,23 @@
 package com.mvprestaurante.mvp.controllers;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.mvprestaurante.mvp.models.Empresa;
+import com.mvprestaurante.mvp.models.Usuario;
+import com.mvprestaurante.mvp.repositories.UsuarioRepositorio;
 import com.mvprestaurante.mvp.services.EmpresaService;
+import com.mvprestaurante.mvp.services.UsuarioService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 @Controller
@@ -19,11 +26,56 @@ import lombok.RequiredArgsConstructor;
 public class SuperAdminController {
 
     private final EmpresaService empresaService;
+    private final UsuarioRepositorio usuarioRepositorio;
+    private final UsuarioService usuarioService;
+    private final PasswordEncoder passwordEncoder;
 
     @GetMapping("/empresas")
     public String listaEmpresas(Model model) {
         model.addAttribute("empresas", empresaService.listarTodas());
         return "superadmin/empresas/lista";
+    }
+
+    @PostMapping("/cambiar-password")
+    public String cambiarPassword(
+            @RequestParam String passwordActual,
+            @RequestParam String nuevaPassword,
+            @RequestParam String confirmarPassword,
+            Authentication authentication,
+            HttpServletRequest request,
+            RedirectAttributes redirectAttributes) {
+
+        String username = authentication.getName();
+        Usuario usuario = usuarioRepositorio.findBynombreUsuario(username)
+                .orElse(null);
+
+        if (usuario == null || !"ADMINDEV".equals(usuario.getRol())) {
+            redirectAttributes.addFlashAttribute("error", "Usuario no encontrado");
+            return "redirect:/superadmin/empresas";
+        }
+
+        if (!passwordEncoder.matches(passwordActual, usuario.getContrasenna())) {
+            redirectAttributes.addFlashAttribute("error", "La contraseña actual es incorrecta");
+            return "redirect:/superadmin/empresas";
+        }
+
+        if (!nuevaPassword.equals(confirmarPassword)) {
+            redirectAttributes.addFlashAttribute("error", "Las contraseñas no coinciden");
+            return "redirect:/superadmin/empresas";
+        }
+
+        if (nuevaPassword.length() < 6) {
+            redirectAttributes.addFlashAttribute("error", "La contraseña debe tener al menos 6 caracteres");
+            return "redirect:/superadmin/empresas";
+        }
+
+        usuario.setContrasenna(passwordEncoder.encode(nuevaPassword));
+        usuarioRepositorio.save(usuario);
+
+        redirectAttributes.addFlashAttribute("success", "Contraseña cambiada. Por favor inicie sesión con la nueva contraseña");
+        
+        request.getSession().invalidate();
+        return "redirect:/superadmin/login?passwordChanged=true";
     }
 
     @GetMapping("/empresas/nueva")
@@ -66,7 +118,10 @@ public class SuperAdminController {
             Empresa empresa = empresaService.buscarPorId(id);
             empresa.setActiva(true);
             empresaService.actualizar(id, empresa);
-            redirectAttributes.addFlashAttribute("success", "Empresa activada!");
+            
+            usuarioService.crearUsuarioAdmin(empresa);
+            
+            redirectAttributes.addFlashAttribute("success", "Empresa activada! Se ha creado el usuario admin.");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Error: " + e.getMessage());
         }

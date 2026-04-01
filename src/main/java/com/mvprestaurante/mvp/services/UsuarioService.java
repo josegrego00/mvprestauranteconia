@@ -144,9 +144,10 @@ public class UsuarioService {
         admin.setNombreUsuario("admin");
         admin.setContrasenna(passwordEncoder.encode("123456"));
         admin.setRol("ADMIN");
-        admin.setEmail("cliente@gail.com");
+        admin.setEmail("admin@" + empresa.getSubdominio() + ".com");
         admin.setEmpresa(empresa);
         admin.setEstaActivo(true);
+        admin.setEsSuperadmin(false);
 
         System.out.println("📋 [crearUsuarioAdmin] Datos del usuario a guardar:");
         System.out.println("   - Nombre: " + admin.getNombre());

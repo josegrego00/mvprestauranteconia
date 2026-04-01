@@ -122,8 +122,7 @@
                                     <td>
                                         <span th:if="${receta.precioBruto != null and receta.precioVenta != null}"
                                               th:text="${#numbers.formatDecimal((receta.precioVenta - receta.precioBruto) / receta.precioBruto * 100, 1, 2)} + '%'"
-                                              th:class="${(receta.precioVenta - receta.precioBruto) / receta.precioBruto > 0.3} ? 'text-success fw-semibold' : 
-                                                       ((receta.precioVenta - receta.precioBruto) / receta.precioBruto > 0.1) ? 'text-warning fw-semibold' : 'text-danger fw-semibold'">
+                                              th:classappend="${(receta.precioVenta - receta.precioBruto) / receta.precioBruto > 0.3} ? 'text-success fw-semibold' : (${(receta.precioVenta - receta.precioBruto) / receta.precioBruto > 0.1} ? 'text-warning fw-semibold' : 'text-danger fw-semibold')">
                                             100%
                                         </span>
                                         <span th:unless="${receta.precioBruto != null and receta.precioVenta != null}" class="text-secondary">-</span>

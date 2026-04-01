@@ -94,7 +94,7 @@ public class VentaController {
                 
                 return dto;
             })
-            .collect(Collectors.toList());
+            .collect(Collectors.toList());  
         
         model.addAttribute("productos", productos);
         model.addAttribute("numeroVenta", ventaService.generarNumeroVenta());

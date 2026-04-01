@@ -3,147 +3,151 @@
 
 <head th:replace="~{fragments/head :: head}"></head>
 
-<body>
+<body class="bg-light">
 
-    <!-- NAVBAR -->
-    <div th:replace="~{fragments/navbar :: navbar}"></div>
+    <!-- NAVBAR SIMPLE -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" th:href="@{/superadmin/empresas}">
+                <i class="bi bi-shield-lock me-2"></i>
+                Panel Superadmin
+            </a>
+            <div class="d-flex">
+                <a th:href="@{/superadmin/empresas}" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i>
+                    Volver
+                </a>
+            </div>
+        </div>
+    </nav>
 
-    <div class="container-fluid">
-        <div class="row">
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="container py-4">
 
-            <!-- SIDEBAR -->
-            <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+        <!-- Header con título -->
+        <div class="welcome-section mb-4">
+            <h1 class="welcome-title">
+                <i class="bi bi-building me-2" th:if="${empresa.id == null}"></i>
+                <i class="bi bi-pencil-square me-2" th:if="${empresa.id != null}"></i>
+                <span th:text="${empresa.id == null} ? 'Nueva Empresa' : 'Editar Empresa'"></span>
+            </h1>
+            <p class="welcome-subtitle"
+                th:text="${empresa.id == null} ? 'Registra una nueva empresa' : 'Modifica los datos de la empresa'">
+                Registra una nueva empresa
+            </p>
+        </div>
 
-            <!-- CONTENIDO PRINCIPAL -->
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <!-- Formulario -->
+        <div class="card">
+            <div class="card-body">
 
-                <!-- Header con título -->
-                <div class="welcome-section mt-4 mb-4">
-                    <h1 class="welcome-title">
-                        <i class="bi bi-building me-2" th:if="${empresa.id == null}"></i>
-                        <i class="bi bi-pencil-square me-2" th:if="${empresa.id != null}"></i>
-                        <span th:text="${empresa.id == null} ? 'Nueva Empresa' : 'Editar Empresa'"></span>
-                    </h1>
-                    <p class="welcome-subtitle"
-                        th:text="${empresa.id == null} ? 'Registra una nueva empresa' : 'Modifica los datos de la empresa'">
-                        Registra una nueva empresa
-                    </p>
+                <!-- MENSAJE DE ERROR -->
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
 
-                <!-- Formulario -->
-                <div class="card">
-                    <div class="card-body">
-                        <div class="card-body">
+                <form th:action="${empresa.id == null} ? @{/superadmin/empresas/guardar} : @{/superadmin/empresas/actualizar/{id}(id=${empresa.id})}" th:object="${empresa}" method="post"
+                    class="needs-validation" novalidate>
 
-                            <!-- MENSAJE DE ERROR -->
-                            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                <span th:text="${error}"></span>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <input type="hidden" name="id" th:value="${empresa.id}">
+
+                    <div class="row">
+                        <!-- Subdominio -->
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label text-uppercase small fw-bold">
+                                <i class="bi bi-globe me-1"></i>
+                                SUBDOMINIO
+                            </label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" th:field="*{subdominio}"
+                                    placeholder="ej: empanadas" required>
+                                <span class="input-group-text">.localhost</span>
                             </div>
+                            <small class="text-secondary">Este será el subdominio de la empresa</small>
+                        </div>
 
-                            <form th:action="${empresa.id == null} ? @{/superadmin/empresas/guardar} : @{/superadmin/empresas/actualizar/{id}(id=${empresa.id})}" th:object="${empresa}" method="post"
-                                class="needs-validation" novalidate>
+                        <!-- Nombre de la Empresa -->
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label text-uppercase small fw-bold">
+                                <i class="bi bi-building me-1"></i>
+                                NOMBRE DE LA EMPRESA
+                            </label>
+                            <input type="text" class="form-control" th:field="*{nombreEmpresa}"
+                                placeholder="Ej: Las Empanadas" required>
+                        </div>
 
-                                <input type="hidden" name="id" th:value="${empresa.id}">
+                        <!-- Email -->
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label text-uppercase small fw-bold">
+                                <i class="bi bi-envelope me-1"></i>
+                                EMAIL
+                            </label>
+                            <input type="email" class="form-control" th:field="*{email}"
+                                placeholder="correo@ejemplo.com" required>
+                        </div>
 
-                                <div class="row">
-                                    <!-- Subdominio -->
-                                    <div class="col-md-6 mb-4">
-                                        <label class="form-label text-uppercase small fw-bold">
-                                            <i class="bi bi-globe me-1"></i>
-                                            SUBDOMINIO
-                                        </label>
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" th:field="*{subdominio}"
-                                                placeholder="ej: empanadas" required>
-                                            <span class="input-group-text">.localhost</span>
-                                        </div>
-                                        <small class="text-secondary">Este será el subdominio de la empresa</small>
-                                    </div>
+                        <!-- Teléfono -->
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label text-uppercase small fw-bold">
+                                <i class="bi bi-telephone me-1"></i>
+                                TELÉFONO
+                            </label>
+                            <input type="text" class="form-control" th:field="*{telefono}"
+                                placeholder="Ej: 3001234567">
+                        </div>
 
-                                    <!-- Nombre de la Empresa -->
-                                    <div class="col-md-6 mb-4">
-                                        <label class="form-label text-uppercase small fw-bold">
-                                            <i class="bi bi-building me-1"></i>
-                                            NOMBRE DE LA EMPRESA
-                                        </label>
-                                        <input type="text" class="form-control" th:field="*{nombreEmpresa}"
-                                            placeholder="Ej: Las Empanadas" required>
-                                    </div>
+                        <!-- Plan -->
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label text-uppercase small fw-bold">
+                                <i class="bi bi-credit-card me-1"></i>
+                                PLAN
+                            </label>
+                            <select class="form-select" th:field="*{plan}">
+                                <option value="BASIC">Basic</option>
+                                <option value="PREMIUM">Premium</option>
+                                <option value="ENTERPRISE">Enterprise</option>
+                            </select>
+                        </div>
 
-                                    <!-- Email -->
-                                    <div class="col-md-6 mb-4">
-                                        <label class="form-label text-uppercase small fw-bold">
-                                            <i class="bi bi-envelope me-1"></i>
-                                            EMAIL
-                                        </label>
-                                        <input type="email" class="form-control" th:field="*{email}"
-                                            placeholder="correo@ejemplo.com" required>
-                                    </div>
-
-                                    <!-- Teléfono -->
-                                    <div class="col-md-6 mb-4">
-                                        <label class="form-label text-uppercase small fw-bold">
-                                            <i class="bi bi-telephone me-1"></i>
-                                            TELÉFONO
-                                        </label>
-                                        <input type="text" class="form-control" th:field="*{telefono}"
-                                            placeholder="Ej: 3001234567">
-                                    </div>
-
-                                    <!-- Plan -->
-                                    <div class="col-md-6 mb-4">
-                                        <label class="form-label text-uppercase small fw-bold">
-                                            <i class="bi bi-credit-card me-1"></i>
-                                            PLAN
-                                        </label>
-                                        <select class="form-select" th:field="*{plan}">
-                                            <option value="BASIC">Basic</option>
-                                            <option value="PREMIUM">Premium</option>
-                                            <option value="ENTERPRISE">Enterprise</option>
-                                        </select>
-                                    </div>
-
-                                    <!-- Estado (solo para edición) -->
-                                    <div class="col-md-6 mb-4" th:if="${empresa.id != null}">
-                                        <label class="form-label text-uppercase small fw-bold">
-                                            <i class="bi bi-toggle-on me-1"></i>
-                                            ESTADO
-                                        </label>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="activa"
-                                                th:field="*{activa}" />
-                                            <label class="form-check-label">
-                                                Empresa activa
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Acciones -->
-                                <div class="d-flex gap-2 mt-4">
-                                    <button type="submit" class="btn btn-primary px-5">
-                                        <i class="bi bi-check-circle me-2"></i>
-                                        Guardar
-                                    </button>
-                                    <a th:href="@{/superadmin/empresas}" class="btn btn-outline-secondary px-5">
-                                        <i class="bi bi-x-circle me-2"></i>
-                                        Cancelar
-                                    </a>
-                                </div>
-                            </form>
+                        <!-- Estado (solo para edición) -->
+                        <div class="col-md-6 mb-4" th:if="${empresa.id != null}">
+                            <label class="form-label text-uppercase small fw-bold">
+                                <i class="bi bi-toggle-on me-1"></i>
+                                ESTADO
+                            </label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="activa"
+                                    th:field="*{activa}" />
+                                <label class="form-check-label">
+                                    Empresa activa
+                                </label>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- FOOTER -->
-                <div th:replace="~{fragments/footer :: footer}"></div>
-
-            </main>
-
+                    <!-- Acciones -->
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary px-5">
+                            <i class="bi bi-check-circle me-2"></i>
+                            Guardar
+                        </button>
+                        <a th:href="@{/superadmin/empresas}" class="btn btn-outline-secondary px-5">
+                            <i class="bi bi-x-circle me-2"></i>
+                            Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
+
+        <!-- FOOTER -->
+        <div class="text-center text-muted py-4">
+            <small>&copy; 2026 MVP Restaurante</small>
+        </div>
+
+    </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 

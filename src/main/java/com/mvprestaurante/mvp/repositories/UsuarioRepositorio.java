@@ -19,4 +19,10 @@ public interface UsuarioRepositorio extends JpaRepository<Usuario, Long> {
 
     Optional<Usuario> findByIdAndEmpresaId(Long id, Long empresaId);
 
+    Optional<Usuario> findByEsSuperadminTrue();
+
+    boolean existsByEsSuperadminTrue();
+
+    boolean existsByRol(String rol);
+
 }
