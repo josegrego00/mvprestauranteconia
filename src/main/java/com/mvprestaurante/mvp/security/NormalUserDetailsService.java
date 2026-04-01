@@ -29,7 +29,7 @@ public class NormalUserDetailsService implements UserDetailsService {
         Usuario usuario = repositorio.findByNombreUsuarioAndEmpresa_Id(username, empresaId)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
 
-        if (usuario.getEsSuperadmin() != null && usuario.getEsSuperadmin()) {
+        if ("ADMINDEV".equals(usuario.getRol())) {
             throw new UsernameNotFoundException("Usuario no válido para esta empresa");
         }
 

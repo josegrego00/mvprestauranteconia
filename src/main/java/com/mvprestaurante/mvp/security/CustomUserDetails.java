@@ -27,7 +27,7 @@ public class CustomUserDetails implements UserDetails {
         this.email = usuario.getEmail();
         this.rol = usuario.getRol();
         this.activo = usuario.getEstaActivo() != null && usuario.getEstaActivo();
-        this.esSuperadmin = usuario.getEsSuperadmin() != null && usuario.getEsSuperadmin();
+        this.esSuperadmin = "ADMINDEV".equals(usuario.getRol());
     }
 
     public Long getId() {
@@ -48,7 +48,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        if (esSuperadmin) {
+        if ("ADMINDEV".equals(rol)) {
             return List.of(new SimpleGrantedAuthority("ROLE_SUPERADMIN"));
         }
         return List.of(new SimpleGrantedAuthority("ROLE_" + rol));
