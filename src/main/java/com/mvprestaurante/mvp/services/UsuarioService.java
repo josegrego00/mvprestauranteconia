@@ -3,6 +3,7 @@ package com.mvprestaurante.mvp.services;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -47,12 +48,14 @@ public class UsuarioService {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public List<Usuario> listarUsuarios() {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
         return usuarioRepositorio.findByEmpresaId(empresaId);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public Usuario buscarPorId(Long id) {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
@@ -62,6 +65,7 @@ public class UsuarioService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public void guardarUsuario(UsuarioDTORequest usuario) {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
@@ -83,6 +87,7 @@ public class UsuarioService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public void actualizarUsuario(Long id, UsuarioDTORequest usuario) {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
@@ -104,6 +109,7 @@ public class UsuarioService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public void eliminarUsuario(Long id) {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
@@ -118,6 +124,7 @@ public class UsuarioService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('SUPERADMIN')")
     public void crearUsuarioAdmin(Empresa empresa) {
         System.out.println("\n🔍 [crearUsuarioAdmin] ========== INICIO ==========");
 
