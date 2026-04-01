@@ -23,13 +23,13 @@ public class EmpresaService {
     private final EmpresaMapper empresaMapper;
 
     @Transactional(readOnly = true)
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMINDEV')")
     public List<Empresa> listarTodas() {
         return empresaRepositorio.findAll();
     }
 
     @Transactional(readOnly = true)
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMINDEV')")
     public Empresa buscarPorId(Long id) {
         return empresaRepositorio.findById(id)
                 .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
@@ -49,7 +49,7 @@ public class EmpresaService {
     }
 
     @Transactional
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMINDEV')")
     public Empresa guardar(Empresa empresa) {
         if (empresa.getSubdominio() == null || empresa.getSubdominio().trim().isEmpty()) {
             throw new BusinessException("El subdominio es obligatorio");
@@ -67,7 +67,7 @@ public class EmpresaService {
     }
 
     @Transactional
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMINDEV')")
     public Empresa actualizar(Long id, Empresa empresaActualizada) {
         Empresa empresa = empresaRepositorio.findById(id)
                 .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
@@ -82,7 +82,7 @@ public class EmpresaService {
     }
 
     @Transactional
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMINDEV')")
     public void eliminar(Long id) {
         Empresa empresa = empresaRepositorio.findById(id)
                 .orElseThrow(() -> new BusinessException("Empresa no encontrada"));

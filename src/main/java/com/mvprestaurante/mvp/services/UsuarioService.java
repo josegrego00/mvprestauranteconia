@@ -48,14 +48,14 @@ public class UsuarioService {
         }
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINDEV')")
     public List<Usuario> listarUsuarios() {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
         return usuarioRepositorio.findByEmpresaId(empresaId);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINDEV')")
     public Usuario buscarPorId(Long id) {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
@@ -124,7 +124,7 @@ public class UsuarioService {
     }
 
     @Transactional
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMINDEV')")
     public void crearUsuarioAdmin(Empresa empresa) {
         System.out.println("\n🔍 [crearUsuarioAdmin] ========== INICIO ==========");
 

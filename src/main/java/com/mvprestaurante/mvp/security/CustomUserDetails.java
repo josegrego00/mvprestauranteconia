@@ -49,7 +49,7 @@ public class CustomUserDetails implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if ("ADMINDEV".equals(rol)) {
-            return List.of(new SimpleGrantedAuthority("ROLE_SUPERADMIN"));
+            return List.of(new SimpleGrantedAuthority("ROLE_ADMINDEV"));
         }
         return List.of(new SimpleGrantedAuthority("ROLE_" + rol));
     }

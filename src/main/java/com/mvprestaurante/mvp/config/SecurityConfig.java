@@ -50,7 +50,7 @@ public class SecurityConfig {
                                 .csrf(csrf -> csrf.disable())
                                 .authorizeHttpRequests(authz -> authz
                                                 .requestMatchers("/superadmin/login", "/setup").permitAll()
-                                                .requestMatchers("/superadmin/**").hasRole("SUPERADMIN"))
+                                                .requestMatchers("/superadmin/**").hasRole("ADMINDEV"))
                                 .formLogin(form -> form
                                                 .loginPage("/superadmin/login")
                                                 .loginProcessingUrl("/superadmin/login")
