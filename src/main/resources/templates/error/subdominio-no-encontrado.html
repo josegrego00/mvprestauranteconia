@@ -5,90 +5,115 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Subdominio no encontrado - MVP Restaurante</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/register.css}">
     <style>
-        body {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .error-card {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            overflow: hidden;
-            max-width: 500px;
-        }
         .error-icon {
-            font-size: 4rem;
-            color: #dc3545;
-            animation: pulse 2s infinite;
+            color: #e74a3b;
         }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+        .info-card {
+            background: #f8f9fc;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #4e73df;
         }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            padding: 12px 30px;
+        .info-card h5 {
+            color: #2c3e50;
             font-weight: 600;
+            margin-bottom: 1rem;
         }
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
+        .info-card ul {
+            margin: 0;
+            padding-left: 1.25rem;
+            color: #6c757d;
+        }
+        .info-card li {
+            margin-bottom: 0.5rem;
+        }
+        .btn-primary-custom {
+            background: #4e73df;
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary-custom:hover {
+            background: #224abe;
             transform: translateY(-2px);
+            color: white;
+        }
+        .btn-outline-custom {
+            background: transparent;
+            border: 2px solid #6c757d;
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-outline-custom:hover {
+            background: #6c757d;
+            color: white;
         }
     </style>
 </head>
 
 <body>
-
     <div class="container">
         <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="error-card p-5 text-center">
-                    <div class="mb-4">
+            <div class="col-md-6 col-lg-5">
+                <div class="register-card">
+
+                    <div class="register-header">
                         <i class="bi bi-exclamation-triangle-fill error-icon"></i>
+                        <h2>Subdominio no encontrado</h2>
+                        <p>El subdominio no existe en nuestro sistema</p>
                     </div>
-                    
-                    <h2 class="fw-bold mb-3">¡Ups! Subdominio no encontrado</h2>
-                    
-                    <p class="text-muted mb-4">
-                        El subdominio <strong th:text="${subdominio}">subdominio</strong> 
-                        no existe en nuestro sistema.
-                    </p>
-                    
-                    <div class="alert alert-light border mb-4">
-                        <i class="bi bi-info-circle me-2"></i>
-                        <strong>¿Qué puedes hacer?</strong>
-                        <ul class="mb-0 mt-2 text-start">
+
+                    <div class="info-card">
+                        <h5>
+                            <i class="bi bi-info-circle me-2"></i>
+                            ¿Qué puedes hacer?
+                        </h5>
+                        <ul>
                             <li>Verifica que el nombre del subdominio esté correcto</li>
                             <li>Contacta al administrador del sistema</li>
                             <li>Si eres el propietario, registra tu empresa</li>
                         </ul>
                     </div>
-                    
-                    <div class="d-flex gap-3 justify-content-center">
-                        <a href="http://localhost:8080" class="btn btn-primary">
-                            <i class="bi bi-house-door me-2"></i>
+
+                    <div class="d-flex gap-3 justify-content-center mt-4">
+                        <a href="http://localhost:8080" class="btn-primary-custom">
+                            <i class="bi bi-house me-2"></i>
                             Ir al inicio
                         </a>
-                        <a href="http://localhost:8080/registro" class="btn btn-outline-secondary">
+                        <a href="http://localhost:8080/registro" class="btn-outline-custom">
                             <i class="bi bi-person-plus me-2"></i>
                             Registrar Empresa
                         </a>
                     </div>
+
+                    <div class="register-footer">
+                        <p class="mb-0">
+                            <i class="bi bi-shield-lock"></i>
+                            Sistema de Gestión Empresarial
+                        </p>
+                    </div>
+
                 </div>
-                
-                <p class="text-center text-white mt-4 small opacity-75">
-                    © 2026 MVP Restaurante - Sistema de Gestión
-                </p>
             </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
