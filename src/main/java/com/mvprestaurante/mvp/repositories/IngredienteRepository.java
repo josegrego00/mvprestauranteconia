@@ -8,8 +8,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface IngredienteRepository extends JpaRepository<Ingrediente, Long> {
+
+    @Query("SELECT i FROM Ingrediente i WHERE i.id = :id AND i.empresa.id = :tenantId")
+    Optional<Ingrediente> findByIdAndEmpresaId(@Param("id") Long id, @Param("tenantId") Long tenantId);
 
     // Find active ingredients for a specific company (tenant)
     @Query("SELECT i FROM Ingrediente i WHERE i.empresa.id = :tenantId AND i.estaActivo = true")
@@ -28,8 +33,8 @@ public interface IngredienteRepository extends JpaRepository<Ingrediente, Long> 
             @Param("tenantId") Long tenantId,
             @Param("nombre") String nombre);
 
-    @Query("SELECT COUNT(d) > 0 FROM DetalleReceta d WHERE d.ingrediente.id = :ingredienteId")
-    boolean existsByIngredienteEnReceta(@Param("ingredienteId") Long ingredienteId);
+    @Query("SELECT COUNT(d) > 0 FROM DetalleReceta d WHERE d.ingrediente.id = :ingredienteId AND d.receta.empresa.id = :tenantId")
+    boolean existsByIngredienteEnReceta(@Param("tenantId") Long tenantId, @Param("ingredienteId") Long ingredienteId);
 
     @Query("SELECT i FROM Ingrediente i WHERE i.empresa.id = :tenantId AND i.estaActivo = true AND i.stockDisponible > 0")
     java.util.List<Ingrediente> findActiveWithStock(@Param("tenantId") Long tenantId);

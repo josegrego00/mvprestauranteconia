@@ -1,7 +1,9 @@
 package com.mvprestaurante.mvp.services;
 
+import com.mvprestaurante.mvp.DTO.IngredienteDTO;
 import com.mvprestaurante.mvp.exceptions.BusinessException;
 import com.mvprestaurante.mvp.exceptions.DuplicateResourceException;
+import com.mvprestaurante.mvp.mapper.IngredienteMapper;
 import com.mvprestaurante.mvp.models.Empresa;
 import com.mvprestaurante.mvp.models.Ingrediente;
 import com.mvprestaurante.mvp.models.Receta;
@@ -31,6 +33,7 @@ public class IngredienteService {
     private final RecetaRepository recetaRepository;
     private final DetalleRecetaRepository detalleRecetaRepository;
     private final RecetaService recetaService;
+    private final IngredienteMapper ingredienteMapper;
 
     private void validarTenant() {
         Long empresaId = TenantContext.getTenantId();
@@ -40,42 +43,41 @@ public class IngredienteService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Ingrediente> listarActivos(Pageable pageable) {
+    public Page<IngredienteDTO> listarActivos(Pageable pageable) {
         validarTenant();
-        return ingredienteRepository.findByEstaActivoTrue(TenantContext.getTenantId(), pageable);
+        Page<Ingrediente> ingredientes = ingredienteRepository.findByEstaActivoTrue(TenantContext.getTenantId(),
+                pageable);
+        return ingredientes.map(ingredienteMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
-    public Page<Ingrediente> buscarPorNombre(String nombre, Pageable pageable) {
+    public Page<IngredienteDTO> buscarPorNombre(String nombre, Pageable pageable) {
         validarTenant();
-        return ingredienteRepository.findByNombreContainingIgnoreCaseAndEstaActivoTrue(TenantContext.getTenantId(), nombre, pageable);
+        Page<Ingrediente> ingredientes = ingredienteRepository
+                .findByNombreContainingIgnoreCaseAndEstaActivoTrue(TenantContext.getTenantId(), nombre, pageable);
+        return ingredientes.map(ingredienteMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
-    public Optional<Ingrediente> obtenerPorId(Long id) {
+    public Optional<IngredienteDTO> obtenerPorId(Long id) {
         validarTenant();
-        return ingredienteRepository.findById(id)
-                .filter(ingrediente -> ingrediente.getEmpresa().getId().equals(TenantContext.getTenantId()));
+        return ingredienteRepository.findByIdAndEmpresaId(id, TenantContext.getTenantId())
+                .map(ingredienteMapper::toDTO);
     }
 
     @Transactional
-    public Ingrediente guardar(Ingrediente ingrediente) {
+    public IngredienteDTO guardar(IngredienteDTO ingredienteDTO) {
         validarTenant();
-        
-        if (ingrediente.getNombre() == null || ingrediente.getNombre().trim().isEmpty()) {
-            throw new BusinessException("El nombre del ingrediente es obligatorio");
-        }
-        if (ingrediente.getUnidadMedida() == null || ingrediente.getUnidadMedida().trim().isEmpty()) {
-            throw new BusinessException("La unidad de medida es obligatoria");
-        }
 
-        validarNombreDuplicado(ingrediente.getNombre());
+        validarNombreDuplicado(ingredienteDTO.getNombre());
 
         Empresa empresa = empresaRepositorio.findById(TenantContext.getTenantId())
                 .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
-        ingrediente.setId(null);
+
+        Ingrediente ingrediente = ingredienteMapper.toEntity(ingredienteDTO);
+
         ingrediente.setEstaActivo(true);
-        ingrediente.setNombre(ingrediente.getNombre().trim());
+        ingrediente.setNombre(ingredienteDTO.getNombre().trim());
         if (ingrediente.getStockDisponible() == null) {
             ingrediente.setStockDisponible(0.0);
         }
@@ -83,52 +85,45 @@ public class IngredienteService {
             ingrediente.setPrecioCompra(0.0);
         }
         ingrediente.setEmpresa(empresa);
-        return ingredienteRepository.save(ingrediente);
+        return ingredienteMapper.toDTO(ingredienteRepository.save(ingrediente));
     }
 
     @Transactional
-    public Optional<Ingrediente> actualizar(Long id, Ingrediente ingredienteActualizado) {
+    public Optional<IngredienteDTO> actualizar(Long id, IngredienteDTO ingredienteDTO) {
         validarTenant();
 
-        return ingredienteRepository.findById(id)
-                .filter(ingrediente -> ingrediente.getEmpresa().getId().equals(TenantContext.getTenantId()))
-                .map(ingrediente -> {
-                    if (ingredienteActualizado.getNombre() == null || ingredienteActualizado.getNombre().trim().isEmpty()) {
-                        throw new BusinessException("El nombre del ingrediente es obligatorio");
-                    }
-                    if (ingredienteActualizado.getUnidadMedida() == null || ingredienteActualizado.getUnidadMedida().trim().isEmpty()) {
-                        throw new BusinessException("La unidad de medida es obligatoria");
-                    }
+        Ingrediente ingrediente = ingredienteRepository.findByIdAndEmpresaId(id, TenantContext.getTenantId())
+                .orElseThrow(() -> new BusinessException("Ingrediente no encontrado"));
 
-                    if (!ingrediente.getNombre().equalsIgnoreCase(ingredienteActualizado.getNombre())
-                            && existePorNombre(ingredienteActualizado.getNombre())) {
-                        throw new DuplicateResourceException("Ingrediente", ingredienteActualizado.getNombre());
-                    }
+        if (!ingrediente.getNombre().equalsIgnoreCase(ingredienteDTO.getNombre())
+                && existePorNombre(ingredienteDTO.getNombre())) {
+            throw new DuplicateResourceException("Ingrediente", ingredienteDTO.getNombre());
+        }
 
-                    boolean precioCambio = !Objects.equals(
-                            ingrediente.getPrecioCompra(),
-                            ingredienteActualizado.getPrecioCompra() != null ? ingredienteActualizado.getPrecioCompra() : 0.0
-                    );
+        boolean precioCambio = !Objects.equals(
+                ingrediente.getPrecioCompra(),
+                ingredienteDTO.getPrecioCompra() != null ? ingredienteDTO.getPrecioCompra() : 0.0);
 
-                    ingrediente.setNombre(ingredienteActualizado.getNombre().trim());
-                    ingrediente.setStockDisponible(ingredienteActualizado.getStockDisponible() != null ? ingredienteActualizado.getStockDisponible() : 0.0);
-                    ingrediente.setPrecioCompra(ingredienteActualizado.getPrecioCompra() != null ? ingredienteActualizado.getPrecioCompra() : 0.0);
-                    ingrediente.setUnidadMedida(ingredienteActualizado.getUnidadMedida().trim());
-                    
-                    Ingrediente ingredienteGuardado = ingredienteRepository.save(ingrediente);
-                    
-                    if (precioCambio) {
-                        recalcularRecetasQueUsenIngrediente(ingredienteGuardado);
-                    }
-                    
-                    return ingredienteGuardado;
-                });
+        ingrediente.setNombre(ingredienteDTO.getNombre().trim());
+        ingrediente.setStockDisponible(
+                ingredienteDTO.getStockDisponible() != null ? ingredienteDTO.getStockDisponible() : 0.0);
+        ingrediente.setPrecioCompra(
+                ingredienteDTO.getPrecioCompra() != null ? ingredienteDTO.getPrecioCompra() : 0.0);
+        ingrediente.setUnidadMedida(ingredienteDTO.getUnidadMedida().trim());
+
+        Ingrediente ingredienteGuardado = ingredienteRepository.save(ingrediente);
+
+        if (precioCambio) {
+            recalcularRecetasQueUsenIngrediente(ingredienteGuardado);
+        }
+
+        return Optional.of(ingredienteMapper.toDTO(ingredienteGuardado));
     }
 
     private void recalcularRecetasQueUsenIngrediente(Ingrediente ingrediente) {
         List<Receta> recetas = detalleRecetaRepository.findRecetasByIngredienteId(
                 TenantContext.getTenantId(), ingrediente.getId());
-        
+
         for (Receta receta : recetas) {
             recetaService.calcularPrecioBruto(receta);
             recetaRepository.save(receta);
@@ -142,8 +137,9 @@ public class IngredienteService {
         return ingredienteRepository.findById(id)
                 .filter(ingrediente -> ingrediente.getEmpresa().getId().equals(TenantContext.getTenantId()))
                 .map(ingrediente -> {
-                    if (ingredienteRepository.existsByIngredienteEnReceta(id)) {
-                        throw new BusinessException("No se puede desactivar el ingrediente porque está siendo usado en una o más recetas");
+                    if (ingredienteRepository.existsByIngredienteEnReceta(TenantContext.getTenantId(), id)) {
+                        throw new BusinessException(
+                                "No se puede desactivar el ingrediente porque está siendo usado en una o más recetas");
                     }
                     ingrediente.setEstaActivo(false);
                     ingredienteRepository.save(ingrediente);

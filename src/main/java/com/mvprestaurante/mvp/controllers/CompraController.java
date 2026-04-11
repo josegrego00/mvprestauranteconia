@@ -92,10 +92,7 @@ public class CompraController {
         model.addAttribute("compra", new Compra());
         
         List<IngredienteDTO> ingredientesDTO = ingredienteService.listarActivos(PageRequest.of(0, 100))
-            .getContent()
-            .stream()
-            .map(ingredienteMapper::toSimpleDTO)
-            .collect(Collectors.toList());
+            .getContent();
         
         List<ProductoDTO> productosDTO = productoService.listarProductosSinReceta(PageRequest.of(0, 100))
             .getContent()

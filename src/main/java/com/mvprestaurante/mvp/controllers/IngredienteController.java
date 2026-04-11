@@ -1,6 +1,6 @@
 package com.mvprestaurante.mvp.controllers;
 
-import com.mvprestaurante.mvp.models.Ingrediente;
+import com.mvprestaurante.mvp.DTO.IngredienteDTO;
 import com.mvprestaurante.mvp.services.IngredienteService;
 
 import java.util.Optional;
@@ -12,8 +12,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import jakarta.validation.Valid;
 
 @Controller
 @RequestMapping("/ingredientes")
@@ -29,7 +32,7 @@ public class IngredienteController {
             Model model) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("nombre").ascending());
-        Page<Ingrediente> ingredientesPage;
+        Page<IngredienteDTO> ingredientesPage;
 
         if (search != null && !search.isEmpty()) {
             ingredientesPage = ingredienteService.buscarPorNombre(search, pageable);
@@ -49,28 +52,33 @@ public class IngredienteController {
 
     @GetMapping("/nuevo")
     public String nuevo(Model model) {
-        model.addAttribute("ingrediente", new Ingrediente());
+        model.addAttribute("ingrediente", new IngredienteDTO());
         model.addAttribute("unidades", new String[] { "kg", "g", "l", "ml", "unidad", "docena" });
         return "ingredientes/formulario";
     }
 
     @PostMapping("/guardar")
-    public String guardar(@ModelAttribute Ingrediente ingrediente,
+    public String guardar(@ModelAttribute @Valid IngredienteDTO ingredienteDTO,
+            BindingResult bindingResult,
+            Model model,
             RedirectAttributes redirectAttributes) {
 
-        // 🔥 SIN try-catch
-        // 🔥 SIN validación duplicada
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("ingrediente", ingredienteDTO);
+            model.addAttribute("unidades", new String[] { "kg", "g", "l", "ml", "unidad", "docena" });
+            return "ingredientes/formulario";
+        }
 
-        if (ingrediente.getId() != null) {
-            Optional<Ingrediente> actualizado = ingredienteService.actualizar(ingrediente.getId(), ingrediente);
+        if (ingredienteDTO.getId() != null) {
+            Optional<IngredienteDTO> actualizado = ingredienteService.actualizar(ingredienteDTO.getId(), ingredienteDTO);
             if (actualizado.isPresent()) {
                 redirectAttributes.addFlashAttribute("success", "Ingrediente actualizado exitosamente");
             } else {
                 redirectAttributes.addFlashAttribute("error", "No se pudo actualizar el ingrediente");
-                return "redirect:/ingredientes/editar/" + ingrediente.getId();
+                return "redirect:/ingredientes/editar/" + ingredienteDTO.getId();
             }
         } else {
-            ingredienteService.guardar(ingrediente);
+            ingredienteService.guardar(ingredienteDTO);
             redirectAttributes.addFlashAttribute("success", "Ingrediente guardado exitosamente");
         }
 
