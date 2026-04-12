@@ -33,9 +33,9 @@
                 <!-- Formulario -->
                 <div class="card">
                     <div class="card-body">
-                        <form th:action="@{/recetas/guardar}" method="post" class="needs-validation" novalidate>
+                        <form th:action="@{/recetas/guardar}" th:object="${receta}" method="post" class="needs-validation" novalidate>
 
-                            <input type="hidden" name="id" th:value="${receta.id}">
+                            <input type="hidden" th:field="*{id}">
                             <input type="hidden" name="totalIngredientes" id="totalIngredientes"
                                 th:value="${receta.listaIngredientes != null ? receta.listaIngredientes.size() : 0}">
 
@@ -46,11 +46,20 @@
                                         <i class="bi bi-tag me-1"></i>
                                         NOMBRE DE LA RECETA
                                     </label>
-                                    <input type="text" class="form-control" name="nombre" th:value="${receta.nombre}"
+                                    <input type="text" class="form-control" th:field="*{nombre}"
                                         required placeholder="Ej: Receta Café Latte">
                                     <div class="invalid-feedback">
                                         El nombre es obligatorio
                                     </div>
+                                </div>
+
+                                <div class="col-md-3 mb-4">
+                                    <label class="form-label text-uppercase small fw-bold">
+                                        <i class="bi bi-currency-dollar me-1"></i>
+                                        PRECIO DE VENTA
+                                    </label>
+                                    <input type="number" step="0.01" class="form-control" th:field="*{precioVenta}"
+                                        placeholder="0.00">
                                 </div>
 
                                 <div class="col-12 mb-4">
@@ -58,9 +67,8 @@
                                         <i class="bi bi-card-text me-1"></i>
                                         DESCRIPCIÓN
                                     </label>
-                                    <textarea class="form-control" name="descripcion" rows="2"
-                                        placeholder="Descripción de la receta..."
-                                        th:text="${receta.descripcion}"></textarea>
+                                    <textarea class="form-control" th:field="*{descripcion}" rows="2"
+                                        placeholder="Descripción de la receta..."></textarea>
                                 </div>
                             </div>
 
@@ -98,7 +106,7 @@
                                                     <option value="">Seleccionar</option>
                                                     <option th:each="ing : ${ingredientes}" th:value="${ing.id}"
                                                         th:text="${ing.nombre}"
-                                                        th:selected="${detalle.ingrediente != null and detalle.ingrediente.id == ing.id}">
+                                                        th:selected="${detalle.ingredienteId != null and detalle.ingredienteId == ing.id}">
                                                     </option>
                                                 </select>
                                             </td>
@@ -131,7 +139,7 @@
                             <template id="templateFila">
                                 <tr>
                                     <td>
-                                        <select class="form-select form-select-sm" name="temp_ingrediente" required>
+                                        <select class="form-select form-select-sm" name="ingredientesIds" required>
                                             <option value="">Seleccionar</option>
                                             <option th:each="ing : ${ingredientes}" th:value="${ing.id}"
                                                 th:text="${ing.nombre}">
@@ -140,7 +148,7 @@
                                     </td>
                                     <td>
                                         <input type="number" step="0.001" class="form-control form-control-sm"
-                                            name="temp_cantidad" placeholder="0.000" required>
+                                            name="cantidades" placeholder="0.000" required>
                                     </td>
                                     <td class="text-center">
                                         <button type="button" class="btn btn-sm btn-outline-danger"
@@ -209,12 +217,6 @@
             // Crear nueva fila
             const template = document.getElementById('templateFila');
             const newRow = template.content.cloneNode(true);
-
-            // Actualizar nombres de los campos para que sean arrays
-            newRow.querySelector('select[name="temp_ingrediente"]').name = 'ingredientesIds';
-            newRow.querySelector('input[name="temp_cantidad"]').name = 'cantidades';
-            newRow.querySelector('select[name="ingredientesIds"]').name = 'ingredientesIds';
-            newRow.querySelector('input[name="cantidades"]').name = 'cantidades';
             tbody.appendChild(newRow);
             contador++;
 

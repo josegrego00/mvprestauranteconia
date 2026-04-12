@@ -1,7 +1,7 @@
 package com.mvprestaurante.mvp.services;
 
 import com.mvprestaurante.mvp.DTO.InventarioDTO;
-import com.mvprestaurante.mvp.DTO.ProductoVendidoDTO;
+import com.mvprestaurante.mvp.DTO.ProductoDTO;
 import com.mvprestaurante.mvp.DTO.ReporteDashboardDTO;
 import com.mvprestaurante.mvp.models.Ingrediente;
 import com.mvprestaurante.mvp.models.Producto;
@@ -59,7 +59,7 @@ public class ReporteService {
         Integer countSemana = ventaRepository.countByFechaBetween(empresaId, inicioSemana, finHoy);
         Integer countMes = ventaRepository.countByFechaBetween(empresaId, inicioMes, finHoy);
 
-        List<ProductoVendidoDTO> topProductos = obtenerTopProductos(empresaId, inicioMes, finHoy);
+        List<ProductoDTO> topProductos = obtenerTopProductos(empresaId, inicioMes, finHoy);
         List<InventarioDTO> topProductosSinReceta = obtenerTopProductosSinReceta(empresaId);
         List<InventarioDTO> topIngredientes = obtenerTopIngredientes(empresaId);
 
@@ -79,16 +79,16 @@ public class ReporteService {
                 .build();
     }
 
-    private List<ProductoVendidoDTO> obtenerTopProductos(Long empresaId, LocalDateTime inicio, LocalDateTime fin) {
+    private List<ProductoDTO> obtenerTopProductos(Long empresaId, LocalDateTime inicio, LocalDateTime fin) {
         List<Object[]> resultados = detalleVentaRepository.findTopProductosByVentasBetween(empresaId, inicio, fin);
 
         return resultados.stream()
                 .limit(10)
-                .map(row -> ProductoVendidoDTO.builder()
-                        .productoId((Long) row[0])
-                        .productoNombre((String) row[1])
-                        .cantidadTotal(((Number) row[2]).intValue())
-                        .montoTotal(((Number) row[3]).doubleValue())
+                .map(row -> ProductoDTO.builder()
+                        .id((Long) row[0])
+                        .nombre((String) row[1])
+                        .stock(((Number) row[2]).doubleValue())
+                        .precioVenta(((Number) row[3]).doubleValue())
                         .build())
                 .collect(Collectors.toList());
     }

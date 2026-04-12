@@ -11,9 +11,13 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DetalleRecetaRepository extends JpaRepository<DetalleReceta, Long> {
+
+    @Query("SELECT dr FROM DetalleReceta dr WHERE dr.id = :id AND dr.receta.empresa.id = :tenantId")
+    Optional<DetalleReceta> findByIdAndRecetaEmpresaId(@Param("id") Long id, @Param("tenantId") Long tenantId);
 
     @Query("SELECT dr FROM DetalleReceta dr WHERE dr.receta.id = :recetaId " +
             "AND dr.receta.empresa.id = :tenantId")

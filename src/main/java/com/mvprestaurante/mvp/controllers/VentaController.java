@@ -1,9 +1,9 @@
 package com.mvprestaurante.mvp.controllers;
 
-import com.mvprestaurante.mvp.DTO.ProductoVentaDTO;
+import com.mvprestaurante.mvp.DTO.ProductoDTO;
 import com.mvprestaurante.mvp.DTO.ReporteCierreDTO;
 import com.mvprestaurante.mvp.DTO.VentaDTO;
-import com.mvprestaurante.mvp.mapper.ProductoVentaMapper;
+import com.mvprestaurante.mvp.mapper.ProductoMapper;
 import com.mvprestaurante.mvp.mapper.VentaMapper;
 import com.mvprestaurante.mvp.models.Venta;
 import com.mvprestaurante.mvp.services.ProductoService;
@@ -37,7 +37,7 @@ public class VentaController {
     private VentaMapper ventaMapper;
 
     @Autowired
-    private ProductoVentaMapper productoVentaMapper;
+    private ProductoMapper productoMapper;
 
     @GetMapping
     public String listar(@RequestParam(defaultValue = "0") int page,
@@ -67,125 +67,58 @@ public class VentaController {
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", ventasPage.getTotalPages());
         model.addAttribute("totalItems", ventasPage.getTotalElements());
-        model.addAttribute("pageSize", size);
 
         return "ventas/lista";
     }
 
     @GetMapping("/nueva")
-    public String nueva(Model model, RedirectAttributes ra) {
-        if (ventaService.isDiaCerrado()) {
-            ra.addFlashAttribute("error", "El día ha sido cerrado. No se pueden realizar más ventas.");
-            return "redirect:/ventas";
-        }
-        
-        model.addAttribute("venta", new Venta());
-        
-        List<ProductoVentaDTO> productos = productoService.listarActivos(PageRequest.of(0, 100))
-            .getContent()
-            .stream()
-            .map(producto -> {
-                ProductoVentaDTO dto = productoVentaMapper.toVentaDTO(producto);
-                dto.setTieneReceta(producto.getTieneReceta());
-                
-                if (Boolean.TRUE.equals(producto.getTieneReceta()) && producto.getReceta() != null) {
-                    dto.setStockEstimado(ventaService.calcularStockDisponibleReceta(producto.getReceta().getId()));
-                }
-                
-                return dto;
-            })
-            .collect(Collectors.toList());  
-        
+    public String nueva(Model model) {
+        List<ProductoDTO> productos = productoService.listarActivos(PageRequest.of(0, 100)).getContent();
+
         model.addAttribute("productos", productos);
+        model.addAttribute("venta", new VentaDTO());
         model.addAttribute("numeroVenta", ventaService.generarNumeroVenta());
+
         return "ventas/nueva";
     }
 
-    @PostMapping("/guardar")
-    public String guardar(@ModelAttribute Venta venta,
-            @RequestParam Map<String, String> allParams,
-            RedirectAttributes ra, Model model) {
-
-        try {
-            ventaService.guardarDesdeFormulario(venta, allParams);
-            ra.addFlashAttribute("success", "Venta registrada exitosamente");
-            return "redirect:/ventas/nueva";
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("error", e.getMessage());
-            
-            List<ProductoVentaDTO> productos = productoService.listarActivos(PageRequest.of(0, 100))
-                .getContent()
-                .stream()
-                .map(producto -> {
-                    ProductoVentaDTO dto = productoVentaMapper.toVentaDTO(producto);
-                    dto.setTieneReceta(producto.getTieneReceta());
-                    if (Boolean.TRUE.equals(producto.getTieneReceta()) && producto.getReceta() != null) {
-                        dto.setStockEstimado(ventaService.calcularStockDisponibleReceta(producto.getReceta().getId()));
-                    }
-                    return dto;
-                })
-                .collect(Collectors.toList());
-            
-            model.addAttribute("venta", new Venta());
-            model.addAttribute("productos", productos);
-            model.addAttribute("numeroVenta", venta.getNumeroVenta() != null ? venta.getNumeroVenta() : ventaService.generarNumeroVenta());
-            model.addAttribute("carritoParams", allParams);
-            
-            return "ventas/nueva";
-        }
-    }
-
     @GetMapping("/ver/{id}")
-    public String ver(@PathVariable Long id, Model model, RedirectAttributes ra) {
+    public String ver(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         return ventaService.obtenerPorId(id)
                 .map(venta -> {
-                    VentaDTO ventaDTO = ventaMapper.toDetalleDTO(venta);
-                    model.addAttribute("venta", ventaDTO);
+                    model.addAttribute("venta", venta);
                     return "ventas/ver";
                 })
                 .orElseGet(() -> {
-                    ra.addFlashAttribute("error", "Venta no encontrada");
+                    redirectAttributes.addFlashAttribute("error", "Venta no encontrada");
                     return "redirect:/ventas";
                 });
     }
 
-    @PostMapping("/anular/{id}")
-    public String anular(@PathVariable Long id, RedirectAttributes ra) {
-        try {
-            boolean anulado = ventaService.anular(id).isPresent();
-            if (anulado) {
-                ra.addFlashAttribute("success", "Venta anulada correctamente");
-            } else {
-                ra.addFlashAttribute("error", "No se pudo anular la venta");
-            }
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("error", e.getMessage());
-        }
-        return "redirect:/ventas";
-    }
+    @PostMapping("/guardar")
+    public String guardar(@ModelAttribute VentaDTO ventaDTO,
+            @RequestParam Map<String, String> params,
+            RedirectAttributes redirectAttributes) {
 
-    @GetMapping("/cierre-x")
-    public String reporteCierreX(Model model) {
-        ReporteCierreDTO reporte = ventaService.generarReporteCierreX(java.time.LocalDateTime.now());
-        model.addAttribute("reporte", reporte);
-        return "ventas/cierre-x";
-    }
-
-    @GetMapping("/cierre-z")
-    public String reporteCierreZ(Model model, RedirectAttributes ra) {
         try {
-            ReporteCierreDTO reporte = ventaService.generarReporteCierreZ(java.time.LocalDateTime.now());
-            model.addAttribute("reporte", reporte);
-            return "ventas/cierre-z";
-        } catch (RuntimeException e) {
-            ra.addFlashAttribute("error", e.getMessage());
+            ventaService.guardar(ventaDTO, params);
+            redirectAttributes.addFlashAttribute("success", "Venta registrada correctamente");
             return "redirect:/ventas";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/ventas/nueva";
         }
     }
 
-    @GetMapping("/dia-cerrado")
+    @GetMapping("/buscar")
     @ResponseBody
-    public boolean verificarDiaCerrado() {
-        return ventaService.isDiaCerrado();
+    public Page<Venta> buscar(@RequestParam(required = false) String search,
+            @RequestParam(required = false) String fechaInicio,
+            @RequestParam(required = false) String fechaFin,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("fechaVenta").descending());
+        return ventaService.buscar(search, fechaInicio, fechaFin, pageable);
     }
 }

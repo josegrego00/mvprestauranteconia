@@ -1,12 +1,12 @@
 package com.mvprestaurante.mvp.controllers;
 
 import com.mvprestaurante.mvp.DTO.CompraDetalleDTO;
+import com.mvprestaurante.mvp.DTO.CompraDTO;
 import com.mvprestaurante.mvp.DTO.IngredienteDTO;
 import com.mvprestaurante.mvp.DTO.ProductoDTO;
 import com.mvprestaurante.mvp.mapper.CompraMapper;
 import com.mvprestaurante.mvp.mapper.IngredienteMapper;
 import com.mvprestaurante.mvp.mapper.ProductoMapper;
-import com.mvprestaurante.mvp.models.Compra;
 import com.mvprestaurante.mvp.services.CompraService;
 import com.mvprestaurante.mvp.services.IngredienteService;
 import com.mvprestaurante.mvp.services.ProductoService;
@@ -61,7 +61,7 @@ public class CompraController {
             Model model) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("fechaCompra").descending());
-        Page<Compra> comprasPage = compraService.buscar(search, fechaInicio, fechaFin, pageable);
+        Page<CompraDTO> comprasPage = compraService.buscar(search, fechaInicio, fechaFin, pageable);
 
         if (search != null && !search.isEmpty()) {
             model.addAttribute("search", search);
@@ -89,16 +89,13 @@ public class CompraController {
             return "redirect:/compras";
         }
         
-        model.addAttribute("compra", new Compra());
+        model.addAttribute("compra", new CompraDTO());
         
         List<IngredienteDTO> ingredientesDTO = ingredienteService.listarActivos(PageRequest.of(0, 100))
             .getContent();
         
-        List<ProductoDTO> productosDTO = productoService.listarProductosSinReceta(PageRequest.of(0, 100))
-            .getContent()
-            .stream()
-            .map(productoMapper::toSimpleDTO)
-            .collect(Collectors.toList());
+        List<ProductoDTO> productosDTO = productoService.listarSinProducto(PageRequest.of(0, 100))
+            .getContent();
         
         model.addAttribute("ingredientes", ingredientesDTO);
         model.addAttribute("productos", productosDTO);
@@ -107,7 +104,7 @@ public class CompraController {
     }
 
     @PostMapping("/guardar")
-    public String guardar(@ModelAttribute Compra compra,
+    public String guardar(@ModelAttribute CompraDTO compra,
             @RequestParam Map<String, String> allParams,
             RedirectAttributes ra) {
 
@@ -124,16 +121,14 @@ public class CompraController {
 
     @GetMapping("/ver/{id}")
     public String ver(@PathVariable Long id, Model model, RedirectAttributes ra) {
-        return compraService.obtenerPorId(id)
-                .map(compra -> {
-                    CompraDetalleDTO compraDTO = compraMapper.toDetalleDTO(compra);
-                    model.addAttribute("compra", compraDTO);
-                    return "compras/ver";
-                })
-                .orElseGet(() -> {
-                    ra.addFlashAttribute("error", "Compra no encontrada");
-                    return "redirect:/compras";
-                });
+        try {
+            CompraDTO compra = compraService.obtenerPorId(id);
+            model.addAttribute("compra", compra);
+            return "compras/ver";
+        } catch (Exception e) {
+            ra.addFlashAttribute("error", "Compra no encontrada");
+            return "redirect:/compras";
+        }
     }
 
     @PostMapping("/anular/{id}")

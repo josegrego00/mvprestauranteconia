@@ -53,7 +53,7 @@
                 <div th:if="${success}" class="modal-backdrop fade show"></div>
 
                 <form th:action="@{/ventas/guardar}" th:object="${venta}" method="post">
-                    <input type="hidden" name="numeroVenta" th:value="${numeroVenta}" />
+                    <input type="hidden" th:field="*{numeroVenta}" th:value="${numeroVenta}" />
 
                     <div class="row">
                         <div class="col-lg-8">
@@ -134,7 +134,7 @@
 
                                     <div class="mb-3">
                                         <label class="form-label text-uppercase small fw-bold">MÉTODO DE PAGO</label>
-                                        <select class="form-select" name="metodoPago" id="metodoPago">
+                                        <select class="form-select" th:field="*{metodoPago}" id="metodoPago">
                                             <option value="MIXTO" selected>Mixto (Efectivo, Tarjeta, Transferencia)</option>
                                         </select>
                                     </div>
@@ -146,21 +146,21 @@
                                             <div class="row g-2">
                                                 <div class="col-4">
                                                     <label class="form-label small fw-bold">Efectivo</label>
-                                                    <input type="number" class="form-control" name="pagoEfectivo"
+                                                    <input type="number" class="form-control" th:field="*{pagoEfectivo}"
                                                         id="pagoEfectivo" value="0" step="0.01" min="0"
                                                         onchange="actualizarCambioMixto()"
                                                         oninput="actualizarCambioMixto()">
                                                 </div>
                                                 <div class="col-4">
                                                     <label class="form-label small fw-bold">Tarjeta</label>
-                                                    <input type="number" class="form-control" name="pagoTarjeta"
+                                                    <input type="number" class="form-control" th:field="*{pagoTarjeta}"
                                                         id="pagoTarjeta" value="0" step="0.01" min="0"
                                                         onchange="actualizarCambioMixto()"
                                                         oninput="actualizarCambioMixto()">
                                                 </div>
                                                 <div class="col-4">
                                                     <label class="form-label small fw-bold">Transferencia</label>
-                                                    <input type="number" class="form-control" name="pagoTransferencia"
+                                                    <input type="number" class="form-control" th:field="*{pagoTransferencia}"
                                                         id="pagoTransferencia" value="0" step="0.01" min="0"
                                                         onchange="actualizarCambioMixto()"
                                                         oninput="actualizarCambioMixto()">
@@ -176,7 +176,7 @@
                                         </div>
                                                 <div class="col-6">
                                                     <label class="form-label small fw-bold">Transferencia</label>
-                                                    <input type="number" class="form-control" name="pagoTransferencia"
+                                                    <input type="number" class="form-control" th:field="*{pagoTransferencia}"
                                                         id="pagoTransferencia" value="0" step="0.01" min="0"
                                                         onchange="actualizarCambioMixto()"
                                                         oninput="actualizarCambioMixto()">

@@ -95,14 +95,14 @@
                                         <small class="text-secondary" th:text="${receta.descripcion}">Receta clásica</small>
                                     </td>
                                     <td>
-                                        <span th:if="${receta.producto != null}" 
-                                              th:text="${receta.producto.nombre}" 
+                                        <span th:if="${receta.productoId != null}" 
+                                              th:text="${receta.productoNombre}" 
                                               class="fw-semibold">Café Latte</span>
-                                        <span th:unless="${receta.producto != null}" class="text-secondary">Sin producto</span>
+                                        <span th:unless="${receta.productoId != null}" class="text-secondary">Sin producto</span>
                                     </td>
                                     <td>
                                         <span class="badge bg-info bg-opacity-10 text-info" 
-                                              th:text="${#lists.size(receta.listaIngredientes)} + ' ingredientes'">
+                                              th:text="${receta.listaIngredientes != null ? #lists.size(receta.listaIngredientes) : 0} + ' ingredientes'">
                                             5 ingredientes
                                         </span>
                                     </td>

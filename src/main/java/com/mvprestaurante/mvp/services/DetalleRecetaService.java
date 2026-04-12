@@ -1,26 +1,34 @@
 package com.mvprestaurante.mvp.services;
 
+import com.mvprestaurante.mvp.DTO.DetalleRecetaDTO;
 import com.mvprestaurante.mvp.exceptions.BusinessException;
+import com.mvprestaurante.mvp.mapper.DetalleRecetaMapper;
 import com.mvprestaurante.mvp.models.DetalleReceta;
+import com.mvprestaurante.mvp.models.Ingrediente;
 import com.mvprestaurante.mvp.models.Receta;
 import com.mvprestaurante.mvp.multitenant.TenantContext;
 import com.mvprestaurante.mvp.repositories.DetalleRecetaRepository;
+import com.mvprestaurante.mvp.repositories.IngredienteRepository;
 import com.mvprestaurante.mvp.repositories.RecetaRepository;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class DetalleRecetaService {
 
     private final DetalleRecetaRepository detalleRecetaRepository;
+    private final DetalleRecetaMapper detalleRecetaMapper;
     private final RecetaRepository recetaRepository;
+    private final IngredienteRepository ingredienteRepository;
 
     private void validarTenant() {
         Long empresaId = TenantContext.getTenantId();
@@ -29,92 +37,59 @@ public class DetalleRecetaService {
         }
     }
 
-    @Transactional
-    public DetalleReceta guardar(DetalleReceta detalleReceta) {
+    @Transactional(readOnly = true)
+    public DetalleRecetaDTO obtenerPorId(Long id) {
         validarTenant();
-        Long empresaId = TenantContext.getTenantId();
-
-        if (detalleReceta.getReceta() != null) {
-            Receta receta = recetaRepository.findById(detalleReceta.getReceta().getId())
-                    .orElseThrow(() -> new BusinessException("Receta no encontrada"));
-
-            if (!receta.getEmpresa().getId().equals(empresaId)) {
-                throw new BusinessException("No tiene permiso para modificar esta receta");
-            }
-
-            detalleReceta.setReceta(receta);
-        }
-
-        if (detalleReceta.getIngrediente() != null &&
-                !detalleReceta.getIngrediente().getEmpresa().getId().equals(empresaId)) {
-            throw new BusinessException("No tiene permiso para usar este ingrediente");
-        }
-        
-        return detalleRecetaRepository.save(detalleReceta);
-    }
-
-    @Transactional
-    public List<DetalleReceta> guardarListaDetalleReceta(List<DetalleReceta> detalles) {
-        validarTenant();
-        Long empresaId = TenantContext.getTenantId();
-
-        for (DetalleReceta detalle : detalles) {
-            if (detalle.getReceta() != null) {
-                Receta receta = recetaRepository.findById(detalle.getReceta().getId())
-                        .orElseThrow(() -> new BusinessException("Receta no encontrada"));
-
-                if (!receta.getEmpresa().getId().equals(empresaId)) {
-                    throw new BusinessException("No tiene permiso para modificar esta receta");
-                }
-
-                detalle.setReceta(receta);
-            }
-
-            if (detalle.getIngrediente() != null &&
-                    !detalle.getIngrediente().getEmpresa().getId().equals(empresaId)) {
-                throw new BusinessException("No tiene permiso para usar este ingrediente");
-            }
-        }
-
-        return detalleRecetaRepository.saveAll(detalles);
+        DetalleReceta detalle = detalleRecetaRepository.findByIdAndRecetaEmpresaId(id, TenantContext.getTenantId())
+                .orElseThrow(() -> new BusinessException("Detalle de receta no encontrado"));
+        return detalleRecetaMapper.toDTO(detalle);
     }
 
     @Transactional(readOnly = true)
-    public Optional<DetalleReceta> obtenerPorId(Long id) {
+    public Page<DetalleRecetaDTO> listarPorRecetaId(Long recetaId, Pageable pageable) {
         validarTenant();
-        Long empresaId = TenantContext.getTenantId();
+        recetaRepository.findByIdAndEmpresaId(recetaId, TenantContext.getTenantId())
+                .orElseThrow(() -> new BusinessException("Receta no encontrada"));
 
-        return detalleRecetaRepository.findById(id)
-                .filter(detalle -> detalle.getReceta().getEmpresa().getId().equals(empresaId));
+        Page<DetalleReceta> detalles = detalleRecetaRepository.findByRecetaId(TenantContext.getTenantId(), recetaId, pageable);
+        return detalles.map(detalleRecetaMapper::toDTO);
+    }
+
+    @Transactional
+    public DetalleRecetaDTO guardar(DetalleRecetaDTO dto) {
+        validarTenant();
+
+        if (dto.getRecetaId() != null) {
+            Receta receta = recetaRepository.findByIdAndEmpresaId(dto.getRecetaId(), TenantContext.getTenantId())
+                    .orElseThrow(() -> new BusinessException("Receta no encontrada"));
+        }
+
+        if (dto.getIngredienteId() != null) {
+            ingredienteRepository.findByIdAndEmpresaId(dto.getIngredienteId(), TenantContext.getTenantId())
+                    .orElseThrow(() -> new BusinessException("Ingrediente no encontrado"));
+        }
+
+        DetalleReceta detalle = detalleRecetaMapper.toEntity(dto);
+        DetalleReceta guardado = detalleRecetaRepository.save(detalle);
+        return detalleRecetaMapper.toDTO(guardado);
     }
 
     @Transactional
     public void eliminarPorRecetaId(Long recetaId) {
         validarTenant();
-        Long empresaId = TenantContext.getTenantId();
-
-        Receta receta = recetaRepository.findById(recetaId)
+        recetaRepository.findByIdAndEmpresaId(recetaId, TenantContext.getTenantId())
                 .orElseThrow(() -> new BusinessException("Receta no encontrada"));
-
-        if (!receta.getEmpresa().getId().equals(empresaId)) {
-            throw new BusinessException("No tiene permiso para eliminar detalles de esta receta");
-        }
-
-        detalleRecetaRepository.deleteByRecetaId(empresaId, recetaId);
+        detalleRecetaRepository.deleteByRecetaId(TenantContext.getTenantId(), recetaId);
     }
 
     @Transactional
     public boolean eliminar(Long id) {
         validarTenant();
-        Long empresaId = TenantContext.getTenantId();
 
-        return detalleRecetaRepository.findById(id)
-                .filter(detalle -> detalle.getReceta().getEmpresa().getId().equals(empresaId))
-                .map(detalle -> {
-                    detalleRecetaRepository.delete(detalle);
-                    return true;
-                })
-                .orElse(false);
+        DetalleReceta detalle = detalleRecetaRepository.findByIdAndRecetaEmpresaId(id, TenantContext.getTenantId())
+                .orElseThrow(() -> new BusinessException("Detalle de receta no encontrado"));
+
+        detalleRecetaRepository.delete(detalle);
+        return true;
     }
-
 }

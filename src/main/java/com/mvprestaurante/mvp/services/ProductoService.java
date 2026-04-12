@@ -1,7 +1,8 @@
 package com.mvprestaurante.mvp.services;
 
+import com.mvprestaurante.mvp.DTO.ProductoDTO;
 import com.mvprestaurante.mvp.exceptions.BusinessException;
-import com.mvprestaurante.mvp.exceptions.DuplicateResourceException;
+import com.mvprestaurante.mvp.mapper.ProductoMapper;
 import com.mvprestaurante.mvp.models.Empresa;
 import com.mvprestaurante.mvp.models.Producto;
 import com.mvprestaurante.mvp.models.Receta;
@@ -25,6 +26,7 @@ import java.util.Optional;
 public class ProductoService {
 
     private final ProductoRepository productoRepository;
+    private final ProductoMapper productoMapper;
     private final EmpresaRepositorio empresaRepositorio;
     private final RecetaRepository recetaRepository;
 
@@ -36,170 +38,177 @@ public class ProductoService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Producto> listarActivos(Pageable pageable) {
+    public Page<ProductoDTO> listarActivos(Pageable pageable) {
         validarTenant();
-        return productoRepository.findByEstaActivoTrue(TenantContext.getTenantId(), pageable);
+        Page<Producto> productos = productoRepository.findByEstaActivoTrue(TenantContext.getTenantId(), pageable);
+        return productos.map(productoMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
-    public Page<Producto> buscarPorNombre(String nombre, Pageable pageable) {
+    public Page<ProductoDTO> buscarPorNombre(String nombre, Pageable pageable) {
         validarTenant();
-        return productoRepository.findByNombreContainingIgnoreCaseAndEstaActivoTrue(TenantContext.getTenantId(), nombre, pageable);
+        Page<Producto> productos = productoRepository.findByNombreContainingIgnoreCaseAndEstaActivoTrue(TenantContext.getTenantId(), nombre, pageable);
+        return productos.map(productoMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
-    public Page<Producto> listarProductosConReceta(Pageable pageable) {
+    public Page<ProductoDTO> listarProductosConReceta(Pageable pageable) {
         validarTenant();
-        return productoRepository.findByTieneRecetaTrueAndEstaActivoTrue(TenantContext.getTenantId(), pageable);
+        Page<Producto> productos = productoRepository.findByTieneRecetaTrueAndEstaActivoTrue(TenantContext.getTenantId(), pageable);
+        return productos.map(productoMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
-    public Page<Producto> listarProductosSinReceta(Pageable pageable) {
+    public Page<ProductoDTO> listarSinProducto(Pageable pageable) {
         validarTenant();
-        return productoRepository.findByTieneRecetaFalseAndEstaActivoTrue(TenantContext.getTenantId(), pageable);
+        Page<Producto> productos = productoRepository.findByTieneRecetaFalseAndEstaActivoTrue(TenantContext.getTenantId(), pageable);
+        return productos.map(productoMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
-    public Optional<Producto> obtenerPorId(Long id) {
+    public Page<ProductoDTO> listarDisponiblesParaProducto(Long productoId, Pageable pageable) {
         validarTenant();
-        return productoRepository.findById(id)
-                .filter(producto -> producto.getEmpresa().getId().equals(TenantContext.getTenantId()));
+        Page<Producto> productos = productoRepository.findByTieneRecetaTrueAndEstaActivoTrue(TenantContext.getTenantId(), pageable);
+        return productos.map(productoMapper::toDTO);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductoDTO obtenerPorId(Long id) {
+        validarTenant();
+        Producto producto = productoRepository.findByIdAndEmpresaId(id, TenantContext.getTenantId())
+                .orElseThrow(() -> new BusinessException("Producto no encontrado"));
+        return productoMapper.toDTO(producto);
     }
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public Producto guardar(Producto producto, Long recetaId) {
+    public ProductoDTO guardar(ProductoDTO dto, Long recetaId) {
         validarTenant();
 
-        if (producto.getNombre() == null || producto.getNombre().trim().isEmpty()) {
+        if (dto.getNombre() == null || dto.getNombre().trim().isEmpty()) {
             throw new BusinessException("El nombre del producto es obligatorio");
         }
-        if (producto.getPrecioVenta() == null || producto.getPrecioVenta() < 0) {
-            throw new BusinessException("El precio de venta debe ser mayor o igual a 0");
+
+        if (existePorNombre(dto.getNombre())) {
+            throw new BusinessException("Ya existe un producto con ese nombre");
         }
 
-        if (producto.getId() == null &&
-                productoRepository.existsByNombreIgnoreCaseAndEmpresaIdAndEstaActivoTrue(
-                        producto.getNombre(), TenantContext.getTenantId())) {
-            throw new DuplicateResourceException("Producto", producto.getNombre());
+        if (dto.getTieneReceta() == null) {
+            dto.setTieneReceta(false);
         }
 
-        if (producto.getTieneReceta() == null) {
-            producto.setTieneReceta(false);
-        }
-        
-        if (Boolean.TRUE.equals(producto.getTieneReceta())) {
-            producto.setStock(null);
+        if (Boolean.TRUE.equals(dto.getTieneReceta())) {
+            dto.setStock(null);
             if (recetaId != null) {
-                Receta receta = recetaRepository.findById(recetaId)
+                Receta receta = recetaRepository.findByIdAndEmpresaId(recetaId, TenantContext.getTenantId())
                         .orElseThrow(() -> new BusinessException("Receta no encontrada"));
                 if (receta.getProducto() != null) {
-                    throw new BusinessException("Esta receta ya está asignada a otro producto: " + receta.getProducto().getNombre());
+                    throw new BusinessException("Esta receta ya está asignada a otro producto");
                 }
-                producto.setReceta(receta);
-                receta.setProducto(producto);
-                recetaRepository.save(receta);
-            } else {
-                producto.setReceta(null);
             }
         } else {
-            producto.setReceta(null);
-            if ((producto.getStock() == null) || (producto.getStock() < 0)) {
-                producto.setStock(0.0);
+            if (dto.getStock() == null || dto.getStock() < 0) {
+                dto.setStock(0.0);
             }
         }
 
         Empresa empresa = empresaRepositorio.findById(TenantContext.getTenantId())
                 .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
 
+        Producto producto = productoMapper.toEntity(dto);
         producto.setEmpresa(empresa);
         producto.setEstaActivo(true);
-        producto.setNombre(producto.getNombre().trim());
+        producto.setNombre(dto.getNombre().trim());
 
-        return productoRepository.save(producto);
+        if (producto.getDescripcion() != null) {
+            producto.setDescripcion(producto.getDescripcion().trim());
+        }
+
+        if (Boolean.TRUE.equals(dto.getTieneReceta()) && recetaId != null) {
+            Receta receta = recetaRepository.findByIdAndEmpresaId(recetaId, TenantContext.getTenantId())
+                    .orElseThrow(() -> new BusinessException("Receta no encontrada"));
+            producto.setReceta(receta);
+            receta.setProducto(producto);
+            recetaRepository.save(receta);
+        }
+
+        Producto guardado = productoRepository.save(producto);
+        return productoMapper.toDTO(guardado);
     }
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public Optional<Producto> actualizar(Long id, Producto productoActualizado, Long recetaId) {
+    public ProductoDTO actualizar(Long id, ProductoDTO dto, Long recetaId) {
         validarTenant();
 
-        return productoRepository.findById(id)
-                .filter(producto -> producto.getEmpresa().getId().equals(TenantContext.getTenantId()))
-                .map(producto -> {
-                    if (productoActualizado.getNombre() == null || productoActualizado.getNombre().trim().isEmpty()) {
-                        throw new BusinessException("El nombre del producto es obligatorio");
-                    }
-                    if (productoActualizado.getPrecioVenta() == null || productoActualizado.getPrecioVenta() < 0) {
-                        throw new BusinessException("El precio de venta debe ser mayor o igual a 0");
-                    }
+        Producto productoExistente = productoRepository.findByIdAndEmpresaId(id, TenantContext.getTenantId())
+                .orElseThrow(() -> new BusinessException("Producto no ditemukan"));
 
-                    if (!producto.getNombre().equalsIgnoreCase(productoActualizado.getNombre()) &&
-                            productoRepository.existsByNombreIgnoreCaseAndEmpresaIdAndEstaActivoTrue(
-                                    productoActualizado.getNombre(), TenantContext.getTenantId())) {
-                        throw new DuplicateResourceException("Producto", productoActualizado.getNombre());
-                    }
+        if (dto.getNombre() == null || dto.getNombre().trim().isEmpty()) {
+            throw new BusinessException("El nombre del producto es obligatorio");
+        }
 
-                    Boolean tieneRecetaActual = Boolean.TRUE.equals(producto.getTieneReceta());
-                    Boolean tieneRecetaNuevo = Boolean.TRUE.equals(productoActualizado.getTieneReceta());
+        if (!productoExistente.getNombre().equalsIgnoreCase(dto.getNombre()) && existePorNombre(dto.getNombre())) {
+            throw new BusinessException("Ya existe un producto con ese nombre");
+        }
 
-                    if (tieneRecetaActual != tieneRecetaNuevo) {
-                        throw new BusinessException("No puedes cambiar el tipo de producto (con/sin receta)");
-                    }
+        Boolean tieneRecetaActual = Boolean.TRUE.equals(productoExistente.getTieneReceta());
+        Boolean tieneRecetaNuevo = Boolean.TRUE.equals(dto.getTieneReceta());
 
-                    producto.setNombre(productoActualizado.getNombre().trim());
-                    if (productoActualizado.getDescripcion() != null) {
-                        producto.setDescripcion(productoActualizado.getDescripcion().trim());
-                    }
-                    producto.setPrecioCompra(productoActualizado.getPrecioCompra());
-                    producto.setPrecioVenta(productoActualizado.getPrecioVenta() != null ? productoActualizado.getPrecioVenta() : 0.0);
+        if (!tieneRecetaActual.equals(tieneRecetaNuevo)) {
+            throw new BusinessException("No puedes cambiar el tipo de producto (con/sin receta)");
+        }
 
-                    if (Boolean.TRUE.equals(producto.getTieneReceta())) {
-                        producto.setStock(null);
-                        if (recetaId != null) {
-                            Receta recetaNueva = recetaRepository.findById(recetaId)
-                                    .orElseThrow(() -> new BusinessException("Receta no encontrada"));
-                            
-                            if (recetaNueva.getProducto() != null && 
-                                !recetaNueva.getProducto().getId().equals(producto.getId())) {
-                                throw new BusinessException("Esta receta ya está asignada a otro producto: " + recetaNueva.getProducto().getNombre());
-                            }
-                            
-                            Receta recetaAnterior = producto.getReceta();
-                            if (recetaAnterior != null && !recetaAnterior.getId().equals(recetaId)) {
-                                recetaAnterior.setProducto(null);
-                                recetaRepository.save(recetaAnterior);
-                            }
-                            
-                            producto.setReceta(recetaNueva);
-                            recetaNueva.setProducto(producto);
-                            recetaRepository.save(recetaNueva);
-                        }
-                    } else {
-                        if ((productoActualizado.getStock() == null) || (productoActualizado.getStock() < 0)) {
-                            producto.setStock(0.0);
-                        } else {
-                            producto.setStock(productoActualizado.getStock());
-                        }
-                    }
+        productoExistente.setNombre(dto.getNombre().trim());
+        if (dto.getDescripcion() != null) {
+            productoExistente.setDescripcion(dto.getDescripcion().trim());
+        }
+        productoExistente.setPrecioCompra(dto.getPrecioCompra());
+        productoExistente.setPrecioVenta(dto.getPrecioVenta() != null ? dto.getPrecioVenta() : 0.0);
 
-                    return productoRepository.save(producto);
-                });
+        if (Boolean.TRUE.equals(dto.getTieneReceta())) {
+            productoExistente.setStock(null);
+            if (recetaId != null) {
+                Receta recetaNueva = recetaRepository.findByIdAndEmpresaId(recetaId, TenantContext.getTenantId())
+                        .orElseThrow(() -> new BusinessException("Receta no encontrada"));
+
+                if (recetaNueva.getProducto() != null && !recetaNueva.getProducto().getId().equals(id)) {
+                    throw new BusinessException("Esta receta ya está asignada a otro producto");
+                }
+
+                Receta recetaAnterior = productoExistente.getReceta();
+                if (recetaAnterior != null && !recetaAnterior.getId().equals(recetaId)) {
+                    recetaAnterior.setProducto(null);
+                    recetaRepository.save(recetaAnterior);
+                }
+
+                productoExistente.setReceta(recetaNueva);
+                recetaNueva.setProducto(productoExistente);
+                recetaRepository.save(recetaNueva);
+            }
+        } else {
+            if (dto.getStock() == null || dto.getStock() < 0) {
+                productoExistente.setStock(0.0);
+            } else {
+                productoExistente.setStock(dto.getStock());
+            }
+        }
+
+        Producto guardado = productoRepository.save(productoExistente);
+        return productoMapper.toDTO(guardado);
     }
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public boolean eliminarLogico(Long id) {
+    public boolean eliminar(Long id) {
         validarTenant();
 
-        return productoRepository.findById(id)
-                .filter(producto -> producto.getEmpresa().getId().equals(TenantContext.getTenantId()))
-                .map(producto -> {
-                    producto.setEstaActivo(false);
-                    productoRepository.save(producto);
-                    return true;
-                })
-                .orElse(false);
+        Producto producto = productoRepository.findByIdAndEmpresaId(id, TenantContext.getTenantId())
+                .orElseThrow(() -> new BusinessException("Producto no encontrado"));
+
+        producto.setEstaActivo(false);
+        productoRepository.save(producto);
+        return true;
     }
 
     @Transactional(readOnly = true)
@@ -209,26 +218,13 @@ public class ProductoService {
     }
 
     @Transactional
-    public void actualizarFlagReceta(Long productoId, boolean tieneReceta) {
-        validarTenant();
-
-        productoRepository.findById(productoId)
-                .filter(producto -> producto.getEmpresa().getId().equals(TenantContext.getTenantId()))
-                .ifPresent(producto -> {
-                    producto.setTieneReceta(tieneReceta);
-                    productoRepository.save(producto);
-                });
-    }
-
-    @Transactional
     public void asociarReceta(Long productoId, Long recetaId) {
         validarTenant();
 
-        Producto producto = productoRepository.findById(productoId)
-                .filter(p -> p.getEmpresa().getId().equals(TenantContext.getTenantId()))
+        Producto producto = productoRepository.findByIdAndEmpresaId(productoId, TenantContext.getTenantId())
                 .orElseThrow(() -> new BusinessException("Producto no encontrado"));
 
-        Receta receta = recetaRepository.findById(recetaId)
+        Receta receta = recetaRepository.findByIdAndEmpresaId(recetaId, TenantContext.getTenantId())
                 .orElseThrow(() -> new BusinessException("Receta no encontrada"));
 
         if (receta.getProducto() != null && !receta.getProducto().getId().equals(productoId)) {
@@ -247,8 +243,7 @@ public class ProductoService {
     public Double calcularStockEstimado(Long productoId) {
         validarTenant();
 
-        Producto producto = productoRepository.findById(productoId)
-                .filter(p -> p.getEmpresa().getId().equals(TenantContext.getTenantId()))
+        Producto producto = productoRepository.findByIdAndEmpresaId(productoId, TenantContext.getTenantId())
                 .orElseThrow(() -> new BusinessException("Producto no encontrado"));
 
         if (producto.getReceta() == null) {
@@ -271,12 +266,11 @@ public class ProductoService {
     @Transactional
     public void actualizarPrecioVenta(Long productoId, Double nuevoPrecio) {
         validarTenant();
-        
-        productoRepository.findById(productoId)
-                .filter(producto -> producto.getEmpresa().getId().equals(TenantContext.getTenantId()))
-                .ifPresent(producto -> {
-                    producto.setPrecioVenta(nuevoPrecio);
-                    productoRepository.save(producto);
-                });
+
+        Producto producto = productoRepository.findByIdAndEmpresaId(productoId, TenantContext.getTenantId())
+                .orElseThrow(() -> new BusinessException("Producto no encontrado"));
+
+        producto.setPrecioVenta(nuevoPrecio);
+        productoRepository.save(producto);
     }
 }

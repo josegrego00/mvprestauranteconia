@@ -30,8 +30,8 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
 
-                <form th:action="@{/compras/guardar}" th:object="${compra}" method="post" class="needs-validation" novalidate>
-
+<form th:action="@{/compras/guardar}" th:object="${compra}" method="post" class="needs-validation" novalidate>
+ 
                     <div class="card mb-4">
                         <div class="card-header bg-primary text-white">
                             <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Datos de la Compra</h5>
@@ -40,16 +40,16 @@
                             <div class="row">
                                 <div class="col-md-3">
                                     <label class="form-label text-uppercase small fw-bold">NÚMERO DE FACTURA</label>
-                                    <input type="text" class="form-control" name="numeroCompra" placeholder="FAC-001" required>
+                                    <input type="text" class="form-control" th:field="*{numeroCompra}" placeholder="FAC-001" required>
                                     <small class="text-secondary">Ingrese el número de factura del proveedor</small>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label text-uppercase small fw-bold">PROVEEDOR</label>
-                                    <input type="text" class="form-control" name="proveedor" placeholder="Nombre del proveedor">
+                                    <input type="text" class="form-control" th:field="*{proveedor}" placeholder="Nombre del proveedor">
                                 </div>
                                 <div class="col-md-5">
                                     <label class="form-label text-uppercase small fw-bold">OBSERVACIONES</label>
-                                    <input type="text" class="form-control" name="observaciones" placeholder="Notas adicionales...">
+                                    <input type="text" class="form-control" th:field="*{observaciones}" placeholder="Notas adicionales...">
                                 </div>
                             </div>
                         </div>

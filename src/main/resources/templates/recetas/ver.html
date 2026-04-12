@@ -63,8 +63,8 @@
 
                                 <dt class="col-sm-4">Producto:</dt>
                                 <dd class="col-sm-8">
-                                    <span th:if="${receta.producto}" th:text="${receta.producto.nombre}">-</span>
-                                    <span th:unless="${receta.producto}" class="text-secondary">Sin producto asociado</span>
+                                    <span th:if="${receta.productoId != null}" th:text="${receta.productoNombre}">-</span>
+                                    <span th:unless="${receta.productoId != null}" class="text-secondary">Sin producto asociado</span>
                                 </dd>
                             </dl>
                         </div>
@@ -140,18 +140,18 @@
                             </thead>
                             <tbody>
                                 <tr th:each="detalle : ${receta.listaIngredientes}">
-                                    <td class="ps-4 fw-semibold" th:text="${detalle.ingrediente.nombre}">-</td>
-                                    <td th:text="${detalle.ingrediente.unidadMedida}">-</td>
+                                    <td class="ps-4 fw-semibold" th:text="${detalle.ingredienteNombre}">-</td>
+                                    <td th:text="${detalle.ingredienteUnidadMedida}">-</td>
                                     <td>
                                         <span th:text="${detalle.cantidadIngrediente}">0</span>
-                                        <span th:text="${detalle.ingrediente.unidadMedida}"></span>
+                                        <span th:text="${detalle.ingredienteUnidadMedida}"></span>
                                     </td>
                                     <td>
-                                        <span th:text="${detalle.ingrediente.stockDisponible}">0</span>
-                                        <span th:text="${detalle.ingrediente.unidadMedida}"></span>
+                                        <span th:text="${detalle.ingredienteStockDisponible}">0</span>
+                                        <span th:text="${detalle.ingredienteUnidadMedida}"></span>
                                     </td>
                                     <td>
-                                        <span th:text="${detalle.ingrediente.stockDisponible} + ' / ' + ${detalle.cantidadIngrediente} + ' = ' + ${#numbers.formatDecimal(detalle.ingrediente.stockDisponible / detalle.cantidadIngrediente, 1, 0)} + ' uds'">
+                                        <span th:text="${detalle.ingredienteStockDisponible} + ' / ' + ${detalle.cantidadIngrediente} + ' = ' + ${#numbers.formatDecimal(detalle.ingredienteStockDisponible / detalle.cantidadIngrediente, 1, 0)} + ' uds'">
                                             0 uds
                                         </span>
                                     </td>

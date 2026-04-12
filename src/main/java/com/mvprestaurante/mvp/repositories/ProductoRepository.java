@@ -8,8 +8,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
+
+       @Query("SELECT p FROM Producto p WHERE p.id = :id AND p.empresa.id = :tenantId")
+       Optional<Producto> findByIdAndEmpresaId(@Param("id") Long id, @Param("tenantId") Long tenantId);
 
        @Query("SELECT p FROM Producto p WHERE p.empresa.id = :tenantId AND p.estaActivo = true")
        Page<Producto> findByEstaActivoTrue(@Param("tenantId") Long tenantId, Pageable pageable);

@@ -70,8 +70,8 @@ public class IngredienteController {
         }
 
         if (ingredienteDTO.getId() != null) {
-            Optional<IngredienteDTO> actualizado = ingredienteService.actualizar(ingredienteDTO.getId(), ingredienteDTO);
-            if (actualizado.isPresent()) {
+            IngredienteDTO actualizado = ingredienteService.actualizar(ingredienteDTO.getId(), ingredienteDTO);
+            if (actualizado != null) {
                 redirectAttributes.addFlashAttribute("success", "Ingrediente actualizado exitosamente");
             } else {
                 redirectAttributes.addFlashAttribute("error", "No se pudo actualizar el ingrediente");
@@ -102,7 +102,7 @@ public class IngredienteController {
     @GetMapping("/eliminar/{id}")
     public String eliminar(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
-            if (ingredienteService.eliminarLogico(id)) {
+            if (ingredienteService.eliminar(id)) {
                 redirectAttributes.addFlashAttribute("success", "Ingrediente eliminado correctamente");
             } else {
                 redirectAttributes.addFlashAttribute("error", "Error al eliminar el ingrediente");

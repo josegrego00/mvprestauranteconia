@@ -2,7 +2,6 @@ package com.mvprestaurante.mvp.services;
 
 import com.mvprestaurante.mvp.DTO.IngredienteDTO;
 import com.mvprestaurante.mvp.exceptions.BusinessException;
-import com.mvprestaurante.mvp.exceptions.DuplicateResourceException;
 import com.mvprestaurante.mvp.mapper.IngredienteMapper;
 import com.mvprestaurante.mvp.models.Empresa;
 import com.mvprestaurante.mvp.models.Ingrediente;
@@ -89,7 +88,7 @@ public class IngredienteService {
     }
 
     @Transactional
-    public Optional<IngredienteDTO> actualizar(Long id, IngredienteDTO ingredienteDTO) {
+    public IngredienteDTO actualizar(Long id, IngredienteDTO ingredienteDTO) {
         validarTenant();
 
         Ingrediente ingrediente = ingredienteRepository.findByIdAndEmpresaId(id, TenantContext.getTenantId())
@@ -97,7 +96,7 @@ public class IngredienteService {
 
         if (!ingrediente.getNombre().equalsIgnoreCase(ingredienteDTO.getNombre())
                 && existePorNombre(ingredienteDTO.getNombre())) {
-            throw new DuplicateResourceException("Ingrediente", ingredienteDTO.getNombre());
+            throw new BusinessException("Ya existe un ingrediente con ese nombre");
         }
 
         boolean precioCambio = !Objects.equals(
@@ -117,7 +116,7 @@ public class IngredienteService {
             recalcularRecetasQueUsenIngrediente(ingredienteGuardado);
         }
 
-        return Optional.of(ingredienteMapper.toDTO(ingredienteGuardado));
+        return ingredienteMapper.toDTO(ingredienteGuardado);
     }
 
     private void recalcularRecetasQueUsenIngrediente(Ingrediente ingrediente) {
@@ -131,21 +130,19 @@ public class IngredienteService {
     }
 
     @Transactional
-    public boolean eliminarLogico(Long id) {
+    public boolean eliminar(Long id) {
         validarTenant();
 
-        return ingredienteRepository.findById(id)
-                .filter(ingrediente -> ingrediente.getEmpresa().getId().equals(TenantContext.getTenantId()))
-                .map(ingrediente -> {
-                    if (ingredienteRepository.existsByIngredienteEnReceta(TenantContext.getTenantId(), id)) {
-                        throw new BusinessException(
-                                "No se puede desactivar el ingrediente porque está siendo usado en una o más recetas");
-                    }
-                    ingrediente.setEstaActivo(false);
-                    ingredienteRepository.save(ingrediente);
-                    return true;
-                })
-                .orElse(false);
+        Ingrediente ingrediente = ingredienteRepository.findByIdAndEmpresaId(id, TenantContext.getTenantId())
+                .orElseThrow(() -> new BusinessException("Ingrediente no encontrado"));
+
+        if (ingredienteRepository.existsByIngredienteEnReceta(TenantContext.getTenantId(), id)) {
+            throw new BusinessException("No se puede eliminar el ingrediente porque está siendo usado en una o más recetas");
+        }
+
+        ingrediente.setEstaActivo(false);
+        ingredienteRepository.save(ingrediente);
+        return true;
     }
 
     @Transactional(readOnly = true)
@@ -157,7 +154,7 @@ public class IngredienteService {
     private void validarNombreDuplicado(String nombre) {
         String nombreNormalizado = nombre.trim().toLowerCase();
         if (existePorNombre(nombreNormalizado)) {
-            throw new DuplicateResourceException("Ingrediente", nombre);
+            throw new BusinessException("Ya existe un ingrediente con ese nombre");
         }
     }
 }

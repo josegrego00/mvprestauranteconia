@@ -1,6 +1,6 @@
 package com.mvprestaurante.mvp.services;
 
-import com.mvprestaurante.mvp.DTO.ProductoVendidoDTO;
+import com.mvprestaurante.mvp.DTO.ProductoDTO;
 import com.mvprestaurante.mvp.DTO.ReporteCierreDTO;
 import com.mvprestaurante.mvp.exceptions.BusinessException;
 import com.mvprestaurante.mvp.models.Cliente;
@@ -451,7 +451,7 @@ public class VentaService {
 
         List<Venta> ventasDelDia = ventaRepository.findVentasDelDia(empresaId, inicioDia, finDia);
 
-        Map<Long, ProductoVendidoDTO> productosMap = new LinkedHashMap<>();
+        Map<Long, ProductoDTO> productosMap = new LinkedHashMap<>();
         double totalAnulado = 0.0;
 
         for (Venta venta : ventasDelDia) {
@@ -460,22 +460,23 @@ public class VentaService {
                 String productoNombre = detalle.getProducto().getNombre();
 
                 if (productosMap.containsKey(productoId)) {
-                    ProductoVendidoDTO dto = productosMap.get(productoId);
-                    dto.setCantidadTotal(dto.getCantidadTotal() + detalle.getCantidad());
-                    dto.setMontoTotal(dto.getMontoTotal() + detalle.getSubtotal());
+                    ProductoDTO dto = productosMap.get(productoId);
+                    dto.setStock((dto.getStock() != null ? dto.getStock() : 0.0) + detalle.getCantidad());
+                    dto.setPrecioVenta((dto.getPrecioVenta() != null ? dto.getPrecioVenta() : 0.0) + detalle.getSubtotal());
                 } else {
-                    productosMap.put(productoId, ProductoVendidoDTO.builder()
-                            .productoId(productoId)
-                            .productoNombre(productoNombre)
-                            .cantidadTotal(detalle.getCantidad())
-                            .montoTotal(detalle.getSubtotal())
-                            .build());
+                    ProductoDTO nuevo = ProductoDTO.builder()
+                            .id(productoId)
+                            .nombre(productoNombre)
+                            .stock((double) detalle.getCantidad())
+                            .precioVenta(detalle.getSubtotal())
+                            .build();
+                    productosMap.put(productoId, nuevo);
                 }
             }
         }
 
-        List<ProductoVendidoDTO> productosVendidos = new ArrayList<>(productosMap.values());
-        productosVendidos.sort((a, b) -> Double.compare(b.getMontoTotal(), a.getMontoTotal()));
+        List<ProductoDTO> productosVendidos = new ArrayList<>(productosMap.values());
+        productosVendidos.sort((a, b) -> Double.compare(b.getPrecioVenta() != null ? b.getPrecioVenta() : 0.0, a.getPrecioVenta() != null ? a.getPrecioVenta() : 0.0));
 
         return ReporteCierreDTO.builder()
                 .fecha(fecha.toLocalDate())

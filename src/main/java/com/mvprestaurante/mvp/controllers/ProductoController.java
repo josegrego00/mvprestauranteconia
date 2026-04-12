@@ -1,34 +1,35 @@
 package com.mvprestaurante.mvp.controllers;
 
-import com.mvprestaurante.mvp.models.Producto;
-import com.mvprestaurante.mvp.models.Receta;
+import com.mvprestaurante.mvp.DTO.ProductoDTO;
+import com.mvprestaurante.mvp.DTO.RecetaDTO;
+import com.mvprestaurante.mvp.mapper.ProductoMapper;
 import com.mvprestaurante.mvp.services.ProductoService;
 import com.mvprestaurante.mvp.services.RecetaService;
 
 import jakarta.validation.Valid;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-
 
 @Controller
 @RequestMapping("/productos")
 public class ProductoController {
 
-    @Autowired
-    private ProductoService productoService;
+    private final ProductoService productoService;
+    private final ProductoMapper productoMapper;
+    private final RecetaService recetaService;
 
-    @Autowired
-    private RecetaService recetaService;
+    public ProductoController(ProductoService productoService, ProductoMapper productoMapper, RecetaService recetaService) {
+        this.productoService = productoService;
+        this.productoMapper = productoMapper;
+        this.recetaService = recetaService;
+    }
 
     @GetMapping
     public String listar(@RequestParam(defaultValue = "0") int page,
@@ -38,7 +39,7 @@ public class ProductoController {
             Model model) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("nombre").ascending());
-        Page<Producto> productosPage;
+        Page<ProductoDTO> productosPage;
 
         if (soloConReceta) {
             productosPage = productoService.listarProductosConReceta(pageable);
@@ -61,22 +62,16 @@ public class ProductoController {
 
     @GetMapping("/nuevo")
     public String nuevo(Model model) {
-        model.addAttribute("producto", new Producto());
-        model.addAttribute("recetas", recetaService.listarSinProducto(PageRequest.of(0, 100)).getContent());
+        model.addAttribute("producto", new ProductoDTO());
+        Page<RecetaDTO> recetas = recetaService.listarSinProducto(PageRequest.of(0, 100));
+        model.addAttribute("recetas", recetas.getContent());
         return "productos/formulario";
     }
 
     @PostMapping("/guardar")
-    public String guardar(@Valid @ModelAttribute Producto producto, 
+    public String guardar(@ModelAttribute @Valid ProductoDTO producto,
             @RequestParam(required = false) Long recetaId,
-            BindingResult result,
-            Model model,
             RedirectAttributes redirectAttributes) {
-
-        if (result.hasErrors()) {
-            model.addAttribute("recetas", recetaService.listarActivas(PageRequest.of(0, 100)).getContent());
-            return "productos/formulario";
-        }
 
         try {
             if (producto.getId() == null) {
@@ -86,14 +81,11 @@ public class ProductoController {
                 productoService.actualizar(producto.getId(), producto, recetaId);
                 redirectAttributes.addFlashAttribute("success", "Producto actualizado correctamente");
             }
-        } catch (RuntimeException e) {
-            model.addAttribute("error", e.getMessage());
-            if (producto.getId() != null) {
-                model.addAttribute("recetas", recetaService.listarDisponiblesParaProducto(producto.getId(), PageRequest.of(0, 100)).getContent());
-            } else {
-                model.addAttribute("recetas", recetaService.listarSinProducto(PageRequest.of(0, 100)).getContent());
-            }
-            return "productos/formulario";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            Page<RecetaDTO> recetas = recetaService.listarSinProducto(PageRequest.of(0, 100));
+            redirectAttributes.addFlashAttribute("recetas", recetas.getContent());
+            return "redirect:/productos/editar/" + producto.getId();
         }
 
         return "redirect:/productos";
@@ -101,39 +93,41 @@ public class ProductoController {
 
     @GetMapping("/editar/{id}")
     public String editar(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
-        return productoService.obtenerPorId(id)
-                .map(producto -> {
-                    model.addAttribute("producto", producto);
-                    model.addAttribute("recetas", recetaService.listarDisponiblesParaProducto(id, PageRequest.of(0, 100)).getContent());
-                    return "productos/formulario";
-                })
-                .orElseGet(() -> {
-                    redirectAttributes.addFlashAttribute("error", "Producto no encontrado");
-                    return "redirect:/productos";
-                });
+        try {
+            ProductoDTO producto = productoService.obtenerPorId(id);
+            model.addAttribute("producto", producto);
+
+            Page<RecetaDTO> recetas = recetaService.listarSinProducto(PageRequest.of(0, 100));
+            model.addAttribute("recetas", recetas.getContent());
+
+            return "productos/formulario";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Producto no encontrado");
+            return "redirect:/productos";
+        }
     }
 
     @GetMapping("/eliminar/{id}")
     public String eliminar(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        if (productoService.eliminarLogico(id)) {
+        try {
+            productoService.eliminar(id);
             redirectAttributes.addFlashAttribute("success", "Producto eliminado correctamente");
-        } else {
-            redirectAttributes.addFlashAttribute("error", "Error al eliminar el producto");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/productos";
     }
 
     @GetMapping("/ver/{id}")
     public String ver(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
-        return productoService.obtenerPorId(id)
-                .map(producto -> {
-                    model.addAttribute("producto", producto);
-                    return "productos/ver";
-                })
-                .orElseGet(() -> {
-                    redirectAttributes.addFlashAttribute("error", "Producto no encontrado");
-                    return "redirect:/productos";
-                });
+        try {
+            ProductoDTO producto = productoService.obtenerPorId(id);
+            model.addAttribute("producto", producto);
+            return "productos/ver";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Producto no encontrado");
+            return "redirect:/productos";
+        }
     }
 
     @GetMapping("/estimado/{id}")
@@ -144,20 +138,19 @@ public class ProductoController {
 
     @GetMapping("/receta/{id}")
     public String gestionarReceta(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        return productoService.obtenerPorId(id)
-                .map(producto -> {
-                    if (!Boolean.TRUE.equals(producto.getTieneReceta())) {
-                        redirectAttributes.addFlashAttribute("error", "Los productos sin receta no pueden tener receta");
-                        return "redirect:/productos/ver/" + id;
-                    }
-                    if (producto.getReceta() != null) {
-                        return "redirect:/recetas/ver/" + producto.getReceta().getId();
-                    }
-                    return "redirect:/recetas/nueva?productoId=" + id;
-                })
-                .orElseGet(() -> {
-                    redirectAttributes.addFlashAttribute("error", "Producto no encontrado");
-                    return "redirect:/productos";
-                });
+        try {
+            ProductoDTO producto = productoService.obtenerPorId(id);
+            if (!Boolean.TRUE.equals(producto.getTieneReceta())) {
+                redirectAttributes.addFlashAttribute("error", "Los productos sin receta no pueden tener receta");
+                return "redirect:/productos/ver/" + id;
+            }
+            if (producto.getRecetaId() != null) {
+                return "redirect:/recetas/ver/" + producto.getRecetaId();
+            }
+            return "redirect:/recetas/nueva?productoId=" + id;
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Producto no encontrado");
+            return "redirect:/productos";
+        }
     }
 }

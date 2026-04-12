@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface RecetaRepository extends JpaRepository<Receta, Long> {
 
@@ -39,4 +41,7 @@ public interface RecetaRepository extends JpaRepository<Receta, Long> {
 
     @Query("SELECT r FROM Receta r WHERE r.empresa.id = :tenantId AND r.estaActiva = true AND (r.producto IS NULL OR r.producto.id = :productoId)")
     Page<Receta> findDisponiblesParaProducto(@Param("tenantId") Long tenantId, @Param("productoId") Long productoId, Pageable pageable);
+
+    @Query("SELECT r FROM Receta r WHERE r.id = :id AND r.empresa.id = :tenantId")
+    Optional<Receta> findByIdAndEmpresaId(@Param("id") Long id, @Param("tenantId") Long tenantId);
 }

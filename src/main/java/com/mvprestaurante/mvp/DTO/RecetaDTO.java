@@ -7,11 +7,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ProductoDTO {
+public class RecetaDTO {
 
     private Long id;
 
@@ -20,23 +22,19 @@ public class ProductoDTO {
 
     private String descripcion;
 
-    @PositiveOrZero(message = "El precio de compra no puede ser negativo")
-    private Double precioCompra;
+    @PositiveOrZero(message = "El precio bruto no puede ser negativo")
+    private Double precioBruto;
 
     @PositiveOrZero(message = "El precio de venta no puede ser negativo")
     private Double precioVenta;
 
-    private Boolean estaActivo;
+    private Boolean estaActiva;
 
-    private Boolean tieneReceta;
+    private Long productoId;
 
-    private Long recetaId;
+    private String productoNombre;
 
-    private String recetaNombre;
-
-    private Double stock;
-
-    private Double stockEstimado;
+    private List<DetalleRecetaDTO> listaIngredientes;
 
     private Long empresaId;
 }

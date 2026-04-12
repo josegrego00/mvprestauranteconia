@@ -1,7 +1,8 @@
 package com.mvprestaurante.mvp.services;
 
+import com.mvprestaurante.mvp.DTO.CompraDTO;
 import com.mvprestaurante.mvp.exceptions.BusinessException;
-import com.mvprestaurante.mvp.exceptions.DuplicateResourceException;
+import com.mvprestaurante.mvp.mapper.CompraMapper;
 import com.mvprestaurante.mvp.models.Compra;
 import com.mvprestaurante.mvp.models.DetalleCompra;
 import com.mvprestaurante.mvp.models.Empresa;
@@ -45,6 +46,7 @@ public class CompraService {
     private final UsuarioRepositorio usuarioRepository;
     private final EmpresaRepositorio empresaRepository;
     private final MovimientoStockService movimientoStockService;
+    private final CompraMapper compraMapper;
 
     private void validarTenant() {
         Long empresaId = TenantContext.getTenantId();
@@ -65,35 +67,40 @@ public class CompraService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Compra> listarActivos(Pageable pageable) {
+    public Page<CompraDTO> listarActivos(Pageable pageable) {
         validarTenant();
-        return compraRepository.findAllByTenantId(TenantContext.getTenantId(), pageable);
+        Page<Compra> compras = compraRepository.findAllByTenantId(TenantContext.getTenantId(), pageable);
+        return compras.map(compraMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
-    public Page<Compra> buscar(String search, String fechaInicio, String fechaFin, Pageable pageable) {
+    public Page<CompraDTO> buscar(String search, String fechaInicio, String fechaFin, Pageable pageable) {
         validarTenant();
         
         if (search != null && !search.isEmpty()) {
-            return compraRepository.findByNumeroContainingIgnoreCase(TenantContext.getTenantId(), search, pageable);
+            Page<Compra> compras = compraRepository.findByNumeroContainingIgnoreCase(TenantContext.getTenantId(), search, pageable);
+            return compras.map(compraMapper::toDTO);
         } else if (fechaInicio != null && !fechaInicio.isEmpty() && fechaFin != null && !fechaFin.isEmpty()) {
             LocalDateTime inicio = LocalDateTime.parse(fechaInicio + "T00:00:00");
             LocalDateTime fin = LocalDateTime.parse(fechaFin + "T23:59:59");
-            return compraRepository.findByFechaBetween(TenantContext.getTenantId(), inicio, fin, pageable);
+            Page<Compra> compras = compraRepository.findByFechaBetween(TenantContext.getTenantId(), inicio, fin, pageable);
+            return compras.map(compraMapper::toDTO);
         } else {
-            return compraRepository.findAllByTenantId(TenantContext.getTenantId(), pageable);
+            Page<Compra> compras = compraRepository.findAllByTenantId(TenantContext.getTenantId(), pageable);
+            return compras.map(compraMapper::toDTO);
         }
     }
 
     @Transactional(readOnly = true)
-    public Optional<Compra> obtenerPorId(Long id) {
+    public CompraDTO obtenerPorId(Long id) {
         validarTenant();
-        return compraRepository.findByIdWithEmpresa(id)
-                .filter(compra -> compra.getEmpresa().getId().equals(TenantContext.getTenantId()));
+        Compra compra = compraRepository.findByIdAndEmpresaId(id, TenantContext.getTenantId())
+                .orElseThrow(() -> new BusinessException("Compra no encontrada"));
+        return compraMapper.toDTO(compra);
     }
 
     @Transactional
-    public Compra guardarDesdeFormulario(Compra compra, Map<String, String> allParams) {
+    public CompraDTO guardarDesdeFormulario(CompraDTO compraDTO, Map<String, String> allParams) {
         validarTenant();
 
         List<DetalleCompra> detalles = new ArrayList<>();
@@ -144,11 +151,11 @@ public class CompraService {
             }
         }
 
-        return guardar(compra, detalles);
+        return guardar(compraDTO, detalles);
     }
 
     @Transactional
-    public Compra guardar(Compra compra, List<DetalleCompra> detalles) {
+    public CompraDTO guardar(CompraDTO compraDTO, List<DetalleCompra> detalles) {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
 
@@ -156,9 +163,11 @@ public class CompraService {
             throw new BusinessException("La compra debe tener al menos un item");
         }
 
+        Compra compra = compraMapper.toEntity(compraDTO);
+
         if (compra.getId() == null) {
             if (compraRepository.existsByNumeroCompraAndEmpresaId(compra.getNumeroCompra(), empresaId)) {
-                throw new DuplicateResourceException("Compra", "El número de factura '" + compra.getNumeroCompra() + "' ya existe en esta empresa");
+                throw new BusinessException("El número de factura '" + compra.getNumeroCompra() + "' ya existe en esta empresa");
             }
         }
 
@@ -219,7 +228,7 @@ public class CompraService {
             }
         }
 
-        return compraGuardada;
+        return compraMapper.toDTO(compraGuardada);
     }
 
     @Transactional
@@ -231,15 +240,7 @@ public class CompraService {
         log.info("========== INICIO ANULACION COMPRA ==========");
         log.info("ID Compra: {}, Empresa: {}", id, empresaId);
 
-        return compraRepository.findById(id)
-                .filter(compra -> {
-                    log.info("Compra encontrada: {}, Estado: {}", compra.getNumeroCompra(), compra.getEstado());
-                    return compra.getEmpresa().getId().equals(empresaId);
-                })
-                .filter(compra -> {
-                    log.info("Verificando estado COMPLETADA: {}", compra.getEstado());
-                    return "COMPLETADA".equals(compra.getEstado());
-                })
+        return compraRepository.findByIdAndEmpresaIdAndEstado(id, empresaId, "COMPLETADA")
                 .map(compra -> {
                     log.info("Iniciando anulacion para compra: {}, Detalles: {}", compra.getNumeroCompra(), compra.getDetallesCompra().size());
                     

@@ -36,14 +36,4 @@ public class GlobalExceptionHandler {
         redirectAttributes.addFlashAttribute("error", ex.getMessage());
         return getRedirectUrl(request);
     }
-
-    @ExceptionHandler(Exception.class)
-    public String handleGeneral(
-            Exception ex,
-            RedirectAttributes redirectAttributes,
-            HttpServletRequest request) {
-
-        redirectAttributes.addFlashAttribute("error", "Ocurrió un error inesperado: " + ex.getMessage());
-        return getRedirectUrl(request);
-    }
 }

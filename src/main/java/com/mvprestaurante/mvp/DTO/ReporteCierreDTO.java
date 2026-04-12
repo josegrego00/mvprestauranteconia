@@ -25,5 +25,5 @@ public class ReporteCierreDTO {
     private Double totalCompras;
     private Integer cantidadCompras;
     private Double balance;
-    private List<ProductoVendidoDTO> productosVendidos;
+    private List<ProductoDTO> productosVendidos;
 }

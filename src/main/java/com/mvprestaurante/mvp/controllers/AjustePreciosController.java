@@ -1,6 +1,6 @@
 package com.mvprestaurante.mvp.controllers;
 
-import com.mvprestaurante.mvp.models.Producto;
+import com.mvprestaurante.mvp.DTO.ProductoDTO;
 import com.mvprestaurante.mvp.services.ProductoService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +32,7 @@ public class AjustePreciosController {
             Model model) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("nombre").ascending());
-        Page<Producto> productosPage;
+        Page<ProductoDTO> productosPage;
 
         if (search != null && !search.isEmpty()) {
             productosPage = productoService.buscarPorNombre(search, pageable);
@@ -40,13 +40,15 @@ public class AjustePreciosController {
         } else {
             switch (tipoProducto) {
                 case "conReceta" -> productosPage = productoService.listarProductosConReceta(pageable);
-                case "sinReceta" -> productosPage = productoService.listarProductosSinReceta(pageable);
+                case "sinReceta" -> productosPage = productoService.listarSinProducto(pageable);
                 default -> productosPage = productoService.listarActivos(pageable);
             }
         }
 
-        model.addAttribute("productos", productosPage);
+        model.addAttribute("productos", productosPage.getContent());
         model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", productosPage.getTotalPages());
+        model.addAttribute("totalItems", productosPage.getTotalElements());
         model.addAttribute("pageSize", size);
         model.addAttribute("porcentajeGanancia", porcentajeGanancia);
         model.addAttribute("tipoProducto", tipoProducto);
@@ -59,42 +61,23 @@ public class AjustePreciosController {
                          @RequestParam(required = false, defaultValue = "0") Double porcentajeGanancia,
                          RedirectAttributes ra) {
 
-        int actualizados = 0;
-
-        for (String key : formParams.keySet()) {
-            if (key.startsWith("precios[")) {
-                String value = formParams.getFirst(key);
-                if (value != null && !value.isEmpty()) {
-                    try {
-                        Long productoId = Long.parseLong(key.replace("precios[", "").replace("]", ""));
-                        Double nuevoPrecio = Double.parseDouble(value);
-
+        try {
+            for (Map.Entry<String, java.util.List<String>> entry : formParams.entrySet()) {
+                String key = entry.getKey();
+                if (key.startsWith("precio_")) {
+                    Long productoId = Long.parseLong(key.replace("precio_", ""));
+                    String valor = entry.getValue().get(0);
+                    if (valor != null && !valor.isEmpty()) {
+                        Double nuevoPrecio = Double.parseDouble(valor);
                         productoService.actualizarPrecioVenta(productoId, nuevoPrecio);
-                        actualizados++;
-                    } catch (NumberFormatException e) {
-                        // Ignorar valores inválidos
                     }
                 }
             }
-        }
-
-        if (actualizados > 0) {
-            ra.addFlashAttribute("success", "Se actualizaron " + actualizados + " precios correctamente");
-        } else {
-            ra.addFlashAttribute("error", "No se pudieron actualizar los precios");
-        }
-
-        return "redirect:/ajuste-precios" + (porcentajeGanancia != null && porcentajeGanancia > 0 ? "?porcentajeGanancia=" + porcentajeGanancia : "");
-    }
-
-    @PostMapping("/actualizar-precio/{id}")
-    @ResponseBody
-    public Map<String, Object> actualizarPrecio(@PathVariable Long id, @RequestParam Double precio) {
-        try {
-            productoService.actualizarPrecioVenta(id, precio);
-            return Map.of("success", true, "precio", precio);
+            ra.addFlashAttribute("success", "Precios actualizados correctamente");
         } catch (Exception e) {
-            return Map.of("success", false, "error", e.getMessage());
+            ra.addFlashAttribute("error", e.getMessage());
         }
+
+        return "redirect:/ajuste-precios";
     }
 }

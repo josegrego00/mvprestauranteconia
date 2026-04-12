@@ -45,7 +45,7 @@
                             <form th:action="@{/productos/guardar}" th:object="${producto}" method="post"
                                 class="needs-validation" novalidate>
 
-                                <input type="hidden" name="id" th:value="${producto.id}">
+                                <input type="hidden" th:field="*{id}">
 
 
                                 <div class="row">
@@ -72,8 +72,8 @@
                                         </label>
                                         <div class="input-group">
                                             <span class="input-group-text bg-white">$</span>
-                                            <input type="number" step="0.01" class="form-control" name="precioVenta"
-                                                th:value="${producto.precioVenta}" required placeholder="0.00">
+                                            <input type="number" step="0.01" class="form-control" th:field="*{precioVenta}"
+                                                required placeholder="0.00">
                                         </div>
                                         <div class="invalid-feedback">
                                             Ingresa el precio de venta
@@ -107,8 +107,8 @@
                                             STOCK ACTUAL
                                         </label>
 
-                                        <input type="number" step="0.01" class="form-control" name="stock"
-                                            th:value="${producto.stock}" placeholder="0">
+<input type="number" step="0.01" class="form-control" th:field="*{stock}"
+                                                placeholder="0">
 
                                         <small class="text-secondary">
                                             Solo para productos sin receta (ej: bebidas)

@@ -54,20 +54,31 @@
 - This enables automatic data binding and validation
 
 ### Service Layer (Required Pattern)
-- **Controllers:** SOLO reciben requests, llaman servicios, pasan model/redirect attributes
-- **Services:** TODA la lógica de negocio, validaciones, parsing de parámetros
+- **Controllers:** SOLO receives requests, call services, pass model/redirect attributes
+- **Services:** ALL business logic, validations, parameter parsing
 - Use `@Transactional` on all service methods
 - Use `readOnly = true` for read operations
 - Validate tenant with `validarTenant()` method
 - **Repository queries MUST filter by tenantId**, never filter in memory with stream/filter
+- **Return DTOs, not entities** - Services must convert entities to DTOs before returning
+- **Use @Valid in controllers for DTO validation with annotations**
+- **Use BusinessException for all errors** - never DuplicateResourceException
+
+### Repository Filter Pattern (Required)
+- **ALL queries MUST include tenantId in WHERE clause**
+- Use `@Param("tenantId")` and filter by `empresa.id`
+- Examples:
+  - `findByIdAndEmpresaId(Long id, Long tenantId)`
+  - `findByIdAndEmpresaIdAndEstado(Long id, Long tenantId, String estado)`
+- **NEVER use .filter() in service** - filtering is done in repository
 
 ### Error Handling
-- Throw `BusinessException` for business logic errors
-- Throw `DuplicateResourceException` for duplicate entries
+- Throw `BusinessException` for ALL business logic errors
+- **NEVER throw DuplicateResourceException** - use BusinessException with message
 - Use `@ControllerAdvice` (`GlobalExceptionHandler`) for global exception handling
 - Return meaningful error messages in Spanish
 - Use `BindingResult` for form validation in controllers
-- Use `@Valid` in controller for automatic DTO validation
+- Use `@Valid` in controller for automatic DTO validation with annotations
 
 ### Multi-Tenant Pattern
 - Get tenant via `TenantContext.getTenantId()`
