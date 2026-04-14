@@ -110,7 +110,7 @@
                                                 </span>
                                             </td>
                                             <td>
-                                                $<span th:text="${(producto.tieneReceta and producto.receta != null) ? producto.receta.precioBruto : producto.precioCompra}">2.50</span>
+                                                $<span th:text="${(producto.tieneReceta and producto.recetaId != null) ? producto.precioBruto : producto.precioCompra}">2.50</span>
                                             </td>
                                             <td style="min-width: 180px;">
                                                 <div class="input-group input-group-sm">
@@ -120,7 +120,7 @@
                                                            th:value="${producto.precioVenta}"
                                                            step="0.01" min="0"
                                                            th:data-producto-id="${producto.id}"
-                                                           th:data-costo="${(producto.tieneReceta and producto.receta != null) ? producto.receta.precioBruto : producto.precioCompra}">
+                                                           th:data-costo="${(producto.tieneReceta and producto.recetaId != null) ? producto.precioBruto : producto.precioCompra}">
                                                     <button type="button" class="btn btn-outline-success btn-guardar-precio" 
                                                             th:data-producto-id="${producto.id}" title="Guardar precio">
                                                         <i class="bi bi-check-lg"></i>
@@ -128,7 +128,7 @@
                                                 </div>
                                             </td>
                                             <td>
-                                                <th:block th:with="costo=${(producto.tieneReceta and producto.receta != null) ? producto.receta.precioBruto : producto.precioCompra}, pct=${porcentajeGanancia != null ? porcentajeGanancia : 0}, sugerido=${costo != null ? costo * (1 + pct/100) : 0}">
+                                                <th:block th:with="costo=${(producto.tieneReceta and producto.recetaId != null) ? producto.precioBruto : producto.precioCompra}, pct=${porcentajeGanancia != null ? porcentajeGanancia : 0}, sugerido=${costo != null ? costo * (1 + pct/100) : 0}">
                                                     <button type="button" class="btn btn-sm btn-outline-success aplicar-sugerido"
                                                             th:data-costo="${costo}"
                                                             th:data-porcentaje="${pct}">
@@ -137,7 +137,7 @@
                                                 </th:block>
                                             </td>
                                             <td>
-                                                <th:block th:with="costo=${(producto.tieneReceta and producto.receta != null) ? producto.receta.precioBruto : producto.precioCompra}, margen=${(costo != null and producto.precioVenta != null and costo > 0) ? (producto.precioVenta - costo) / costo * 100 : 0}">
+                                                <th:block th:with="costo=${(producto.tieneReceta and producto.recetaId != null) ? producto.precioBruto : producto.precioCompra}, margen=${(costo != null and producto.precioVenta != null and costo > 0) ? (producto.precioVenta - costo) / costo * 100 : 0}">
                                                     <span th:if="${costo != null and producto.precioVenta != null and costo > 0}"
                                                           th:class="${margen < 0 ? 'text-danger' : (margen <= 5 ? 'text-warning' : 'text-success')}"
                                                           th:text="${#numbers.formatDecimal(margen, 1, 2)} + '%'">
@@ -160,23 +160,23 @@
                     </div>
 
                     <!-- Paginación -->
-                    <div th:if="${productos.totalPages > 1}" class="d-flex justify-content-between align-items-center mt-4">
+                    <div th:if="${totalPages > 1}" class="d-flex justify-content-between align-items-center mt-4">
                         <span class="text-secondary">
-                            Mostrando <span th:text="${productos.number * productos.size + 1}"></span> 
-                            a <span th:text="${(productos.number + 1) * productos.size > productos.totalElements ? productos.totalElements : (productos.number + 1) * productos.size}"></span>
-                            de <span th:text="${productos.totalElements}"></span> productos
+                            Mostrando <span th:text="${currentPage * pageSize + 1}"></span> 
+                            a <span th:text="${(currentPage + 1) * pageSize > totalItems ? totalItems : (currentPage + 1) * pageSize}"></span>
+                            de <span th:text="${totalItems}"></span> productos
                         </span>
                         <nav>
                             <ul class="pagination mb-0">
                                 <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
                                     <a class="page-link" th:href="@{/ajuste-precios(page=${currentPage - 1}, size=${pageSize}, search=${search}, porcentajeGanancia=${porcentajeGanancia}, tipoProducto=${tipoProducto})}">Anterior</a>
                                 </li>
-                                <li class="page-item" th:each="i : ${#numbers.sequence(0, productos.totalPages - 1)}" 
+                                <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}" 
                                     th:classappend="${i == currentPage} ? 'active'">
                                     <a class="page-link" th:href="@{/ajuste-precios(page=${i}, size=${pageSize}, search=${search}, porcentajeGanancia=${porcentajeGanancia}, tipoProducto=${tipoProducto})}" 
                                        th:text="${i + 1}">1</a>
                                 </li>
-                                <li class="page-item" th:classappend="${currentPage + 1 >= productos.totalPages} ? 'disabled'">
+                                <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? 'disabled'">
                                     <a class="page-link" th:href="@{/ajuste-precios(page=${currentPage + 1}, size=${pageSize}, search=${search}, porcentajeGanancia=${porcentajeGanancia}, tipoProducto=${tipoProducto})}">Siguiente</a>
                                 </li>
                             </ul>

@@ -109,16 +109,16 @@
                                     <tr>
                                         <td class="text-secondary">Receta:</td>
                                         <td>
-                                            <span th:if="${producto.tieneReceta and producto.receta != null}">
-                                                <i class="bi bi-check-circle-fill text-success me-2"></i>
-                                                Tiene receta asociada
-                                                <a th:href="@{/recetas/ver/{id}(id=${producto.receta.id})}"
-                                                    class="btn btn-sm btn-outline-primary ms-3">
-                                                    <i class="bi bi-journal-bookmark-fill me-1"></i>
-                                                    Ver receta
-                                                </a>
-                                            </span>
-                                            <span th:if="${producto.tieneReceta and producto.receta == null}">
+                                        <span th:if="${producto.tieneReceta and producto.recetaId != null}">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            Tiene receta asociada
+                                            <a th:href="@{/recetas/ver/{id}(id=${producto.recetaId})}"
+                                                class="btn btn-sm btn-outline-primary ms-3">
+                                                <i class="bi bi-journal-bookmark-fill me-1"></i>
+                                                Ver receta
+                                            </a>
+                                        </span>
+                                        <span th:if="${producto.tieneReceta and producto.recetaId == null}">
                                                 <i class="bi bi-exclamation-circle-fill text-warning me-2"></i>
                                                 Producto con receta pero sin detalles
                                                 <a th:href="@{/recetas/nueva?productoId={id}(id=${producto.id})}"
@@ -168,7 +168,7 @@
                                     Costo estimado por receta
                                 </h6>
                                 <p class="display-6 fw-bold text-primary mb-0"
-                                    th:text="'$' + ${producto.receta.precioBruto}">$2.50</p>
+                                    th:text="'$' + ${producto.precioBruto}">$2.50</p>
                                 <small class="text-secondary">Suma de ingredientes</small>
                             </div>
                         </div>

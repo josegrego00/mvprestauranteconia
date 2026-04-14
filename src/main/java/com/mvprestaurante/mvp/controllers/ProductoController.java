@@ -22,12 +22,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class ProductoController {
 
     private final ProductoService productoService;
-    private final ProductoMapper productoMapper;
     private final RecetaService recetaService;
 
-    public ProductoController(ProductoService productoService, ProductoMapper productoMapper, RecetaService recetaService) {
+    public ProductoController(ProductoService productoService, RecetaService recetaService) {
         this.productoService = productoService;
-        this.productoMapper = productoMapper;
         this.recetaService = recetaService;
     }
 

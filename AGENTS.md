@@ -86,6 +86,13 @@
 - Throw `BusinessException` if no tenant
 - Tenant filter resolves subdomain before authentication
 - **All repository methods MUST include tenantId in WHERE clause**
+- **Use `/salir` endpoint to clear tenant context and redirect to landing page without subdomain**
+
+### Activation/Deactivation Pattern
+- **Never update estaActivo in update endpoints** - use dedicated endpoints for activation/deactivation
+- Create separate endpoints: `/entidad/activar/{id}` and `/entidad/eliminar/{id}` (for deactivation)
+- Services must return DTOs, not entities
+- Always validate current state before toggling (e.g., don't activate already active users)
 
 ### Testing
 - Use `@SpringBootTest` for integration tests

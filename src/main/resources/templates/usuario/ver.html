@@ -24,12 +24,12 @@
                             <i class="bi bi-info-circle me-2"></i>
                             Detalle del Usuario
                         </h1>
-                        <p class="welcome-subtitle" th:text="${usuario.nombre}">
+                        <p class="welcome-subtitle" th:text="${usuarioDTO.nombre}">
                             Juan Pérez
                         </p>
                     </div>
                     <div>
-                        <a th:href="@{/usuarios/editar/{id}(id=${usuario.id})}" class="btn btn-primary me-2">
+                        <a th:href="@{/usuarios/editar/{id}(id=${usuarioDTO.id})}" class="btn btn-primary me-2">
                             <i class="bi bi-pencil me-2"></i>
                             Editar
                         </a>
@@ -54,26 +54,26 @@
                                 <table class="table table-borderless">
                                     <tr>
                                         <td class="text-secondary" width="200">Nombre:</td>
-                                        <td class="fw-semibold" th:text="${usuario.nombre}">Juan Pérez</td>
+                                        <td class="fw-semibold" th:text="${usuarioDTO.nombre}">Juan Pérez</td>
                                     </tr>
                                     <tr>
                                         <td class="text-secondary">Nombre de Usuario:</td>
-                                        <td th:text="${usuario.nombreUsuario}">juan.perez</td>
+                                        <td th:text="${usuarioDTO.nombreUsuario}">juan.perez</td>
                                     </tr>
                                     <tr>
                                         <td class="text-secondary">Email:</td>
-                                        <td th:text="${usuario.email}">juan@email.com</td>
+                                        <td th:text="${usuarioDTO.email}">juan@email.com</td>
                                     </tr>
                                     <tr>
                                         <td class="text-secondary">Rol:</td>
                                         <td>
                                             <span class="badge bg-primary bg-opacity-10 text-primary"
-                                                th:if="${usuario.rol == 'ADMIN'}">
+                                                th:if="${usuarioDTO.rol == 'ADMIN'}">
                                                 <i class="bi bi-shield-lock me-1"></i>
                                                 Administrador
                                             </span>
                                             <span class="badge bg-info bg-opacity-10 text-info"
-                                                th:if="${usuario.rol == 'CAJERO'}">
+                                                th:if="${usuarioDTO.rol == 'CAJERO'}">
                                                 <i class="bi bi-cash-register me-1"></i>
                                                 Cajero
                                             </span>
@@ -82,11 +82,11 @@
                                     <tr>
                                         <td class="text-secondary">Estado:</td>
                                         <td>
-                                            <span class="badge bg-success" th:if="${usuario.estaActivo}">
+                                            <span class="badge bg-success" th:if="${usuarioDTO.estaActivo}">
                                                 <i class="bi bi-check-circle me-1"></i>
                                                 Activo
                                             </span>
-                                            <span class="badge bg-secondary" th:unless="${usuario.estaActivo}">
+                                            <span class="badge bg-secondary" th:unless="${usuarioDTO.estaActivo}">
                                                 <i class="bi bi-x-circle me-1"></i>
                                                 Inactivo
                                             </span>
@@ -102,8 +102,8 @@
                         <div class="card bg-primary text-white mb-4">
                             <div class="card-body text-center py-4">
                                 <i class="bi bi-person-circle display-4 d-block mb-3"></i>
-                                <h5 class="fw-bold" th:text="${usuario.nombre}">Juan Pérez</h5>
-                                <p class="mb-0 opacity-75" th:text="${usuario.rol}">ADMIN</p>
+                                <h5 class="fw-bold" th:text="${usuarioDTO.nombre}">Juan Pérez</h5>
+                                <p class="mb-0 opacity-75" th:text="${usuarioDTO.rol}">ADMIN</p>
                             </div>
                         </div>
 
@@ -114,11 +114,11 @@
                                     Estado de Cuenta
                                 </h6>
                                 <p class="mb-0">
-                                    <span th:if="${usuario.estaActivo}" class="text-success">
+                                    <span th:if="${usuarioDTO.estaActivo}" class="text-success">
                                         <i class="bi bi-check-circle-fill me-1"></i>
                                         Cuenta activa
                                     </span>
-                                    <span th:unless="${usuario.estaActivo}" class="text-secondary">
+                                    <span th:unless="${usuarioDTO.estaActivo}" class="text-secondary">
                                         <i class="bi bi-x-circle-fill me-1"></i>
                                         Cuenta inactiva
                                     </span>

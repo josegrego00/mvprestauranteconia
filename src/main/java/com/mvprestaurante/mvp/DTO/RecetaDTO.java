@@ -1,6 +1,9 @@
 package com.mvprestaurante.mvp.DTO;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,12 +31,16 @@ public class RecetaDTO {
     @PositiveOrZero(message = "El precio de venta no puede ser negativo")
     private Double precioVenta;
 
+    @NotNull(message = "El estado es obligatorio")
     private Boolean estaActiva;
 
+    @NotNull(message = "El producto es obligatorio")
     private Long productoId;
 
     private String productoNombre;
 
+    @NotEmpty(message = "Debe incluir al menos un ingrediente")
+    @Valid
     private List<DetalleRecetaDTO> listaIngredientes;
 
     private Long empresaId;

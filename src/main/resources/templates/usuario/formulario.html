@@ -20,12 +20,12 @@
                 <!-- Header con título -->
                 <div class="welcome-section mt-4 mb-4">
                     <h1 class="welcome-title">
-                        <i class="bi bi-person-plus me-2" th:if="${usuario.id == null}"></i>
-                        <i class="bi bi-pencil-square me-2" th:if="${usuario.id != null}"></i>
-                        <span th:text="${usuario.id == null} ? 'Nuevo Usuario' : 'Editar Usuario'"></span>
+                        <i class="bi bi-person-plus me-2" th:if="${!isEdit}"></i>
+                        <i class="bi bi-pencil-square me-2" th:if="${isEdit}"></i>
+                        <span th:text="${!isEdit} ? 'Nuevo Usuario' : 'Editar Usuario'"></span>
                     </h1>
                     <p class="welcome-subtitle"
-                        th:text="${usuario.id == null} ? 'Registra un nuevo usuario' : 'Modifica los datos del usuario'">
+                        th:text="${!isEdit} ? 'Registra un nuevo usuario' : 'Modifica los datos del usuario'">
                         Registra un nuevo usuario
                     </p>
                 </div>
@@ -42,10 +42,10 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
 
-                            <form th:action="${usuario.id == null} ? @{/usuarios/guardar} : @{/usuarios/actualizar/{id}(id=${usuario.id})}" th:object="${usuarioDTO}" method="post"
+                            <form th:action="${!isEdit} ? @{/usuarios/guardar} : @{/usuarios/actualizar/{id}(id=${usuarioDTO.id})}" th:object="${usuarioDTO}" method="post"
                                 class="needs-validation" novalidate>
 
-                                <input type="hidden" name="id" th:value="${usuario.id}">
+                                <input type="hidden" name="id" th:value="${isEdit ? usuarioDTO.id : ''}">
 
                                 <div class="row">
                                     <!-- Nombre -->
@@ -54,7 +54,7 @@
                                             <i class="bi bi-person me-1"></i>
                                             NOMBRE COMPLETO
                                         </label>
-                                        <input type="text" class="form-control" name="nombre" th:value="${usuario.nombre}"
+                                        <input type="text" class="form-control" name="nombre" th:value="${usuarioDTO.nombre}"
                                             placeholder="Ej: Juan Pérez" required>
                                     </div>
 
@@ -64,7 +64,7 @@
                                             <i class="bi bi-person-badge me-1"></i>
                                             NOMBRE DE USUARIO
                                         </label>
-                                        <input type="text" class="form-control" name="nombreUsuario" th:value="${usuario.nombreUsuario}"
+                                        <input type="text" class="form-control" name="nombreUsuario" th:value="${usuarioDTO.nombreUsuario}"
                                             placeholder="Ej: juan.perez" required>
                                     </div>
 
@@ -75,8 +75,8 @@
                                             CONTRASEÑA
                                         </label>
                                         <input type="password" class="form-control" name="contrasenna"
-                                            placeholder="Contraseña" th:required="${usuario.id == null}">
-                                        <small class="text-secondary" th:if="${usuario.id != null}">
+                                            placeholder="Contraseña" th:required="${!isEdit}">
+                                        <small class="text-secondary" th:if="${isEdit}">
                                             Dejar vacío para mantener la contraseña actual
                                         </small>
                                     </div>
@@ -87,7 +87,7 @@
                                             <i class="bi bi-envelope me-1"></i>
                                             EMAIL
                                         </label>
-                                        <input type="email" class="form-control" name="email" th:value="${usuario.email}"
+                                        <input type="email" class="form-control" name="email" th:value="${usuarioDTO.email}"
                                             placeholder="correo@ejemplo.com" required>
                                     </div>
 
@@ -99,24 +99,9 @@
                                         </label>
                                         <select class="form-select" name="rol" required>
                                             <option value="">Seleccionar rol...</option>
-                                            <option value="ADMIN" th:selected="${usuario.rol == 'ADMIN'}">Administrador</option>
-                                            <option value="CAJERO" th:selected="${usuario.rol == 'CAJERO'}">Cajero</option>
+                                            <option value="ADMIN" th:selected="${usuarioDTO.rol == 'ADMIN'}">Administrador</option>
+                                            <option value="CAJERO" th:selected="${usuarioDTO.rol == 'CAJERO'}">Cajero</option>
                                         </select>
-                                    </div>
-
-                                    <!-- Estado (solo para edición) -->
-                                    <div class="col-md-6 mb-4" th:if="${usuario.id != null}">
-                                        <label class="form-label text-uppercase small fw-bold">
-                                            <i class="bi bi-toggle-on me-1"></i>
-                                            ESTADO
-                                        </label>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="estaActivo"
-                                                name="estaActivo" th:checked="${usuario.estaActivo}" />
-                                            <label class="form-check-label">
-                                                Usuario activo
-                                            </label>
-                                        </div>
                                     </div>
                                 </div>
 

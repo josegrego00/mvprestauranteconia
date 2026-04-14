@@ -104,9 +104,9 @@
                                                 leche</small>
                                         </td>
                                         <td>
-                                            <span th:if="${producto.tieneReceta and producto.receta != null}">$</span>
-                                            <span th:if="${producto.tieneReceta and producto.receta != null}" 
-                                                  th:text="${producto.receta.precioBruto}">2.50</span>
+                                            <span th:if="${producto.tieneReceta and producto.recetaId != null}">$</span>
+                                            <span th:if="${producto.tieneReceta and producto.recetaId != null}" 
+                                                  th:text="${producto.precioBruto}">2.50</span>
                                             <span th:if="${!producto.tieneReceta}">$</span>
                                             <span th:if="${!producto.tieneReceta}" th:text="${producto.precioCompra}">2.50</span>
                                         </td>
@@ -115,7 +115,7 @@
                                             <span class="fw-semibold" th:text="${producto.precioVenta}">5.00</span>
                                         </td>
                                         <td>
-                                            <th:block th:with="costo=${(producto.tieneReceta and producto.receta != null) ? producto.receta.precioBruto : producto.precioCompra}, margen=${(costo != null and producto.precioVenta != null and costo > 0) ? (producto.precioVenta - costo) / costo * 100 : 0}">
+                                            <th:block th:with="costo=${(producto.tieneReceta and producto.recetaId != null) ? producto.precioBruto : producto.precioCompra}, margen=${(costo != null and producto.precioVenta != null and costo > 0) ? (producto.precioVenta - costo) / costo * 100 : 0}">
                                                 <span th:if="${costo != null and producto.precioVenta != null and costo > 0}"
                                                       th:class="${margen < 0 ? 'text-danger' : (margen <= 5 ? 'text-warning' : 'text-success')}"
                                                       th:text="${#numbers.formatDecimal(margen, 1, 2)} + '%'">
@@ -142,11 +142,11 @@
                                             <span th:if="${!producto.tieneReceta}" class="text-secondary">-</span>
 
                                             <!-- Producto CON receta - estimado -->
-                                            <span th:if="${producto.tieneReceta and producto.receta != null}" 
+                                            <span th:if="${producto.tieneReceta and producto.recetaId != null}" 
                                                   th:id="${'estimado-' + producto.id}">
                                                 <i class="bi bi-arrow-repeat spinner-border-sm"></i>
                                             </span>
-                                            <span th:if="${producto.tieneReceta and producto.receta == null}" 
+                                            <span th:if="${producto.tieneReceta and producto.recetaId == null}" 
                                                   class="text-warning">
                                                 Sin receta
                                             </span>
@@ -191,13 +191,13 @@
                                                     <i class="bi bi-trash"></i>
                                                 </a>
                                                 <th:block th:if="${producto.tieneReceta}">
-                                                    <a sec:authorize="hasRole('ADMIN')" th:if="${producto.receta == null}"
+                                                    <a sec:authorize="hasRole('ADMIN')" th:if="${producto.recetaId == null}"
                                                         th:href="@{/recetas/nueva?productoId={id}(id=${producto.id})}"
                                                         class="btn btn-sm btn-outline-success" title="Crear receta">
                                                         <i class="bi bi-journal-plus"></i>
                                                     </a>
-                                                    <a th:if="${producto.receta != null}"
-                                                        th:href="@{/recetas/ver/{id}(id=${producto.receta.id})}"
+                                                    <a th:if="${producto.recetaId != null}"
+                                                        th:href="@{/recetas/ver/{id}(id=${producto.recetaId})}"
                                                         class="btn btn-sm btn-outline-warning" title="Ver receta">
                                                         <i class="bi bi-journal-bookmark-fill"></i>
                                                     </a>

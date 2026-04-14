@@ -1,6 +1,7 @@
 package com.mvprestaurante.mvp.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.mvprestaurante.mvp.DTO.UsuarioDTORequest;
-import com.mvprestaurante.mvp.models.Usuario;
+import com.mvprestaurante.mvp.DTO.UsuarioDTOResponse;
 import com.mvprestaurante.mvp.services.UsuarioService;
 
 import jakarta.validation.Valid;
@@ -23,93 +24,129 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/usuarios")
 public class UsuarioController {
 
-    private final UsuarioService usuarioServicio;
+    private static final Logger log = LoggerFactory.getLogger(UsuarioController.class);
+    private final UsuarioService usuarioService;
 
     @GetMapping
     public String listaUsuarios(Model model) {
-        model.addAttribute("usuarios", usuarioServicio.listarUsuarios());
+        model.addAttribute("usuarios", usuarioService.listarUsuarios());
         return "usuario/lista";
     }
 
     @GetMapping("/nuevo")
     public String nuevoUsuario(Model model) {
-        if (!model.containsAttribute("usuario")) {
-            Usuario nuevoUsuario = new Usuario();
-            nuevoUsuario.setEstaActivo(true);
-            model.addAttribute("usuario", nuevoUsuario);
+        if (!model.containsAttribute("usuarioDTO")) {
+            model.addAttribute("usuarioDTO", new UsuarioDTORequest());
         }
+        model.addAttribute("isEdit", false);
         return "usuario/formulario";
     }
 
     @GetMapping("/editar/{id}")
-    public String editarUsuario(@PathVariable Long id, Model model) {
-        Usuario usuario = usuarioServicio.buscarPorId(id);
-        model.addAttribute("usuario", usuario);
-        return "usuario/formulario";
+    public String editarUsuario(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            UsuarioDTOResponse usuario = usuarioService.buscarPorId(id);
+            model.addAttribute("usuarioDTO", usuario);
+            model.addAttribute("isEdit", true);
+            return "usuario/formulario";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Usuario no encontrado");
+            return "redirect:/usuarios";
+        }
     }
 
     @GetMapping("/ver/{id}")
-    public String verUsuario(@PathVariable Long id, Model model) {
-        Usuario usuario = usuarioServicio.buscarPorId(id);
-        model.addAttribute("usuario", usuario);
-        return "usuario/ver";
+    public String verUsuario(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            UsuarioDTOResponse usuario = usuarioService.buscarPorId(id);
+            model.addAttribute("usuarioDTO", usuario);
+            return "usuario/ver";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Usuario no encontrado");
+            return "redirect:/usuarios";
+        }
     }
 
     @PostMapping("/guardar")
-    public String guardarUsuario(@ModelAttribute Usuario usuario, Model model,
+    public String guardarUsuario(@Valid @ModelAttribute UsuarioDTORequest usuarioDTO,
+            BindingResult bindingResult,
+            Model model,
             RedirectAttributes redirectAttributes) {
 
+        log.info("=== guardarUsuario called ===");
+        log.info("usuarioDTO: {}", usuarioDTO);
+
+        if (bindingResult.hasErrors()) {
+            log.warn("=== BindingResult has errors ===");
+            bindingResult.getFieldErrors().forEach(error -> 
+                log.warn("Field error: {} - {}", error.getField(), error.getDefaultMessage()));
+            model.addAttribute("error", "Error de validación en los datos ingresados");
+            model.addAttribute("isEdit", false);
+            model.addAttribute("usuarioDTO", usuarioDTO);
+            return "usuario/formulario";
+        }
+
         try {
-            UsuarioDTORequest dto = new UsuarioDTORequest();
-            dto.setNombre(usuario.getNombre());
-            dto.setNombreUsuario(usuario.getNombreUsuario());
-            dto.setContrasenna(usuario.getContrasenna());
-            dto.setEmail(usuario.getEmail());
-            dto.setRol(usuario.getRol());
-            dto.setEstaActivo(usuario.getEstaActivo());
-            
-            usuarioServicio.guardarUsuario(dto);
+            log.info("Attempting to save user...");
+            usuarioService.guardarUsuario(usuarioDTO);
+            log.info("User saved successfully!");
             redirectAttributes.addFlashAttribute("success", "Usuario guardado exitosamente!");
             return "redirect:/usuarios";
 
         } catch (Exception e) {
-            model.addAttribute("usuario", usuario);
+            log.error("Error saving user: ", e);
             model.addAttribute("error", "Ocurrió un error: " + e.getMessage());
+            model.addAttribute("isEdit", false);
+            model.addAttribute("usuarioDTO", usuarioDTO);
             return "usuario/formulario";
         }
     }
 
     @PostMapping("/actualizar/{id}")
-    public String actualizarUsuario(@PathVariable Long id, @ModelAttribute Usuario usuario, Model model,
+    public String actualizarUsuario(@PathVariable Long id,
+            @ModelAttribute UsuarioDTORequest usuarioDTO,
+            BindingResult bindingResult,
+            Model model,
             RedirectAttributes redirectAttributes) {
 
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("error", "Error de validación en los datos ingresados");
+            model.addAttribute("isEdit", true);
+            model.addAttribute("usuarioDTO", usuarioDTO);
+            return "usuario/formulario";
+        }
+
         try {
-            UsuarioDTORequest dto = new UsuarioDTORequest();
-            dto.setNombre(usuario.getNombre());
-            dto.setNombreUsuario(usuario.getNombreUsuario());
-            dto.setContrasenna(usuario.getContrasenna());
-            dto.setEmail(usuario.getEmail());
-            dto.setRol(usuario.getRol());
-            dto.setEstaActivo(usuario.getEstaActivo());
-            
-            usuarioServicio.actualizarUsuario(id, dto);
+            usuarioService.actualizarUsuario(id, usuarioDTO);
             redirectAttributes.addFlashAttribute("success", "Usuario actualizado exitosamente!");
             return "redirect:/usuarios";
 
         } catch (Exception e) {
-            model.addAttribute("usuario", usuario);
             model.addAttribute("error", "Ocurrió un error: " + e.getMessage());
-            return "usuario/formulario";
+            model.addAttribute("isEdit", true);
+            model.addAttribute("usuarioDTO", usuarioDTO);
+            return "redirect:/usuarios/editar/" + id;
         }
     }
 
     @GetMapping("/eliminar/{id}")
     public String eliminarUsuario(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
-            usuarioServicio.eliminarUsuario(id);
+            usuarioService.eliminarUsuario(id);
             redirectAttributes.addFlashAttribute("success", "Usuario eliminado exitosamente!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Ocurrió un error: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/usuarios";
+    }
+
+    @GetMapping("/activar/{id}")
+    public String activarUsuario(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            usuarioService.activarUsuario(id);
+            redirectAttributes.addFlashAttribute("success", "Usuario activado exitosamente!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/usuarios";
     }

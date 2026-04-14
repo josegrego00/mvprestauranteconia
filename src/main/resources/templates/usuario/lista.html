@@ -106,10 +106,16 @@
                                                     class="btn btn-sm btn-outline-primary" title="Editar">
                                                     <i class="bi bi-pencil"></i>
                                                 </a>
-                                                <a th:href="@{/usuarios/eliminar/{id}(id=${usuario.id})}"
-                                                    class="btn btn-sm btn-outline-danger" title="Eliminar"
-                                                    onclick="return confirm('¿Estás seguro de eliminar este usuario?')">
-                                                    <i class="bi bi-trash"></i>
+                                                <a th:if="${usuario.estaActivo}"
+                                                    th:href="@{/usuarios/eliminar/{id}(id=${usuario.id})}"
+                                                    class="btn btn-sm btn-outline-danger" title="Desactivar"
+                                                    onclick="return confirm('¿Estás seguro de desactivar este usuario?')">
+                                                    <i class="bi bi-dash-circle"></i>
+                                                </a>
+                                                <a th:unless="${usuario.estaActivo}"
+                                                    th:href="@{/usuarios/activar/{id}(id=${usuario.id})}"
+                                                    class="btn btn-sm btn-outline-success" title="Activar">
+                                                    <i class="bi bi-check-circle"></i>
                                                 </a>
                                             </div>
                                         </td>

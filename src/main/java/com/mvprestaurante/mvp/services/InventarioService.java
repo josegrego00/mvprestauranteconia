@@ -2,6 +2,7 @@ package com.mvprestaurante.mvp.services;
 
 import com.mvprestaurante.mvp.DTO.InventarioItemDTO;
 import com.mvprestaurante.mvp.DTO.InventarioReporteDTO;
+import com.mvprestaurante.mvp.exceptions.BusinessException;
 import com.mvprestaurante.mvp.models.*;
 import com.mvprestaurante.mvp.multitenant.TenantContext;
 import com.mvprestaurante.mvp.repositories.*;
@@ -32,19 +33,19 @@ public class InventarioService {
     private void validarTenant() {
         Long empresaId = TenantContext.getTenantId();
         if (empresaId == null) {
-            throw new RuntimeException("No se ha identificado la empresa");
+            throw new BusinessException("No se ha identificado la empresa");
         }
     }
 
     private Usuario getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
-            throw new RuntimeException("No hay usuario autenticado");
+            throw new BusinessException("No hay usuario autenticado");
         }
         String nombreUsuario = auth.getName();
         Long empresaId = TenantContext.getTenantId();
         return usuarioRepository.findByNombreUsuarioAndEmpresa_Id(nombreUsuario, empresaId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
     }
 
     @Transactional(readOnly = true)
@@ -130,49 +131,56 @@ public class InventarioService {
             String tipo = parts[1];
             String idStr = parts[2];
 
+            Double stockFisico;
             try {
-                Double stockFisico = Double.parseDouble(value);
-
-                if (tipo.equals("INGREDIENTE")) {
-                    Long id = Long.parseLong(idStr);
-                    Optional<Ingrediente> ingOpt = ingredienteRepository.findById(id);
-                    if (ingOpt.isPresent()) {
-                        Ingrediente ing = ingOpt.get();
-                        InventarioDetalle detalle = InventarioDetalle.builder()
-                                .registro(registro)
-                                .tipo("INGREDIENTE")
-                                .ingrediente(ing)
-                                .nombre(ing.getNombre())
-                                .unidadMedida(ing.getUnidadMedida())
-                                .stock(stockFisico)
-                                .precioUnitario(ing.getPrecioCompra() != null ? ing.getPrecioCompra() : 0.0)
-                                .build();
-                        registro.getDetalles().add(detalle);
-
-                        ing.setStockDisponible(stockFisico);
-                        ingredienteRepository.save(ing);
-                    }
-                } else if (tipo.equals("PRODUCTO")) {
-                    Long id = Long.parseLong(idStr);
-                    Optional<Producto> prodOpt = productoRepository.findById(id);
-                    if (prodOpt.isPresent()) {
-                        Producto prod = prodOpt.get();
-                        InventarioDetalle detalle = InventarioDetalle.builder()
-                                .registro(registro)
-                                .tipo("PRODUCTO")
-                                .producto(prod)
-                                .nombre(prod.getNombre())
-                                .unidadMedida("UND")
-                                .stock(stockFisico)
-                                .precioUnitario(prod.getPrecioCompra() != null ? prod.getPrecioCompra() : 0.0)
-                                .build();
-                        registro.getDetalles().add(detalle);
-
-                        prod.setStock(stockFisico);
-                        productoRepository.save(prod);
-                    }
+                stockFisico = Double.parseDouble(value);
+                if (stockFisico < 0) {
+                    throw new BusinessException("El stock físico no puede ser negativo");
                 }
             } catch (NumberFormatException e) {
+                throw new BusinessException("Valor de stock inválido: " + value);
+            }
+
+            if (tipo.equals("INGREDIENTE")) {
+                Long id = Long.parseLong(idStr);
+                Optional<Ingrediente> ingOpt = ingredienteRepository.findByIdAndEmpresaId(id, empresaId);
+                if (ingOpt.isEmpty()) {
+                    throw new BusinessException("Ingrediente no encontrado");
+                }
+                Ingrediente ing = ingOpt.get();
+                InventarioDetalle detalle = InventarioDetalle.builder()
+                        .registro(registro)
+                        .tipo("INGREDIENTE")
+                        .ingrediente(ing)
+                        .nombre(ing.getNombre())
+                        .unidadMedida(ing.getUnidadMedida())
+                        .stock(stockFisico)
+                        .precioUnitario(ing.getPrecioCompra() != null ? ing.getPrecioCompra() : 0.0)
+                        .build();
+                registro.getDetalles().add(detalle);
+
+                ing.setStockDisponible(stockFisico);
+                ingredienteRepository.save(ing);
+            } else if (tipo.equals("PRODUCTO")) {
+                Long id = Long.parseLong(idStr);
+                Optional<Producto> prodOpt = productoRepository.findByIdAndEmpresaId(id, empresaId);
+                if (prodOpt.isEmpty()) {
+                    throw new BusinessException("Producto no encontrado");
+                }
+                Producto prod = prodOpt.get();
+                InventarioDetalle detalle = InventarioDetalle.builder()
+                        .registro(registro)
+                        .tipo("PRODUCTO")
+                        .producto(prod)
+                        .nombre(prod.getNombre())
+                        .unidadMedida("UND")
+                        .stock(stockFisico)
+                        .precioUnitario(prod.getPrecioCompra() != null ? prod.getPrecioCompra() : 0.0)
+                        .build();
+                registro.getDetalles().add(detalle);
+
+                prod.setStock(stockFisico);
+                productoRepository.save(prod);
             }
         }
 

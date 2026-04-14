@@ -166,7 +166,7 @@
                                         <td th:text="${iter.count + (currentPage * pageSize)}"></td>
                                         <td th:text="${#temporals.format(venta.fechaVenta, 'dd/MM/yyyy HH:mm')}"></td>
                                         <td th:text="${venta.numeroVenta}"></td>
-                                        <td th:text="${venta.cliente?.nombre}"></td>
+                                        <td th:text="${venta.nombreCliente != null ? venta.nombreCliente : 'Sin cliente'}"></td>
                                         <td th:text="${venta.metodoPago}"></td>
                                         <td class="fw-bold">$<span th:text="${#numbers.formatDecimal(venta.total, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
                                         <td>

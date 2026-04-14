@@ -45,7 +45,7 @@ public class InventarioController {
         try {
             inventarioService.guardarInventario(allParams);
             ra.addFlashAttribute("success", "Inventario guardado correctamente");
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             ra.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/inventario";

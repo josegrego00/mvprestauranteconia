@@ -1,11 +1,7 @@
 package com.mvprestaurante.mvp.controllers;
 
 import com.mvprestaurante.mvp.DTO.ProductoDTO;
-import com.mvprestaurante.mvp.DTO.ReporteCierreDTO;
 import com.mvprestaurante.mvp.DTO.VentaDTO;
-import com.mvprestaurante.mvp.mapper.ProductoMapper;
-import com.mvprestaurante.mvp.mapper.VentaMapper;
-import com.mvprestaurante.mvp.models.Venta;
 import com.mvprestaurante.mvp.services.ProductoService;
 import com.mvprestaurante.mvp.services.VentaService;
 
@@ -16,12 +12,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/ventas")
@@ -33,12 +30,6 @@ public class VentaController {
     @Autowired
     private ProductoService productoService;
 
-    @Autowired
-    private VentaMapper ventaMapper;
-
-    @Autowired
-    private ProductoMapper productoMapper;
-
     @GetMapping
     public String listar(@RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -48,7 +39,7 @@ public class VentaController {
             Model model) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("fechaVenta").descending());
-        Page<Venta> ventasPage = ventaService.buscar(search, fechaInicio, fechaFin, pageable);
+        Page<VentaDTO> ventasPage = ventaService.buscar(search, fechaInicio, fechaFin, pageable);
 
         if (search != null && !search.isEmpty()) {
             model.addAttribute("search", search);
@@ -65,6 +56,7 @@ public class VentaController {
 
         model.addAttribute("ventas", ventasPage.getContent());
         model.addAttribute("currentPage", page);
+        model.addAttribute("pageSize", size);
         model.addAttribute("totalPages", ventasPage.getTotalPages());
         model.addAttribute("totalItems", ventasPage.getTotalElements());
 
@@ -85,8 +77,8 @@ public class VentaController {
     @GetMapping("/ver/{id}")
     public String ver(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         return ventaService.obtenerPorId(id)
-                .map(venta -> {
-                    model.addAttribute("venta", venta);
+                .map(ventaDTO -> {
+                    model.addAttribute("venta", ventaDTO);
                     return "ventas/ver";
                 })
                 .orElseGet(() -> {
@@ -96,9 +88,15 @@ public class VentaController {
     }
 
     @PostMapping("/guardar")
-    public String guardar(@ModelAttribute VentaDTO ventaDTO,
+    public String guardar(@Valid @ModelAttribute VentaDTO ventaDTO,
+            BindingResult bindingResult,
             @RequestParam Map<String, String> params,
             RedirectAttributes redirectAttributes) {
+
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("error", "Error de validación en los datos ingresados");
+            return "redirect:/ventas/nueva";
+        }
 
         try {
             ventaService.guardar(ventaDTO, params);
@@ -112,7 +110,7 @@ public class VentaController {
 
     @GetMapping("/buscar")
     @ResponseBody
-    public Page<Venta> buscar(@RequestParam(required = false) String search,
+    public Page<VentaDTO> buscar(@RequestParam(required = false) String search,
             @RequestParam(required = false) String fechaInicio,
             @RequestParam(required = false) String fechaFin,
             @RequestParam(defaultValue = "0") int page,

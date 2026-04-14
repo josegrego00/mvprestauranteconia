@@ -15,8 +15,9 @@ import java.util.Optional;
 @Repository
 public interface VentaRepository extends JpaRepository<Venta, Long> {
 
-    @Query("SELECT v FROM Venta v JOIN FETCH v.empresa JOIN FETCH v.usuario JOIN FETCH v.cliente WHERE v.id = :id")
-    Optional<Venta> findByIdWithDetails(@Param("id") Long id);
+    @Query("SELECT v FROM Venta v JOIN FETCH v.empresa JOIN FETCH v.usuario JOIN FETCH v.cliente " +
+            "WHERE v.id = :id AND v.empresa.id = :tenantId")
+    Optional<Venta> findByIdWithDetails(@Param("id") Long id, @Param("tenantId") Long tenantId);
 
     @Query("SELECT v FROM Venta v JOIN FETCH v.empresa WHERE v.empresa.id = :tenantId ORDER BY v.fechaVenta DESC")
     Page<Venta> findAllByTenantId(@Param("tenantId") Long tenantId, Pageable pageable);

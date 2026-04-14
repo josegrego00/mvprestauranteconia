@@ -73,9 +73,9 @@ public class SecurityConfig {
                                 .addFilterBefore(new TenanFilter(extractor, resolver),
                                                 UsernamePasswordAuthenticationFilter.class)
                                 .authorizeHttpRequests(authz -> authz
-                                                .requestMatchers("/", "/registro", "/empresa/guardar", "/empresa/espera-activacion", "/css/**",
-                                                                "/js/**", "/error/**")
-                                                .permitAll()
+.requestMatchers("/", "/registro", "/empresa/guardar", "/empresa/espera-activacion", "/css/**",
+        "/js/**", "/error/**", "/salir")
+        .permitAll()
                                                 .requestMatchers("/login").permitAll()
                                                 .requestMatchers("/superadmin/**").denyAll()
                                                 .anyRequest().authenticated())

@@ -16,6 +16,7 @@ public interface ProductoMapper {
     @Mapping(target = "empresaId", source = "empresa.id")
     @Mapping(target = "recetaId", source = "receta.id")
     @Mapping(target = "recetaNombre", source = "receta.nombre")
+    @Mapping(target = "precioBruto", source = "receta.precioBruto")
     @Mapping(target = "stockEstimado", ignore = true)
     ProductoDTO toDTO(Producto producto);
 

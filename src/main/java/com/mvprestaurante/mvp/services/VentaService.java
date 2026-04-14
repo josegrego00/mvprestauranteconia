@@ -1,8 +1,11 @@
 package com.mvprestaurante.mvp.services;
 
+import com.mvprestaurante.mvp.DTO.DetalleVentaDTO;
 import com.mvprestaurante.mvp.DTO.ProductoDTO;
 import com.mvprestaurante.mvp.DTO.ReporteCierreDTO;
+import com.mvprestaurante.mvp.DTO.VentaDTO;
 import com.mvprestaurante.mvp.exceptions.BusinessException;
+import com.mvprestaurante.mvp.mapper.VentaMapper;
 import com.mvprestaurante.mvp.models.Cliente;
 import com.mvprestaurante.mvp.models.DetalleReceta;
 import com.mvprestaurante.mvp.models.DetalleVenta;
@@ -60,6 +63,7 @@ public class VentaService {
     private final CompraRepository compraRepository;
     private final CierreDiaRepository cierreDiaRepository;
     private final InventarioRegistroRepository inventarioRegistroRepository;
+    private final VentaMapper ventaMapper;
 
     private void validarTenant() {
         Long empresaId = TenantContext.getTenantId();
@@ -90,87 +94,39 @@ public class VentaService {
         }
     }
 
+    private Double nullSafe(Double value, Double defaultVal) {
+        return value != null ? value : defaultVal;
+    }
+
+    private Integer nullSafe(Integer value, Integer defaultVal) {
+        return value != null ? value : defaultVal;
+    }
+
     @Transactional(readOnly = true)
-    public Page<Venta> buscar(String search, String fechaInicio, String fechaFin, Pageable pageable) {
+    public Page<VentaDTO> buscar(String search, String fechaInicio, String fechaFin, Pageable pageable) {
         validarTenant();
 
+        Page<Venta> ventasPage;
         if (search != null && !search.isEmpty()) {
-            return ventaRepository.findByNumeroContainingIgnoreCase(TenantContext.getTenantId(), search, pageable);
+            ventasPage = ventaRepository.findByNumeroContainingIgnoreCase(TenantContext.getTenantId(), search, pageable);
         } else if (fechaInicio != null && !fechaInicio.isEmpty() && fechaFin != null && !fechaFin.isEmpty()) {
             LocalDateTime inicio = LocalDateTime.parse(fechaInicio + "T00:00:00");
             LocalDateTime fin = LocalDateTime.parse(fechaFin + "T23:59:59");
-            return ventaRepository.findByFechaBetween(TenantContext.getTenantId(), inicio, fin, pageable);
+            ventasPage = ventaRepository.findByFechaBetween(TenantContext.getTenantId(), inicio, fin, pageable);
         } else {
-            return ventaRepository.findAllByTenantId(TenantContext.getTenantId(), pageable);
+            ventasPage = ventaRepository.findAllByTenantId(TenantContext.getTenantId(), pageable);
         }
+
+        return ventasPage.map(ventaMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
     @PreAuthorize("hasAnyRole('ADMIN', 'CAJERO')")
-    public Optional<Venta> obtenerPorId(Long id) {
+    public Optional<VentaDTO> obtenerPorId(Long id) {
         validarTenant();
-        return ventaRepository.findByIdWithDetails(id)
-                .filter(venta -> venta.getEmpresa().getId().equals(TenantContext.getTenantId()));
-    }
-
-    @Transactional
-    @PreAuthorize("hasAnyRole('ADMIN', 'CAJERO')")
-    public Venta guardarDesdeFormulario(Venta venta, Map<String, String> allParams) {
-        validarTenant();
-        Long empresaId = TenantContext.getTenantId();
-
-        List<DetalleVenta> detalles = new ArrayList<>();
-
-        for (String key : allParams.keySet()) {
-            if (key.startsWith("producto[")) {
-                String index = key.substring(9, key.length() - 1);
-                String productoValue = allParams.get(key);
-                String cantidadParam = "cantidad[" + index + "]";
-
-                if (productoValue != null && !productoValue.isEmpty() &&
-                        allParams.containsKey(cantidadParam)) {
-
-                    Long productoId = Long.parseLong(productoValue);
-                    Integer cantidad = Integer.parseInt(allParams.get(cantidadParam));
-
-                    if (cantidad == null || cantidad <= 0)
-                        continue;
-
-                    Optional<Producto> productoOpt = productoRepository.findById(productoId);
-                    if (productoOpt.isEmpty()) {
-                        throw new BusinessException("Producto no encontrado");
-                    }
-
-                    Producto producto = productoOpt.get();
-
-                    Double stockEstimado = 0.0;
-
-                    if (Boolean.TRUE.equals(producto.getTieneReceta())) {
-                        var recetaOpt = producto.getReceta();
-                        if (recetaOpt != null) {
-                            stockEstimado = calcularStockDisponibleReceta(recetaOpt.getId());
-                        }
-                    } else {
-                        stockEstimado = producto.getStock() != null ? producto.getStock() : 0.0;
-                    }
-
-                    if (stockEstimado < cantidad) {
-                        String tipoStock = Boolean.TRUE.equals(producto.getTieneReceta()) ? "Stock estimado" : "Stock";
-                        throw new BusinessException("Stock insuficiente para '" + producto.getNombre() + "'. "
-                                + tipoStock + " actual: " + stockEstimado.intValue());
-                    }
-
-                    DetalleVenta detalle = new DetalleVenta();
-                    detalle.setProducto(producto);
-                    detalle.setCantidad(cantidad);
-                    detalle.setPrecioUnitario(producto.getPrecioVenta());
-                    detalle.setSubtotal(cantidad * producto.getPrecioVenta());
-                    detalles.add(detalle);
-                }
-            }
-        }
-
-        return guardar(venta, detalles, allParams);
+        Long tenantId = TenantContext.getTenantId();
+        return ventaRepository.findByIdWithDetails(id, tenantId)
+                .map(ventaMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
@@ -197,11 +153,11 @@ public class VentaService {
 
     @Transactional
     @PreAuthorize("hasAnyRole('ADMIN', 'CAJERO')")
-    public Venta guardar(Venta venta, List<DetalleVenta> detalles, Map<String, String> allParams) {
+    public VentaDTO guardar(VentaDTO ventaDTO, Map<String, String> allParams) {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
 
-        if (detalles == null || detalles.isEmpty()) {
+        if (ventaDTO.getDetalles() == null || ventaDTO.getDetalles().isEmpty()) {
             throw new BusinessException("La venta debe tener al menos un producto");
         }
 
@@ -210,7 +166,6 @@ public class VentaService {
                 .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
 
         Cliente cliente = obtenerOClienteDefault(allParams.get("clienteId"), empresaId);
-
         String metodoPago = allParams.get("metodoPago");
 
         Double efectivo = parseDoubleSafe(allParams.get("pagoEfectivo"));
@@ -218,9 +173,26 @@ public class VentaService {
         Double transferencia = parseDoubleSafe(allParams.get("pagoTransferencia"));
         Double cantidadPagada = efectivo + tarjeta + transferencia;
 
-        venta.setPagoEfectivo(efectivo);
-        venta.setPagoTarjeta(tarjeta);
-        venta.setPagoTransferencia(transferencia);
+        List<DetalleVenta> detalles = new ArrayList<>();
+        for (DetalleVentaDTO detalleDTO : ventaDTO.getDetalles()) {
+            Optional<Producto> productoOpt = productoRepository.findById(detalleDTO.getProductoId());
+            if (productoOpt.isEmpty()) {
+                throw new BusinessException("Producto no encontrado");
+            }
+
+            Producto producto = productoOpt.get();
+            validarStock(producto, detalleDTO.getCantidad());
+
+            Double precioUnitario = producto.getPrecioVenta();
+            Double subtotal = detalleDTO.getCantidad() * precioUnitario;
+
+            DetalleVenta detalle = new DetalleVenta();
+            detalle.setProducto(producto);
+            detalle.setCantidad(detalleDTO.getCantidad());
+            detalle.setPrecioUnitario(precioUnitario);
+            detalle.setSubtotal(subtotal);
+            detalles.add(detalle);
+        }
 
         Double total = detalles.stream().mapToDouble(DetalleVenta::getSubtotal).sum();
         Double cambio = cantidadPagada - total;
@@ -229,6 +201,8 @@ public class VentaService {
             throw new BusinessException("La cantidad pagada debe ser mayor o igual al total");
         }
 
+        Venta venta = new Venta();
+        venta.setNumeroVenta(generarNumeroVenta());
         venta.setFechaVenta(LocalDateTime.now());
         venta.setUsuario(usuario);
         venta.setEmpresa(empresa);
@@ -239,18 +213,48 @@ public class VentaService {
         venta.setImpuesto(0.0);
         venta.setTotal(total);
         venta.setEstado("COMPLETADA");
-
-        if (allParams.containsKey("metodoPago")) {
-            venta.setMetodoPago(allParams.get("metodoPago"));
-        }
+        venta.setMetodoPago(metodoPago);
+        venta.setPagoEfectivo(efectivo);
+        venta.setPagoTarjeta(tarjeta);
+        venta.setPagoTransferencia(transferencia);
 
         Venta ventaGuardada = ventaRepository.save(venta);
-        System.out.println("[DEBUG VentaService] Venta guardada con ID: " + ventaGuardada.getId());
 
         for (DetalleVenta detalle : detalles) {
             detalle.setVenta(ventaGuardada);
             detalleVentaRepository.save(detalle);
+        }
 
+        descontarStock(ventaGuardada, detalles, usuario);
+
+        return ventaMapper.toDTO(ventaGuardada);
+    }
+
+    private void validarStock(Producto producto, Integer cantidad) {
+        Double stockEstimado = 0.0;
+
+        if (Boolean.TRUE.equals(producto.getTieneReceta())) {
+            var recetaOpt = producto.getReceta();
+            if (recetaOpt != null) {
+                stockEstimado = calcularStockDisponibleReceta(recetaOpt.getId());
+            }
+        } else {
+            stockEstimado = producto.getStock() != null ? producto.getStock() : 0.0;
+        }
+
+        if (stockEstimado < cantidad) {
+            String tipoStock = Boolean.TRUE.equals(producto.getTieneReceta()) ? "Stock estimado" : "Stock";
+            throw new BusinessException("Stock insuficiente para '" + producto.getNombre() + "'. "
+                    + tipoStock + " actual: " + stockEstimado.intValue());
+        }
+    }
+
+    private void actualizarStock(Venta venta, List<DetalleVenta> detalles, Usuario usuario, boolean esEntrada) {
+        String tipoMovimiento = esEntrada ? "ENTRADA" : "SALIDA";
+        String motivo = esEntrada ? "ANULACION_VENTA" : "VENTA";
+        Double factor = esEntrada ? 1.0 : -1.0;
+
+        for (DetalleVenta detalle : detalles) {
             Producto producto = detalle.getProducto();
 
             if (Boolean.TRUE.equals(producto.getTieneReceta())) {
@@ -258,36 +262,40 @@ public class VentaService {
                 if (receta != null && receta.getListaIngredientes() != null) {
                     for (DetalleReceta ingReceta : receta.getListaIngredientes()) {
                         Ingrediente ingrediente = ingReceta.getIngrediente();
-                        Double cantidadDescontar = ingReceta.getCantidadIngrediente() * detalle.getCantidad();
+                        Double cantidad = ingReceta.getCantidadIngrediente() * detalle.getCantidad();
                         Double stockAnterior = ingrediente.getStockDisponible() != null
                                 ? ingrediente.getStockDisponible()
                                 : 0.0;
-                        Double nuevoStock = stockAnterior - cantidadDescontar;
-                        if (nuevoStock < 0)
-                            nuevoStock = 0.0;
+                        Double nuevoStock = stockAnterior + (cantidad * factor);
+                        if (nuevoStock < 0) nuevoStock = 0.0;
                         ingrediente.setStockDisponible(nuevoStock);
                         ingredienteRepository.save(ingrediente);
 
                         movimientoStockService.registrarMovimiento(
-                                ingrediente, stockAnterior, -cantidadDescontar, "SALIDA", "VENTA", ventaGuardada,
-                                ventaGuardada.getEmpresa(), usuario);
+                                ingrediente, stockAnterior, cantidad * factor, tipoMovimiento, motivo, venta,
+                                venta.getEmpresa(), usuario);
                     }
                 }
             } else {
                 Double stockAnterior = producto.getStock() != null ? producto.getStock() : 0.0;
-                Double nuevoStock = stockAnterior - detalle.getCantidad();
-                if (nuevoStock < 0)
-                    nuevoStock = 0.0;
+                Double nuevoStock = stockAnterior + (detalle.getCantidad() * factor);
+                if (nuevoStock < 0) nuevoStock = 0.0;
                 producto.setStock(nuevoStock);
                 productoRepository.save(producto);
 
                 movimientoStockService.registrarMovimiento(
-                        producto, stockAnterior, -detalle.getCantidad().doubleValue(), "SALIDA", "VENTA", ventaGuardada,
-                        ventaGuardada.getEmpresa(), usuario);
+                        producto, stockAnterior, detalle.getCantidad() * factor, tipoMovimiento, motivo, venta,
+                        venta.getEmpresa(), usuario);
             }
         }
+    }
 
-        return ventaGuardada;
+    private void descontarStock(Venta venta, List<DetalleVenta> detalles, Usuario usuario) {
+        actualizarStock(venta, detalles, usuario, false);
+    }
+
+    private void devolverStock(Venta venta, Usuario usuario) {
+        actualizarStock(venta, venta.getDetallesVenta(), usuario, true);
     }
 
     private Cliente obtenerOClienteDefault(String clienteIdStr, Long empresaId) {
@@ -300,8 +308,7 @@ public class VentaService {
     }
 
     private Cliente crearClienteDefault(Long empresaId) {
-        Optional<Cliente> existente = clienteRepository.findByNombreContainingIgnoreCaseAndEmpresaId("Consumidor Final",
-                empresaId);
+        Optional<Cliente> existente = clienteRepository.findByNombreContainingIgnoreCaseAndEmpresaId("Consumidor Final", empresaId);
         if (existente.isPresent()) {
             return existente.get();
         }
@@ -316,50 +323,18 @@ public class VentaService {
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public Optional<Venta> anular(Long id) {
+    public Optional<VentaDTO> anular(Long id) {
         validarTenant();
+        Long tenantId = TenantContext.getTenantId();
         Usuario usuario = getUsuarioActual();
 
-        return ventaRepository.findByIdWithDetails(id)
-                .filter(venta -> venta.getEmpresa().getId().equals(TenantContext.getTenantId()))
+        return ventaRepository.findByIdWithDetails(id, tenantId)
                 .filter(venta -> "COMPLETADA".equals(venta.getEstado()))
                 .map(venta -> {
-                    for (DetalleVenta detalle : venta.getDetallesVenta()) {
-                        Producto producto = detalle.getProducto();
-
-                        if (Boolean.TRUE.equals(producto.getTieneReceta())) {
-                            var receta = producto.getReceta();
-                            if (receta != null && receta.getListaIngredientes() != null) {
-                                for (DetalleReceta ingReceta : receta.getListaIngredientes()) {
-                                    Ingrediente ingrediente = ingReceta.getIngrediente();
-                                    Double cantidadDevolver = ingReceta.getCantidadIngrediente()
-                                            * detalle.getCantidad();
-                                    Double stockAnterior = ingrediente.getStockDisponible() != null
-                                            ? ingrediente.getStockDisponible()
-                                            : 0.0;
-                                    Double nuevoStock = stockAnterior + cantidadDevolver;
-                                    ingrediente.setStockDisponible(nuevoStock);
-                                    ingredienteRepository.save(ingrediente);
-
-                                    movimientoStockService.registrarMovimiento(
-                                            ingrediente, stockAnterior, cantidadDevolver, "ENTRADA", "ANULACION_VENTA",
-                                            venta, venta.getEmpresa(), usuario);
-                                }
-                            }
-                        } else {
-                            Double stockAnterior = producto.getStock() != null ? producto.getStock() : 0.0;
-                            Double nuevoStock = stockAnterior + detalle.getCantidad();
-                            producto.setStock(nuevoStock);
-                            productoRepository.save(producto);
-
-                            movimientoStockService.registrarMovimiento(
-                                    producto, stockAnterior, detalle.getCantidad().doubleValue(), "ENTRADA",
-                                    "ANULACION_VENTA", venta, venta.getEmpresa(), usuario);
-                        }
-                    }
-
+                    devolverStock(venta, usuario);
                     venta.setEstado("ANULADA");
-                    return ventaRepository.save(venta);
+                    Venta ventaAnulada = ventaRepository.save(venta);
+                    return ventaMapper.toDTO(ventaAnulada);
                 });
     }
 
@@ -414,45 +389,20 @@ public class VentaService {
         Empresa empresa = empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
 
-        String nombreEmpresa = empresa.getNombreEmpresa() != null ? empresa.getNombreEmpresa()
-                : empresa.getSubdominio();
+        String nombreEmpresa = empresa.getNombreEmpresa() != null ? empresa.getNombreEmpresa() : empresa.getSubdominio();
 
-        Double totalVentas = ventaRepository.sumTotalByFechaBetween(empresaId, inicioDia, finDia);
-        if (totalVentas == null)
-            totalVentas = 0.0;
-
-        Integer cantidadVentas = ventaRepository.countByFechaBetween(empresaId, inicioDia, finDia);
-        if (cantidadVentas == null)
-            cantidadVentas = 0;
-
-        Double totalEfectivo = ventaRepository.sumEfectivoByFechaBetween(empresaId, inicioDia, finDia);
-        if (totalEfectivo == null)
-            totalEfectivo = 0.0;
-
-        Double totalTarjeta = ventaRepository.sumTarjetaByFechaBetween(empresaId, inicioDia, finDia);
-        if (totalTarjeta == null)
-            totalTarjeta = 0.0;
-
-        Double totalTransferencia = ventaRepository.sumTransferenciaByFechaBetween(empresaId, inicioDia, finDia);
-        if (totalTransferencia == null)
-            totalTransferencia = 0.0;
-
-        Integer ventasAnuladas = ventaRepository.countAnuladasByFechaBetween(empresaId, inicioDia, finDia);
-        if (ventasAnuladas == null)
-            ventasAnuladas = 0;
-
-        Double totalCompras = compraRepository.sumTotalByFechaBetween(empresaId, inicioDia, finDia);
-        if (totalCompras == null)
-            totalCompras = 0.0;
-
-        Integer cantidadCompras = compraRepository.countByFechaBetween(empresaId, inicioDia, finDia);
-        if (cantidadCompras == null)
-            cantidadCompras = 0;
+        Double totalVentas = nullSafe(ventaRepository.sumTotalByFechaBetween(empresaId, inicioDia, finDia), 0.0);
+        Integer cantidadVentas = nullSafe(ventaRepository.countByFechaBetween(empresaId, inicioDia, finDia), 0);
+        Double totalEfectivo = nullSafe(ventaRepository.sumEfectivoByFechaBetween(empresaId, inicioDia, finDia), 0.0);
+        Double totalTarjeta = nullSafe(ventaRepository.sumTarjetaByFechaBetween(empresaId, inicioDia, finDia), 0.0);
+        Double totalTransferencia = nullSafe(ventaRepository.sumTransferenciaByFechaBetween(empresaId, inicioDia, finDia), 0.0);
+        Integer ventasAnuladas = nullSafe(ventaRepository.countAnuladasByFechaBetween(empresaId, inicioDia, finDia), 0);
+        Double totalCompras = nullSafe(compraRepository.sumTotalByFechaBetween(empresaId, inicioDia, finDia), 0.0);
+        Integer cantidadCompras = nullSafe(compraRepository.countByFechaBetween(empresaId, inicioDia, finDia), 0);
 
         List<Venta> ventasDelDia = ventaRepository.findVentasDelDia(empresaId, inicioDia, finDia);
 
-        Map<Long, ProductoDTO> productosMap = new LinkedHashMap<>();
-        double totalAnulado = 0.0;
+        Map<Long, ReporteProductoAcumulado> productosMap = new LinkedHashMap<>();
 
         for (Venta venta : ventasDelDia) {
             for (DetalleVenta detalle : venta.getDetallesVenta()) {
@@ -460,23 +410,33 @@ public class VentaService {
                 String productoNombre = detalle.getProducto().getNombre();
 
                 if (productosMap.containsKey(productoId)) {
-                    ProductoDTO dto = productosMap.get(productoId);
-                    dto.setStock((dto.getStock() != null ? dto.getStock() : 0.0) + detalle.getCantidad());
-                    dto.setPrecioVenta((dto.getPrecioVenta() != null ? dto.getPrecioVenta() : 0.0) + detalle.getSubtotal());
+                    ReporteProductoAcumulado ac = productosMap.get(productoId);
+                    ac.cantidadTotal += detalle.getCantidad();
+                    ac.montoTotal += detalle.getSubtotal();
                 } else {
-                    ProductoDTO nuevo = ProductoDTO.builder()
-                            .id(productoId)
-                            .nombre(productoNombre)
-                            .stock((double) detalle.getCantidad())
-                            .precioVenta(detalle.getSubtotal())
-                            .build();
+                    ReporteProductoAcumulado nuevo = new ReporteProductoAcumulado();
+                    nuevo.productoId = productoId;
+                    nuevo.productoNombre = productoNombre;
+                    nuevo.cantidadTotal = detalle.getCantidad();
+                    nuevo.montoTotal = detalle.getSubtotal();
                     productosMap.put(productoId, nuevo);
                 }
             }
         }
 
-        List<ProductoDTO> productosVendidos = new ArrayList<>(productosMap.values());
-        productosVendidos.sort((a, b) -> Double.compare(b.getPrecioVenta() != null ? b.getPrecioVenta() : 0.0, a.getPrecioVenta() != null ? a.getPrecioVenta() : 0.0));
+        List<ProductoDTO> productosVendidos = new ArrayList<>();
+        for (ReporteProductoAcumulado ac : productosMap.values()) {
+            productosVendidos.add(ProductoDTO.builder()
+                    .id(ac.productoId)
+                    .nombre(ac.productoNombre)
+                    .stock(ac.cantidadTotal.doubleValue())
+                    .precioVenta(ac.montoTotal)
+                    .build());
+        }
+
+        productosVendidos.sort((a, b) -> Double.compare(
+                b.getPrecioVenta() != null ? b.getPrecioVenta() : 0.0,
+                a.getPrecioVenta() != null ? a.getPrecioVenta() : 0.0));
 
         return ReporteCierreDTO.builder()
                 .fecha(fecha.toLocalDate())
@@ -487,7 +447,7 @@ public class VentaService {
                 .totalTarjeta(totalTarjeta)
                 .totalTransferencia(totalTransferencia)
                 .ventasAnuladas(ventasAnuladas)
-                .totalAnulado(totalAnulado)
+                .totalAnulado(0.0)
                 .totalCompras(totalCompras)
                 .cantidadCompras(cantidadCompras)
                 .balance(totalVentas - totalCompras)
@@ -536,5 +496,12 @@ public class VentaService {
         Long empresaId = TenantContext.getTenantId();
         LocalDate hoy = LocalDate.now();
         return cierreDiaRepository.existsByEmpresaIdAndFechaAndTipo(empresaId, hoy, "Z");
+    }
+
+    private static class ReporteProductoAcumulado {
+        Long productoId;
+        String productoNombre;
+        Integer cantidadTotal = 0;
+        Double montoTotal = 0.0;
     }
 }
