@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="es">
 
 <head th:replace="~{fragments/head :: head}">
-    <!-- El head se reemplaza con tu fragmento -->
+    <link rel="stylesheet" th:href="@{/css/registro.css}">
 </head>
 
 <body>
@@ -169,128 +169,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Scripts -->
-    <script>
-        // Validación del formulario
-        (function () {
-            'use strict';
-            var forms = document.querySelectorAll('.needs-validation');
-            Array.prototype.slice.call(forms).forEach(function (form) {
-                form.addEventListener('submit', function (event) {
-                    if (!form.checkValidity()) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                    }
-                    form.classList.add('was-validated');
-                }, false);
-            });
-        })();
+    <script th:src="@{/js/registro.js}"></script>
 
-        // Login rápido
-        document.getElementById('btnLogin')?.addEventListener('click', function () {
-            const subdominio = document.getElementById('subdominioLogin').value.trim();
-            if (subdominio === '') {
-                alert('Por favor ingresa el subdominio de tu restaurante');
-                return;
-            }
-            if (!/^[a-z0-9-]+$/.test(subdominio)) {
-                alert('El subdominio solo puede contener letras minúsculas, números y guiones');
-                return;
-            }
-            window.location.href = 'http://' + subdominio + '.localhost:8080/login';
-        });
-
-        // Enter en el campo de login
-        document.getElementById('subdominioLogin')?.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                document.getElementById('btnLogin').click();
-            }
-        });
-    </script>
-
-    <style>
-        :root {
-            --primary: #4e73df;
-            --primary-hover: #2e59d9;
-            --text-dark: #2c3e50;
-            --text-secondary: #6c757d;
-        }
-
-        .btn-primary {
-            background-color: var(--primary);
-            border-color: var(--primary);
-            border-radius: 10px;
-            transition: all 0.2s;
-        }
-
-        .btn-primary:hover {
-            background-color: var(--primary-hover);
-            border-color: var(--primary-hover);
-            transform: translateY(-2px);
-        }
-
-        .btn-outline-primary {
-            color: var(--primary);
-            border-color: var(--primary);
-            border-radius: 10px;
-        }
-
-        .btn-outline-primary:hover {
-            background-color: var(--primary);
-            border-color: var(--primary);
-            color: white;
-        }
-
-        .form-control:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
-        }
-
-        .input-group-text {
-            background: white;
-            border: 1px solid #dee2e6;
-            color: var(--text-secondary);
-        }
-
-        .was-validated .form-control:invalid:focus {
-            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
-        }
-
-        .alert {
-            border-radius: 10px;
-            border: none;
-            padding: 1rem 1.5rem;
-            animation: slideDown 0.3s ease;
-        }
-
-        .alert-success {
-            background-color: #d4edda;
-            color: #155724;
-            border-left: 4px solid #28a745;
-        }
-
-        .alert-danger {
-            background-color: #f8d7da;
-            color: #721c24;
-            border-left: 4px solid #dc3545;
-        }
-
-        .alert i {
-            margin-right: 10px;
-            font-size: 1.2rem;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
 </body>
 
 </html>

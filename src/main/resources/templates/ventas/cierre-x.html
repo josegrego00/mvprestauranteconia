@@ -202,20 +202,7 @@
     </div>
 
     <div th:replace="~{fragments/scripts :: scripts}"></div>
-
-    <script>
-        function actualizarHora() {
-            const ahora = new Date();
-            const hora = String(ahora.getHours()).padStart(2, '0');
-            const minuto = String(ahora.getMinutes()).padStart(2, '0');
-            const segundo = String(ahora.getSeconds()).padStart(2, '0');
-            const horaCompleta = hora + ':' + minuto + ':' + segundo;
-            document.getElementById('horaImpresion').textContent = horaCompleta;
-            document.getElementById('horaFooter').textContent = horaCompleta;
-        }
-        actualizarHora();
-        setInterval(actualizarHora, 1000);
-    </script>
+    <script th:src="@{/js/ventas-cierre-x.js}"></script>
 
 </body>
 
