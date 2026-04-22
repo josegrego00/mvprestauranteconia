@@ -1,5 +1,6 @@
 package com.mvprestaurante.mvp.models;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,9 +16,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(
-    columnNames = {"numero_compra", "empresa_id"}
-))
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "numero_compra", "empresa_id" }))
 public class Compra {
 
     @Id
@@ -36,17 +35,17 @@ public class Compra {
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "empresa_id", nullable = false)
     private Empresa empresa;
 
-    @OneToMany(mappedBy = "compra", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "compra", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<DetalleCompra> detallesCompra = new ArrayList<>();
 
-    private Double subtotal;
-    private Double impuesto;
-    private Double total;
-    private String estado; // PENDIENTE, COMPLETADA, ANULADA
+    private BigDecimal subtotal;
+    private BigDecimal impuesto;
+    private BigDecimal total;
+    private EstadoCompra estado;
 
     private String observaciones;
 }

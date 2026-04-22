@@ -1,11 +1,18 @@
 package com.mvprestaurante.mvp.models;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.mvprestaurante.mvp.enums.EstadoVenta;
+import com.mvprestaurante.mvp.enums.MetodoPago;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -25,9 +32,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(
-    columnNames = {"numero_venta", "empresa_id"}
-))
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "numero_venta", "empresa_id" }))
 public class Venta {
 
     @Id
@@ -52,21 +57,23 @@ public class Venta {
     @JoinColumn(name = "empresa_id", nullable = false)
     private Empresa empresa;
 
-    @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<DetalleVenta> detallesVenta = new ArrayList<>();
 
-    private Double cantidadPagada;
-    private Double cantidadCambio;
-    private Double subtotal;
-    private Double impuesto;
-    private Double total;
+    private BigDecimal cantidadPagada;
+    private BigDecimal cantidadCambio;
+    private BigDecimal subtotal;
+    private BigDecimal impuesto;
+    private BigDecimal total;
 
-    private String metodoPago;
-    private Double pagoEfectivo;
-    private Double pagoTarjeta;
-    private Double pagoTransferencia;
+    @Enumerated(EnumType.STRING)
+    private MetodoPago metodoPago;
+    private BigDecimal pagoEfectivo;
+    private BigDecimal pagoTarjeta;
+    private BigDecimal pagoTransferencia;
 
-    private String estado;
+    @Enumerated(EnumType.STRING)
+    private EstadoVenta estado;
 
     private String observaciones;
 }

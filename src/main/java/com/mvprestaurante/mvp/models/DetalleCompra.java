@@ -1,12 +1,20 @@
 package com.mvprestaurante.mvp.models;
 
+import java.math.BigDecimal;
+
 import jakarta.persistence.*;
+
+import com.mvprestaurante.mvp.enums.TipoItem;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -22,18 +30,18 @@ public class DetalleCompra {
     private Compra compra;
 
     @ManyToOne
-    @JoinColumn(name = "ingrediente_id")
+    @JoinColumn(name = "ingrediente_id", nullable = true)
     private Ingrediente ingrediente;
 
     @ManyToOne
-    @JoinColumn(name = "producto_id")
+    @JoinColumn(name = "producto_id", nullable = true)
     private Producto producto;
 
     @Column(nullable = false)
-    private String tipoItem; // "INGREDIENTE" o "PRODUCTO"
+    private TipoItem tipoItem;
 
-    private Integer cantidad;
-    private Double precioUnitarioCompra;
-    private Double subtotal;
+    private Double cantidad;
+    private BigDecimal precioUnitarioCompra;
+    private BigDecimal subtotal;
 
 }

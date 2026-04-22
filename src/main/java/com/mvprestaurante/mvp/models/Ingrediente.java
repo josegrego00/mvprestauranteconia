@@ -1,9 +1,13 @@
 package com.mvprestaurante.mvp.models;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+
+import com.mvprestaurante.mvp.enums.UnidadMedida;
+
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -23,11 +27,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table( // esto es para evitar la duplicidad en la misma empresa. es decir, 2 empresas pueden tener el mismo producto.
-    uniqueConstraints = @UniqueConstraint(
-        columnNames = {"nombre", "empresa_id"}
-    )
-)
+@Table( // esto es para evitar la duplicidad en la misma empresa. es decir, 2 empresas
+        // pueden tener el mismo producto.
+        uniqueConstraints = @UniqueConstraint(columnNames = { "nombre", "empresa_id" }))
 public class Ingrediente {
 
     @Id
@@ -39,16 +41,15 @@ public class Ingrediente {
 
     private Double stockDisponible;
 
-    private Double precioCompra;
+    private BigDecimal precioCompra;
 
-    @Column(nullable = false)
-    private String unidadMedida;
+    private UnidadMedida unidadMedida;
 
     private Boolean estaActivo;
 
-    @OneToMany(mappedBy = "ingrediente")
+    @OneToMany(mappedBy = "ingrediente", fetch = FetchType.LAZY)
     private List<DetalleReceta> listaDetalleRecetas;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "empresa_id", nullable = false)
     private Empresa empresa;

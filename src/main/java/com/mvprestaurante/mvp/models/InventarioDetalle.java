@@ -1,6 +1,11 @@
 package com.mvprestaurante.mvp.models;
 
+import java.math.BigDecimal;
+
 import jakarta.persistence.*;
+
+import com.mvprestaurante.mvp.enums.TipoItem;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,7 +26,7 @@ public class InventarioDetalle {
     @JoinColumn(name = "registro_id", nullable = false)
     private InventarioRegistro registro;
 
-    private String tipo; // "INGREDIENTE" o "PRODUCTO"
+    private TipoItem tipo;
 
     @ManyToOne
     @JoinColumn(name = "ingrediente_id")
@@ -34,5 +39,5 @@ public class InventarioDetalle {
     private String nombre;
     private String unidadMedida;
     private Double stock;
-    private Double precioUnitario;
+
 }
