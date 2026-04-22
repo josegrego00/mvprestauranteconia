@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.mvprestaurante.mvp.enums.EstadoCompra;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,6 +47,8 @@ public class Compra {
     private BigDecimal subtotal;
     private BigDecimal impuesto;
     private BigDecimal total;
+
+    @Enumerated(EnumType.STRING)
     private EstadoCompra estado;
 
     private String observaciones;

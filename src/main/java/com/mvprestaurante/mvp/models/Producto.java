@@ -1,13 +1,16 @@
 package com.mvprestaurante.mvp.models;
 
+import java.math.BigDecimal;
+
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Setter
+@Getter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -19,16 +22,15 @@ public class Producto {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    
     private String nombre;
 
     private String descripcion;
 
-    private Double precioCompra;
-    private Double precioVenta;
+    private BigDecimal precioCompra;
+    private BigDecimal precioVenta;
 
     private Boolean estaActivo;
-    
+
     @Column(nullable = false)
     private Boolean tieneReceta = false;
 
@@ -38,7 +40,7 @@ public class Producto {
     private Double stock; // solo si no tiene receta
 
     // ADD THIS - Relationship with Empresa
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "empresa_id", nullable = false)
     private Empresa empresa;
 }

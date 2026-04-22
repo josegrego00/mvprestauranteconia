@@ -26,6 +26,7 @@ public class InventarioDetalle {
     @JoinColumn(name = "registro_id", nullable = false)
     private InventarioRegistro registro;
 
+    @Enumerated(EnumType.STRING)
     private TipoItem tipo;
 
     @ManyToOne

@@ -1,5 +1,7 @@
 package com.mvprestaurante.mvp.models;
 
+import java.math.BigDecimal;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,8 +27,8 @@ public class DetalleVenta {
     @JoinColumn(name = "producto_id", nullable = false)
     private Producto producto;
 
-    private Integer cantidad;
-    private Double precioUnitario;
-    private Double subtotal;
+    private Double cantidad;
+    private BigDecimal precioUnitario;
+    private BigDecimal subtotal;
 
 }

@@ -16,7 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"fecha", "empresa_id"}))
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "fecha", "empresa_id" }))
 public class InventarioRegistro {
 
     @Id
@@ -35,8 +35,9 @@ public class InventarioRegistro {
     private Usuario usuario;
 
     @Builder.Default
-    @OneToMany(mappedBy = "registro", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "registro", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<InventarioDetalle> detalles = new ArrayList<>();
 
+    @Column(nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 }

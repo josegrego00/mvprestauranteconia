@@ -1,5 +1,6 @@
 package com.mvprestaurante.mvp.models;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import jakarta.persistence.*;
@@ -24,9 +25,9 @@ public class Receta {
 
     private String descripcion;
 
-    private Double precioBruto;
+    private BigDecimal precioBruto;
 
-    private Double precioVenta;
+    private BigDecimal precioVenta;
 
     private Boolean estaActiva;
 
@@ -34,7 +35,7 @@ public class Receta {
     @JoinColumn(name = "producto_id", unique = true)
     private Producto producto;
 
-    @OneToMany(mappedBy = "receta", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "receta", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<DetalleReceta> listaIngredientes;
 
     @ManyToOne(fetch = FetchType.LAZY)

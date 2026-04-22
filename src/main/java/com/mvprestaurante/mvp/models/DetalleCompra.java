@@ -37,6 +37,7 @@ public class DetalleCompra {
     @JoinColumn(name = "producto_id", nullable = true)
     private Producto producto;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TipoItem tipoItem;
 

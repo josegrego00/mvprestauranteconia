@@ -24,11 +24,11 @@ public class DetalleReceta {
 
     private String nombre;
 
-    @ManyToOne
+    @ManyToOne // esto por defecto es LAZY, pero lo pongo explícito para que se entienda mejor.
     @JoinColumn(name = "receta_id", nullable = false)
     private Receta receta;
 
-    @ManyToOne
+    @ManyToOne // esto por defecto es LAZY, pero lo pongo explícito para que se entienda mejor.
     @JoinColumn(name = "ingrediente_id", nullable = false)
     private Ingrediente ingrediente;
 

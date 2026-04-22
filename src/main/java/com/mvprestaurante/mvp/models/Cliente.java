@@ -38,7 +38,7 @@ public class Cliente {
 
     private Boolean estaActivo;
 
-    @OneToMany(mappedBy = "cliente")
+    @OneToMany(mappedBy = "cliente", fetch = FetchType.LAZY)
     private List<Venta> ventas;
 
     @ManyToOne
