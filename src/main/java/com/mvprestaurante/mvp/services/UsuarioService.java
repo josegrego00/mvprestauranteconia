@@ -1,6 +1,7 @@
 package com.mvprestaurante.mvp.services;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,6 +16,7 @@ import com.mvprestaurante.mvp.models.Usuario;
 import com.mvprestaurante.mvp.multitenant.TenantContext;
 import com.mvprestaurante.mvp.repositories.EmpresaRepositorio;
 import com.mvprestaurante.mvp.repositories.UsuarioRepositorio;
+import com.mvprestaurante.mvp.utils.AuditLogger;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class UsuarioService {
     private final EmpresaRepositorio empresaRepositorio;
     private final PasswordEncoder passwordEncoder;
     private final UsuarioMapper usuarioMapper;
+    private final AuditLogger auditLogger;
 
     private void validarTenant() {
         Long empresaId = TenantContext.getTenantId();
@@ -49,6 +52,7 @@ public class UsuarioService {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
         List<Usuario> usuarios = usuarioRepositorio.findByEmpresaId(empresaId);
+        auditLogger.logListar("Usuario", usuarios.size());
         return usuarios.stream()
                 .map(usuarioMapper::toResponse)
                 .toList();
@@ -60,6 +64,7 @@ public class UsuarioService {
         Long empresaId = TenantContext.getTenantId();
         Usuario usuario = usuarioRepositorio.findByIdAndEmpresaId(id, empresaId)
                 .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
+        auditLogger.logBuscar("Usuario", id.toString());
         return usuarioMapper.toResponse(usuario);
     }
 
@@ -71,6 +76,12 @@ public class UsuarioService {
 
         if (!usuarioDTO.getRol().equals("ADMIN") && !usuarioDTO.getRol().equals("CAJERO")) {
             throw new BusinessException("Rol inválido. Solo se permiten ADMIN o CAJERO");
+        }
+
+        Optional<Usuario> usuarioExistente = usuarioRepositorio.findByNombreUsuarioAndEmpresa_Id(
+                usuarioDTO.getNombreUsuario(), empresaId);
+        if (usuarioExistente.isPresent()) {
+            throw new BusinessException("El nombre de usuario ya existe en esta empresa");
         }
 
         Empresa empresa = empresaRepositorio.findById(empresaId)
@@ -85,6 +96,7 @@ public class UsuarioService {
         entidad.setEstaActivo(true);
 
         Usuario usuarioGuardado = usuarioRepositorio.save(entidad);
+        auditLogger.logCrear("Usuario", usuarioGuardado.getId().toString());
         return usuarioMapper.toResponse(usuarioGuardado);
     }
 
@@ -97,6 +109,14 @@ public class UsuarioService {
         Usuario usuarioExistente = usuarioRepositorio.findByIdAndEmpresaId(id, empresaId)
                 .orElseThrow(() -> new BusinessException("Usuario no encontrado"));
 
+        if (!usuarioExistente.getNombreUsuario().equals(usuarioDTO.getNombreUsuario())) {
+            Optional<Usuario> usuarioDuplicado = usuarioRepositorio.findByNombreUsuarioAndEmpresa_Id(
+                    usuarioDTO.getNombreUsuario(), empresaId);
+            if (usuarioDuplicado.isPresent()) {
+                throw new BusinessException("El nombre de usuario ya existe en esta empresa");
+            }
+        }
+
         usuarioExistente.setNombre(usuarioDTO.getNombre());
         usuarioExistente.setNombreUsuario(usuarioDTO.getNombreUsuario());
         usuarioExistente.setEmail(usuarioDTO.getEmail());
@@ -107,6 +127,7 @@ public class UsuarioService {
         }
 
         Usuario usuarioActualizado = usuarioRepositorio.save(usuarioExistente);
+        auditLogger.logActualizar("Usuario", id.toString());
         return usuarioMapper.toResponse(usuarioActualizado);
     }
 
@@ -125,6 +146,7 @@ public class UsuarioService {
 
         usuario.setEstaActivo(false);
         Usuario usuarioGuardado = usuarioRepositorio.save(usuario);
+        auditLogger.logDesactivar("Usuario", id.toString());
         return usuarioMapper.toResponse(usuarioGuardado);
     }
 
@@ -142,12 +164,17 @@ public class UsuarioService {
 
         usuario.setEstaActivo(true);
         Usuario usuarioGuardado = usuarioRepositorio.save(usuario);
+        auditLogger.logActivar("Usuario", id.toString());
         return usuarioMapper.toResponse(usuarioGuardado);
     }
+
+    // ----------------------------- esto es para crear el usuario admin por defecto
+    // al crear la empresa -----------------------------
 
     @Transactional
     @PreAuthorize("hasRole('ADMINDEV')")
     public void crearUsuarioAdmin(Empresa empresa) {
+        validarTenant();
         Long tenantId = empresa.getId();
 
         if (tenantId == null) {
@@ -168,11 +195,4 @@ public class UsuarioService {
         usuarioRepositorio.save(admin);
     }
 
-    @Transactional
-    @PreAuthorize("hasRole('ADMINDEV')")
-    public void crearUsuarioAdmin(Long empresaId) {
-        Empresa empresa = empresaRepositorio.findById(empresaId)
-                .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
-        crearUsuarioAdmin(empresa);
-    }
 }

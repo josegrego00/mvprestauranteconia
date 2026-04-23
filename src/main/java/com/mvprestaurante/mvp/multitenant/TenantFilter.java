@@ -15,7 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 @Component
-public class TenanFilter extends OncePerRequestFilter {
+public class TenantFilter extends OncePerRequestFilter {
 
     private final SubdomainExtractor extractor;
     private final TenantResolverService resolver;
@@ -29,7 +29,7 @@ public class TenanFilter extends OncePerRequestFilter {
     // Subdominio especial para superadmin
     private final String superAdminSubdomain = "bombaydev";
 
-    public TenanFilter(SubdomainExtractor extractor,
+    public TenantFilter(SubdomainExtractor extractor,
             TenantResolverService resolver) {
         this.extractor = extractor;
         this.resolver = resolver;

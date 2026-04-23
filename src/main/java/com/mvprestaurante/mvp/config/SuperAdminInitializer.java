@@ -102,13 +102,13 @@ public class SuperAdminInitializer implements CommandLineRunner {
         };
 
         String[] unidades = {
-            "und", "kg", "kg", "kg", "kg", "ml",
-            "und", "und", "ml", "ml", "kg",
-            "kg", "ml", "g", "und", "ml",
-            "kg", "und", "g", "und", "kg",
-            "kg", "kg", "kg", "ml", "kg", "kg",
-            "und", "g", "kg", "ml", "kg",
-            "kg", "und", "und", "g"
+            "UNIDAD", "KG", "KG", "KG", "KG", "ML",
+            "UNIDAD", "UNIDAD", "ML", "ML", "KG",
+            "KG", "ML", "G", "UNIDAD", "ML",
+            "KG", "UNIDAD", "G", "UNIDAD", "KG",
+            "KG", "KG", "KG", "ML", "KG", "KG",
+            "UNIDAD", "G", "KG", "ML", "KG",
+            "KG", "UNIDAD", "UNIDAD", "G"
         };
 
         Map<String, Ingrediente> mapaIngredientes = new HashMap<>();

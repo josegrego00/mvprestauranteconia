@@ -103,6 +103,7 @@ Sistema de gestión para restaurantes con soporte multi-empresa (multi-tenant).
 - Roles: ADMIN, CAJERO, COCINERO, INVENTARIO
 - Contraseña encriptada con BCrypt
 - Eliminación lógica
+- **API REST**: Endpoints en `/api/v1/usuarios`
 
 ### Multi-Tenant
 - Aislamiento de datos por empresa

@@ -13,10 +13,9 @@ public interface UsuarioMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "empresa", ignore = true)
     @Mapping(target = "esSuperadmin", ignore = true)
-    @Mapping(target = "contrasenna", ignore = true)
     Usuario toEntity(UsuarioRequestDTO dto);
 
-    @Mapping(target = "empresaId", source = "empresa.id")
-    @Mapping(target = "nombreEmpresa", source = "empresa.nombreEmpresa")
+    @Mapping(target = "empresaId", expression = "java(usuario.getEmpresa() != null ? usuario.getEmpresa().getId() : null)")
+    @Mapping(target = "nombreEmpresa", expression = "java(usuario.getEmpresa() != null ? usuario.getEmpresa().getNombreEmpresa() : null)")
     UsuarioResponseDTO toResponse(Usuario usuario);
 }
