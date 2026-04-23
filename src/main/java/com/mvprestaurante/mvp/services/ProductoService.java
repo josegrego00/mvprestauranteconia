@@ -10,6 +10,7 @@ import com.mvprestaurante.mvp.multitenant.TenantContext;
 import com.mvprestaurante.mvp.repositories.EmpresaRepositorio;
 import com.mvprestaurante.mvp.repositories.ProductoRepository;
 import com.mvprestaurante.mvp.repositories.RecetaRepository;
+import com.mvprestaurante.mvp.utils.AuditLogger;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +30,7 @@ public class ProductoService {
     private final ProductoMapper productoMapper;
     private final EmpresaRepositorio empresaRepositorio;
     private final RecetaRepository recetaRepository;
+    private final AuditLogger auditLogger;
 
     private void validarTenant() {
         Long empresaId = TenantContext.getTenantId();
@@ -41,43 +42,54 @@ public class ProductoService {
     @Transactional(readOnly = true)
     public Page<ProductoDTO> listarActivos(Pageable pageable) {
         validarTenant();
-        Page<Producto> productos = productoRepository.findByEstaActivoTrue(TenantContext.getTenantId(), pageable);
+        Long empresaId = TenantContext.getTenantId();
+        Page<Producto> productos = productoRepository.findByEstaActivoTrue(empresaId, pageable);
+        auditLogger.logListar("Producto", productos.getContent().size());
         return productos.map(productoMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
     public Page<ProductoDTO> buscarPorNombre(String nombre, Pageable pageable) {
         validarTenant();
-        Page<Producto> productos = productoRepository.findByNombreContainingIgnoreCaseAndEstaActivoTrue(TenantContext.getTenantId(), nombre, pageable);
+        Long empresaId = TenantContext.getTenantId();
+        Page<Producto> productos = productoRepository.findByNombreContainingIgnoreCaseAndEstaActivoTrue(empresaId, nombre, pageable);
+        auditLogger.logBuscar("Producto", "Nombre: " + nombre);
         return productos.map(productoMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
     public Page<ProductoDTO> listarProductosConReceta(Pageable pageable) {
         validarTenant();
-        Page<Producto> productos = productoRepository.findByTieneRecetaTrueAndEstaActivoTrue(TenantContext.getTenantId(), pageable);
+        Long empresaId = TenantContext.getTenantId();
+        Page<Producto> productos = productoRepository.findByTieneRecetaTrueAndEstaActivoTrue(empresaId, pageable);
+        auditLogger.logListar("Producto", productos.getContent().size());
         return productos.map(productoMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
     public Page<ProductoDTO> listarSinProducto(Pageable pageable) {
         validarTenant();
-        Page<Producto> productos = productoRepository.findByTieneRecetaFalseAndEstaActivoTrue(TenantContext.getTenantId(), pageable);
+        Long empresaId = TenantContext.getTenantId();
+        Page<Producto> productos = productoRepository.findByTieneRecetaFalseAndEstaActivoTrue(empresaId, pageable);
+        auditLogger.logListar("Producto", productos.getContent().size());
         return productos.map(productoMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
-    public Page<ProductoDTO> listarDisponiblesParaProducto(Long productoId, Pageable pageable) {
+    public Page<ProductoDTO> listarDisponiblesParaReceta(Pageable pageable) {
         validarTenant();
-        Page<Producto> productos = productoRepository.findByTieneRecetaTrueAndEstaActivoTrue(TenantContext.getTenantId(), pageable);
+        Long empresaId = TenantContext.getTenantId();
+        Page<Producto> productos = productoRepository.findByTieneRecetaTrueAndEstaActivoTrue(empresaId, pageable);
         return productos.map(productoMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
     public ProductoDTO obtenerPorId(Long id) {
         validarTenant();
-        Producto producto = productoRepository.findByIdAndEmpresaId(id, TenantContext.getTenantId())
+        Long empresaId = TenantContext.getTenantId();
+        Producto producto = productoRepository.findByIdAndEmpresaId(id, empresaId)
                 .orElseThrow(() -> new BusinessException("Producto no encontrado"));
+        auditLogger.logBuscar("Producto", id.toString());
         return productoMapper.toDTO(producto);
     }
 
@@ -85,6 +97,7 @@ public class ProductoService {
     @PreAuthorize("hasRole('ADMIN')")
     public ProductoDTO guardar(ProductoDTO dto, Long recetaId) {
         validarTenant();
+        Long empresaId = TenantContext.getTenantId();
 
         if (dto.getNombre() == null || dto.getNombre().trim().isEmpty()) {
             throw new BusinessException("El nombre del producto es obligatorio");
@@ -101,7 +114,7 @@ public class ProductoService {
         if (Boolean.TRUE.equals(dto.getTieneReceta())) {
             dto.setStock(null);
             if (recetaId != null) {
-                Receta receta = recetaRepository.findByIdAndEmpresaId(recetaId, TenantContext.getTenantId())
+                Receta receta = recetaRepository.findByIdAndEmpresaId(recetaId, empresaId)
                         .orElseThrow(() -> new BusinessException("Receta no encontrada"));
                 if (receta.getProducto() != null) {
                     throw new BusinessException("Esta receta ya está asignada a otro producto");
@@ -113,7 +126,7 @@ public class ProductoService {
             }
         }
 
-        Empresa empresa = empresaRepositorio.findById(TenantContext.getTenantId())
+        Empresa empresa = empresaRepositorio.findById(empresaId)
                 .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
 
         Producto producto = productoMapper.toEntity(dto);
@@ -126,7 +139,7 @@ public class ProductoService {
         }
 
         if (Boolean.TRUE.equals(dto.getTieneReceta()) && recetaId != null) {
-            Receta receta = recetaRepository.findByIdAndEmpresaId(recetaId, TenantContext.getTenantId())
+            Receta receta = recetaRepository.findByIdAndEmpresaId(recetaId, empresaId)
                     .orElseThrow(() -> new BusinessException("Receta no encontrada"));
             producto.setReceta(receta);
             receta.setProducto(producto);
@@ -134,6 +147,7 @@ public class ProductoService {
         }
 
         Producto guardado = productoRepository.save(producto);
+        auditLogger.logCrear("Producto", guardado.getId().toString());
         return productoMapper.toDTO(guardado);
     }
 
@@ -141,9 +155,10 @@ public class ProductoService {
     @PreAuthorize("hasRole('ADMIN')")
     public ProductoDTO actualizar(Long id, ProductoDTO dto, Long recetaId) {
         validarTenant();
+        Long empresaId = TenantContext.getTenantId();
 
-        Producto productoExistente = productoRepository.findByIdAndEmpresaId(id, TenantContext.getTenantId())
-                .orElseThrow(() -> new BusinessException("Producto no ditemukan"));
+        Producto productoExistente = productoRepository.findByIdAndEmpresaId(id, empresaId)
+                .orElseThrow(() -> new BusinessException("Producto no encontrado"));
 
         if (dto.getNombre() == null || dto.getNombre().trim().isEmpty()) {
             throw new BusinessException("El nombre del producto es obligatorio");
@@ -170,7 +185,7 @@ public class ProductoService {
         if (Boolean.TRUE.equals(dto.getTieneReceta())) {
             productoExistente.setStock(null);
             if (recetaId != null) {
-                Receta recetaNueva = recetaRepository.findByIdAndEmpresaId(recetaId, TenantContext.getTenantId())
+                Receta recetaNueva = recetaRepository.findByIdAndEmpresaId(recetaId, empresaId)
                         .orElseThrow(() -> new BusinessException("Receta no encontrada"));
 
                 if (recetaNueva.getProducto() != null && !recetaNueva.getProducto().getId().equals(id)) {
@@ -196,36 +211,40 @@ public class ProductoService {
         }
 
         Producto guardado = productoRepository.save(productoExistente);
+        auditLogger.logActualizar("Producto", id.toString());
         return productoMapper.toDTO(guardado);
     }
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public boolean eliminar(Long id) {
+    public void eliminar(Long id) {
         validarTenant();
+        Long empresaId = TenantContext.getTenantId();
 
-        Producto producto = productoRepository.findByIdAndEmpresaId(id, TenantContext.getTenantId())
+        Producto producto = productoRepository.findByIdAndEmpresaId(id, empresaId)
                 .orElseThrow(() -> new BusinessException("Producto no encontrado"));
 
         producto.setEstaActivo(false);
         productoRepository.save(producto);
-        return true;
+        auditLogger.logDesactivar("Producto", id.toString());
     }
 
     @Transactional(readOnly = true)
     public boolean existePorNombre(String nombre) {
         validarTenant();
-        return productoRepository.existsByNombreIgnoreCaseAndEmpresaIdAndEstaActivoTrue(nombre, TenantContext.getTenantId());
+        Long empresaId = TenantContext.getTenantId();
+        return productoRepository.existsByNombreIgnoreCaseAndEmpresaIdAndEstaActivoTrue(nombre, empresaId);
     }
 
     @Transactional
     public void asociarReceta(Long productoId, Long recetaId) {
         validarTenant();
+        Long empresaId = TenantContext.getTenantId();
 
-        Producto producto = productoRepository.findByIdAndEmpresaId(productoId, TenantContext.getTenantId())
+        Producto producto = productoRepository.findByIdAndEmpresaId(productoId, empresaId)
                 .orElseThrow(() -> new BusinessException("Producto no encontrado"));
 
-        Receta receta = recetaRepository.findByIdAndEmpresaId(recetaId, TenantContext.getTenantId())
+        Receta receta = recetaRepository.findByIdAndEmpresaId(recetaId, empresaId)
                 .orElseThrow(() -> new BusinessException("Receta no encontrada"));
 
         if (receta.getProducto() != null && !receta.getProducto().getId().equals(productoId)) {
@@ -243,8 +262,9 @@ public class ProductoService {
     @Transactional(readOnly = true)
     public Double calcularStockEstimado(Long productoId) {
         validarTenant();
+        Long empresaId = TenantContext.getTenantId();
 
-        Producto producto = productoRepository.findByIdAndEmpresaId(productoId, TenantContext.getTenantId())
+        Producto producto = productoRepository.findByIdAndEmpresaId(productoId, empresaId)
                 .orElseThrow(() -> new BusinessException("Producto no encontrado"));
 
         if (producto.getReceta() == null) {
@@ -267,8 +287,9 @@ public class ProductoService {
     @Transactional
     public void actualizarPrecioVenta(Long productoId, BigDecimal nuevoPrecio) {
         validarTenant();
+        Long empresaId = TenantContext.getTenantId();
 
-        Producto producto = productoRepository.findByIdAndEmpresaId(productoId, TenantContext.getTenantId())
+        Producto producto = productoRepository.findByIdAndEmpresaId(productoId, empresaId)
                 .orElseThrow(() -> new BusinessException("Producto no encontrado"));
 
         producto.setPrecioVenta(nuevoPrecio);

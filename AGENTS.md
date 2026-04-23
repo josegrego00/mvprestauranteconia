@@ -51,6 +51,26 @@ http://localhost:8080/api/v1
 | DELETE | `/api/v1/usuarios/{id}` | Deactivate usuario |
 | POST | `/api/v1/usuarios/{id}/activar` | Activate usuario |
 
+## API Endpoints (Producto)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/productos` | List productos by empresa |
+| GET | `/productos/{id}` | Get producto by ID |
+| POST | `/productos/guardar` | Create producto |
+| PUT | `/productos/actualizar/{id}` | Update producto |
+| DELETE | `/productos/eliminar/{id}` | Deactivate producto |
+
+## API Endpoints (Ingrediente)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/ingredientes` | List ingredientes by empresa |
+| GET | `/ingredientes/{id}` | Get ingrediente by ID |
+| POST | `/ingredientes/guardar` | Create ingrediente |
+| PUT | `/ingredientes/actualizar/{id}` | Update ingrediente |
+| DELETE | `/ingredientes/eliminar/{id}` | Deactivate ingrediente |
+
 ## Swagger/OpenAPI
 - UI: `/swagger-ui.html`
 - Docs: `/api-docs`
@@ -71,7 +91,7 @@ Edit `src/main/resources/application.properties` or set env vars: `DB_URL`, `DB_
 ## Testing
 - Mockito + JUnit 5 tests en `src/test/java/`
 - DataProviders estáticos en `src/test/java/.../testdata/`
-- Tests para EmpresaService, EmpresaController, UsuarioService, UsuarioController
+- Tests para EmpresaService, EmpresaController, UsuarioService, UsuarioController, ProductoService, ProductoController, IngredienteService, IngredienteController
 
 ## Audit Logging
 - Logs guardados en `./logs/audit/audit.log`

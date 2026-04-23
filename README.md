@@ -36,6 +36,8 @@ Sistema de gestión para restaurantes con soporte multi-empresa (multi-tenant).
 - Asociación de recetas existentes o creación de nuevas desde el producto
 - Nombre único por empresa
 - Eliminación lógica (desactivación)
+- **API REST**: Endpoints en `/productos`
+- **Auditoría**: Logs de creación, actualización y eliminación
 
 ### Gestión de Recetas
 - Recetas asociadas a productos (1:1)
@@ -51,6 +53,8 @@ Sistema de gestión para restaurantes con soporte multi-empresa (multi-tenant).
 - Precio de compra por unidad
 - Eliminación lógica protegida (no se elimina si está en alguna receta)
 - Validaciones: nombre único por empresa, unidad de medida obligatoria
+- **API REST**: Endpoints en `/ingredientes`
+- **Auditoría**: Logs de creación, actualización y eliminación
 
 ### Gestión de Compras
 - Registro de compras de ingredientes

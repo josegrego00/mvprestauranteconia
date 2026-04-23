@@ -11,6 +11,7 @@ import com.mvprestaurante.mvp.repositories.DetalleRecetaRepository;
 import com.mvprestaurante.mvp.repositories.EmpresaRepositorio;
 import com.mvprestaurante.mvp.repositories.IngredienteRepository;
 import com.mvprestaurante.mvp.repositories.RecetaRepository;
+import com.mvprestaurante.mvp.utils.AuditLogger;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,6 +35,7 @@ public class IngredienteService {
     private final DetalleRecetaRepository detalleRecetaRepository;
     private final RecetaService recetaService;
     private final IngredienteMapper ingredienteMapper;
+    private final AuditLogger auditLogger;
 
     private void validarTenant() {
         Long empresaId = TenantContext.getTenantId();
@@ -45,33 +47,42 @@ public class IngredienteService {
     @Transactional(readOnly = true)
     public Page<IngredienteDTO> listarActivos(Pageable pageable) {
         validarTenant();
-        Page<Ingrediente> ingredientes = ingredienteRepository.findByEstaActivoTrue(TenantContext.getTenantId(),
-                pageable);
+        Long empresaId = TenantContext.getTenantId();
+        Page<Ingrediente> ingredientes = ingredienteRepository.findByEstaActivoTrue(empresaId, pageable);
+        auditLogger.logListar("Ingrediente", ingredientes.getContent().size());
         return ingredientes.map(ingredienteMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
     public Page<IngredienteDTO> buscarPorNombre(String nombre, Pageable pageable) {
         validarTenant();
+        Long empresaId = TenantContext.getTenantId();
         Page<Ingrediente> ingredientes = ingredienteRepository
-                .findByNombreContainingIgnoreCaseAndEstaActivoTrue(TenantContext.getTenantId(), nombre, pageable);
+                .findByNombreContainingIgnoreCaseAndEstaActivoTrue(empresaId, nombre, pageable);
+        auditLogger.logBuscar("Ingrediente", "Nombre: " + nombre);
         return ingredientes.map(ingredienteMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
     public Optional<IngredienteDTO> obtenerPorId(Long id) {
         validarTenant();
-        return ingredienteRepository.findByIdAndEmpresaId(id, TenantContext.getTenantId())
-                .map(ingredienteMapper::toDTO);
+        Long empresaId = TenantContext.getTenantId();
+        Optional<IngredienteDTO> resultado = ingredienteRepository.findByIdAndEmpresaId(id, empresaId)
+                .map(ingrediente -> {
+                    auditLogger.logBuscar("Ingrediente", id.toString());
+                    return ingredienteMapper.toDTO(ingrediente);
+                });
+        return resultado;
     }
 
     @Transactional
     public IngredienteDTO guardar(IngredienteDTO ingredienteDTO) {
         validarTenant();
+        Long empresaId = TenantContext.getTenantId();
 
         validarNombreDuplicado(ingredienteDTO.getNombre());
 
-        Empresa empresa = empresaRepositorio.findById(TenantContext.getTenantId())
+        Empresa empresa = empresaRepositorio.findById(empresaId)
                 .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
 
         Ingrediente ingrediente = ingredienteMapper.toEntity(ingredienteDTO);
@@ -85,14 +96,18 @@ public class IngredienteService {
             ingrediente.setPrecioCompra(BigDecimal.ZERO);
         }
         ingrediente.setEmpresa(empresa);
-        return ingredienteMapper.toDTO(ingredienteRepository.save(ingrediente));
+
+        Ingrediente guardado = ingredienteRepository.save(ingrediente);
+        auditLogger.logCrear("Ingrediente", guardado.getId().toString());
+        return ingredienteMapper.toDTO(guardado);
     }
 
     @Transactional
     public IngredienteDTO actualizar(Long id, IngredienteDTO ingredienteDTO) {
         validarTenant();
+        Long empresaId = TenantContext.getTenantId();
 
-        Ingrediente ingrediente = ingredienteRepository.findByIdAndEmpresaId(id, TenantContext.getTenantId())
+        Ingrediente ingrediente = ingredienteRepository.findByIdAndEmpresaId(id, empresaId)
                 .orElseThrow(() -> new BusinessException("Ingrediente no encontrado"));
 
         if (!ingrediente.getNombre().equalsIgnoreCase(ingredienteDTO.getNombre())
@@ -117,6 +132,7 @@ public class IngredienteService {
             recalcularRecetasQueUsenIngrediente(ingredienteGuardado);
         }
 
+        auditLogger.logActualizar("Ingrediente", id.toString());
         return ingredienteMapper.toDTO(ingredienteGuardado);
     }
 
@@ -131,25 +147,27 @@ public class IngredienteService {
     }
 
     @Transactional
-    public boolean eliminar(Long id) {
+    public void eliminar(Long id) {
         validarTenant();
+        Long empresaId = TenantContext.getTenantId();
 
-        Ingrediente ingrediente = ingredienteRepository.findByIdAndEmpresaId(id, TenantContext.getTenantId())
+        Ingrediente ingrediente = ingredienteRepository.findByIdAndEmpresaId(id, empresaId)
                 .orElseThrow(() -> new BusinessException("Ingrediente no encontrado"));
 
-        if (ingredienteRepository.existsByIngredienteEnReceta(TenantContext.getTenantId(), id)) {
+        if (ingredienteRepository.existsByIngredienteEnReceta(empresaId, id)) {
             throw new BusinessException("No se puede eliminar el ingrediente porque está siendo usado en una o más recetas");
         }
 
         ingrediente.setEstaActivo(false);
         ingredienteRepository.save(ingrediente);
-        return true;
+        auditLogger.logDesactivar("Ingrediente", id.toString());
     }
 
     @Transactional(readOnly = true)
     public boolean existePorNombre(String nombre) {
         validarTenant();
-        return ingredienteRepository.existsByNombreAndEstaActivoTrue(TenantContext.getTenantId(), nombre);
+        Long empresaId = TenantContext.getTenantId();
+        return ingredienteRepository.existsByNombreAndEstaActivoTrue(empresaId, nombre);
     }
 
     private void validarNombreDuplicado(String nombre) {
