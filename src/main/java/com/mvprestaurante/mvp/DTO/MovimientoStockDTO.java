@@ -2,22 +2,21 @@ package com.mvprestaurante.mvp.DTO;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class MovimientoStockDTO {
 
     private Long id;
-
     private LocalDateTime fechaMovimiento;
 
     @NotNull(message = "La empresa es obligatoria")
@@ -25,7 +24,6 @@ public class MovimientoStockDTO {
 
     private Long ingredienteId;
     private String nombreIngrediente;
-
     private Long productoId;
     private String nombreProducto;
 
@@ -36,18 +34,17 @@ public class MovimientoStockDTO {
     private String tipoMovimiento;
 
     @NotNull(message = "La cantidad es obligatoria")
-    @PositiveOrZero(message = "La cantidad no puede ser negativa")
-    private Integer cantidad;
+    private BigDecimal cantidad;
 
-    private Double stockAnterior;
-    private Double stockNuevo;
+    private BigDecimal stockAnterior;
+    private BigDecimal stockNuevo;
 
     @NotBlank(message = "El origen es obligatorio")
     private String origen;
 
     private Long ventaId;
     private Long compraId;
-
+    private Long cierreDiaId;
     private String observaciones;
 
     @NotNull(message = "El usuario es obligatorio")

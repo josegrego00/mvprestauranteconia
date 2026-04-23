@@ -1,0 +1,233 @@
+================================================================================
+RESUMEN DEL LAYOUT ACTUAL - MiBombay
+================================================================================
+
+El sistema tiene dos partes principales de navegación:
+1. NAVBAR (fragment)
+2. SIDEBAR (fragment)
+
+Estas se usan en todas las páginas del sistema (dashboard, ventas, productos, usuarios, etc.)
+
+================================================================================
+1. NAVBAR (navbar.html)
+================================================================================
+
+UBICACIÓN: src/main/resources/templates/fragments/navbar.html
+
+CONTENIDO:
+- Tiene dos fragmentos en el mismo archivo:
+  a) navbar: El navbar principal con botón hamburguesa
+  b) sidebar-offcanvas: El menú móvil que se abre como offcanvas
+
+HTML DEL NAVBAR:
+```html
+<nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-custom fixed-top bg-white shadow-sm">
+    <div class="container-fluid">
+        <!-- Botón hamburguesa (solo visible en móvil) -->
+        <button class="btn btn-link text-dark d-md-none me-2 p-0" 
+                type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">
+            <i class="bi bi-list fs-3"></i>
+        </button>
+        
+        <!-- Brand -->
+        <a class="navbar-brand fw-bold" th:href="@{/dashboard}" style="color: #4e73df;">
+            <i class="bi bi-grid-fill"></i>
+            <span class="d-none d-sm-inline">SISTEMA DE GESTIÓN</span>
+            <span class="d-sm-none">SG</span>
+        </a>
+
+        <!-- Right side: usuario y logout -->
+        <div class="ms-auto d-flex align-items-center gap-2">
+            <span class="nav-link d-none d-md-block text-secondary small">
+                <i class="bi bi-person-circle me-1"></i>
+                <span sec:authentication="name">Usuario</span>
+            </span>
+            <form th:action="@{/logout}" method="post">
+                <button type="submit" class="btn btn-link text-decoration-none p-2">
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</nav>
+```
+
+OFFCANVAS (.sidebar-offcanvas):
+```html
+<div th:fragment="sidebar-offcanvas" 
+     class="offcanvas offcanvas-start" 
+     tabindex="-1" id="sidebarOffcanvas" 
+     style="width: 280px; top: 56px;">
+    <div class="offcanvas-header bg-primary text-white">
+        <h5 class="offcanvas-title">
+            <i class="bi bi-cup-hot-fill me-2"></i>MVP RESTAURANTE
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body p-0">
+        <!-- Menú completo con todos los enlaces -->
+    </div>
+</div>
+```
+
+================================================================================
+2. SIDEBAR (sidebar.html)
+================================================================================
+
+UBICACIÓN: src/main/resources/templates/fragments/sidebar.html
+
+SINGLE FRAGMENTO: "sidebar"
+
+CONFIGURACIÓN ACTUAL:
+- Position: FIXED (fijo en la pantalla)
+- Top: 56px (debajo del navbar)
+- Left: 0 (a la izquierda)
+- Width: 250px
+- Height: calc(100vh - 56px) (toda la altura menos el navbar)
+- Z-index: 1000
+- Visible: SOLO en desktop (d-none d-md-block)
+
+```html
+<div th:fragment="sidebar" class="d-none d-md-block bg-light sidebar" 
+     style="position: fixed; top: 56px; left: 0; width: 250px; 
+            height: calc(100vh - 56px); z-index: 1000; overflow-y: auto;">
+    <!-- Contenido del menú -->
+</div>
+```
+
+================================================================================
+3. USO EN LAS PÁGINAS
+================================================================================
+
+Cada página (ej: usuario/lista.html) tiene esta estructura:
+
+```html
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head}"></head>
+<body>
+
+    <!-- NAVBAR con botón hamburguesa -->
+    <nav th:replace="~{fragments/navbar :: navbar}"></nav>
+    
+    <!-- OFFCANVAS para móvil -->
+    <div th:replace="~{fragments/navbar :: sidebar-offcanvas}"></div>
+
+    <!-- Contenedor principal -->
+    <div class="container-fluid" style="padding-top: 56px;">
+        <div class="row">
+            
+            <!-- SIDEBAR desktop (fijo a la izquierda) -->
+            <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+            <!-- CONTENIDO PRINCIPAL -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 pb-4" 
+                 style="margin-left: 250px; margin-top: 56px;">
+                <!-- Contenido de la página -->
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+```
+
+================================================================================
+4. CLASES RESPONSIVE IMPORTANTES
+================================================================================
+
+- d-md-none  = Display: none en desktop y tablet, visible en móvil
+- d-none d-md-block = Oculto en móvil, visible en desktop
+- fixed-top = Fijo arriba de la pantalla
+- position: fixed = Posición fija en la pantalla
+
+================================================================================
+5. PROBLEMAS CONOCIDOS
+================================================================================
+
+1. OFFCANVAS EN MÓVIL:
+   - Problema: Appears ENCIMA del navbar
+   - Solución: Ya tiene top: 56px para aparecer DEBAJO
+
+2. SIDEBAR EN DESKTOP:
+   - Problema: Puede appear DEBAJO del contenido
+   - Solución: Position fixed + margin-left en main
+
+================================================================================
+6. ARCHIVOS MODIFICADOS RECIENTEMENTE
+================================================================================
+
+- navbar.html: Agregado botón hamburguesa + sidebar-offcanvas
+- sidebar.html: Configurado como fixed position
+- inicio.html: Landing page responsive
+- usuario/lista.html: Ejemplo de uso con margin-left
+
+================================================================================
+7. ARCHIVOS RELACIONADOS
+================================================================================
+
+Fragmentos:
+- /fragments/navbar.html
+- /fragments/sidebar.html
+- /fragments/head.html
+- /fragments/footer.html
+- /fragments/scripts.html
+
+CSS:
+- /static/css/dashboard.css
+- /static/css/inicio.css
+- /static/css/registro.css
+- etc.
+
+JavaScript:
+- /static/js/inicio.js
+- /static/js/registro.js
+- etc.
+
+================================================================================
+8. CÓMO AGREGAR EL LAYOUT A UNA NUEVA PÁGINA
+================================================================================
+
+Copiar la estructura de usuario/lista.html:
+
+```html
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head}"></head>
+<body>
+
+    <!-- Navbar -->
+    <nav th:replace="~{fragments/navbar :: navbar}"></nav>
+    
+    <!-- Offcanvas móvil -->
+    <div th:replace="~{fragments/navbar :: sidebar-offcanvas}"></div>
+
+    <!-- Container -->
+    <div class="container-fluid" style="padding-top: 56px;">
+        <div class="row">
+            <!-- Sidebar desktop -->
+            <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+            
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 pb-4" 
+                 style="margin-left: 250px; margin-top: 56px;">
+                <!-- Tu contenido aquí -->
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+```
+
+================================================================================
+9. PRÓXIMOS PASOS POSIBLES
+================================================================================
+
+1. Unificar el layout en un fragmento común (layout/app-layout.html)
+2. Agregar más páginas al sistema responsive
+3. Verificar que el offcanvas funcione en todas las páginas
+
+================================================================================

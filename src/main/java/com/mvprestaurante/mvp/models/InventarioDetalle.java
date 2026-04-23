@@ -40,5 +40,6 @@ public class InventarioDetalle {
     private String nombre;
     private String unidadMedida;
     private Double stock;
+    private Double precioUnitario;
 
 }

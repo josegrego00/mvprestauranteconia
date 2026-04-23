@@ -8,10 +8,11 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class InventarioReporteDTO {
+
     private String nombre;
     private String tipo;
     private String unidadMedida;

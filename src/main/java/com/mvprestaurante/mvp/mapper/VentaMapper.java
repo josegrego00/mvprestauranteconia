@@ -6,13 +6,16 @@ import org.mapstruct.Mapping;
 import com.mvprestaurante.mvp.DTO.VentaDTO;
 import com.mvprestaurante.mvp.models.Venta;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = DetalleVentaMapper.class)
 public interface VentaMapper {
 
     @Mapping(target = "cliente", ignore = true)
     @Mapping(target = "usuario", ignore = true)
     @Mapping(target = "empresa", ignore = true)
     @Mapping(target = "detallesVenta", ignore = true)
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "numeroVenta", ignore = true)
+    @Mapping(target = "fechaVenta", ignore = true)
     Venta toEntity(VentaDTO dto);
 
     @Mapping(target = "clienteId", source = "cliente.id")

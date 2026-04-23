@@ -1,6 +1,6 @@
 package com.mvprestaurante.mvp.controllers;
 
-import com.mvprestaurante.mvp.DTO.CompraDetalleDTO;
+import com.mvprestaurante.mvp.DTO.DetalleCompraDTO;
 import com.mvprestaurante.mvp.DTO.CompraDTO;
 import com.mvprestaurante.mvp.DTO.IngredienteDTO;
 import com.mvprestaurante.mvp.DTO.ProductoDTO;

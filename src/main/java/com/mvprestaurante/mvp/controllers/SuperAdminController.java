@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.mvprestaurante.mvp.models.Empresa;
+import com.mvprestaurante.mvp.DTO.EmpresaDTO;
 import com.mvprestaurante.mvp.models.Usuario;
 import com.mvprestaurante.mvp.repositories.UsuarioRepositorio;
 import com.mvprestaurante.mvp.services.EmpresaService;
@@ -80,14 +80,14 @@ public class SuperAdminController {
 
     @GetMapping("/empresas/nueva")
     public String nuevaEmpresa(Model model) {
-        model.addAttribute("empresa", new Empresa());
+        model.addAttribute("empresa", new EmpresaDTO());
         return "superadmin/empresas/formulario";
     }
 
     @PostMapping("/empresas/guardar")
-    public String guardarEmpresa(Empresa empresa, RedirectAttributes redirectAttributes) {
+    public String guardarEmpresa(EmpresaDTO empresaDTO, RedirectAttributes redirectAttributes) {
         try {
-            empresaService.guardar(empresa);
+            empresaService.guardar(empresaDTO);
             redirectAttributes.addFlashAttribute("success", "Empresa creada exitosamente!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Error: " + e.getMessage());
@@ -102,9 +102,9 @@ public class SuperAdminController {
     }
 
     @PostMapping("/empresas/actualizar/{id}")
-    public String actualizarEmpresa(@PathVariable Long id, Empresa empresa, RedirectAttributes redirectAttributes) {
+    public String actualizarEmpresa(@PathVariable Long id, EmpresaDTO empresaDTO, RedirectAttributes redirectAttributes) {
         try {
-            empresaService.actualizar(id, empresa);
+            empresaService.actualizar(id, empresaDTO);
             redirectAttributes.addFlashAttribute("success", "Empresa actualizada!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Error: " + e.getMessage());
@@ -115,12 +115,12 @@ public class SuperAdminController {
     @GetMapping("/empresas/activar/{id}")
     public String activarEmpresa(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
-            Empresa empresa = empresaService.buscarPorId(id);
-            empresa.setActiva(true);
-            empresaService.actualizar(id, empresa);
-            
-            usuarioService.crearUsuarioAdmin(empresa);
-            
+            EmpresaDTO empresaDTO = empresaService.buscarPorId(id);
+            empresaDTO.setActiva(true);
+            empresaService.actualizar(id, empresaDTO);
+
+            usuarioService.crearUsuarioAdmin(id);
+
             redirectAttributes.addFlashAttribute("success", "Empresa activada! Se ha creado el usuario admin.");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Error: " + e.getMessage());
@@ -131,9 +131,9 @@ public class SuperAdminController {
     @GetMapping("/empresas/desactivar/{id}")
     public String desactivarEmpresa(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
-            Empresa empresa = empresaService.buscarPorId(id);
-            empresa.setActiva(false);
-            empresaService.actualizar(id, empresa);
+            EmpresaDTO empresaDTO = empresaService.buscarPorId(id);
+            empresaDTO.setActiva(false);
+            empresaService.actualizar(id, empresaDTO);
             redirectAttributes.addFlashAttribute("success", "Empresa desactivada!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Error: " + e.getMessage());

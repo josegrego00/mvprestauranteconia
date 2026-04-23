@@ -11,12 +11,13 @@ public interface DetalleRecetaMapper {
 
     @Mapping(target = "receta", ignore = true)
     @Mapping(target = "ingrediente", ignore = true)
+    @Mapping(target = "id", ignore = true)
     DetalleReceta toEntity(DetalleRecetaDTO dto);
 
-    @Mapping(target = "recetaId", source = "receta.id")
+    @Mapping(target = "recetaId", expression = "java(detalleReceta.getReceta() != null ? detalleReceta.getReceta().getId() : null)")
     @Mapping(target = "ingredienteId", source = "ingrediente.id")
     @Mapping(target = "ingredienteNombre", source = "ingrediente.nombre")
-    @Mapping(target = "ingredienteUnidadMedida", source = "ingrediente.unidadMedida")
+    @Mapping(target = "ingredienteUnidadMedida", expression = "java(detalleReceta.getIngrediente() != null && detalleReceta.getIngrediente().getUnidadMedida() != null ? detalleReceta.getIngrediente().getUnidadMedida().name() : null)")
     @Mapping(target = "ingredienteStockDisponible", source = "ingrediente.stockDisponible")
     DetalleRecetaDTO toDTO(DetalleReceta detalleReceta);
 }

@@ -12,6 +12,7 @@ public interface RecetaMapper {
     @Mapping(target = "empresa", ignore = true)
     @Mapping(target = "producto", ignore = true)
     @Mapping(target = "listaIngredientes", ignore = true)
+    @Mapping(target = "id", ignore = true)
     Receta toEntity(RecetaDTO dto);
 
     @Mapping(target = "empresaId", source = "empresa.id")

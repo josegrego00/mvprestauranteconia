@@ -5,12 +5,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class InventarioItemDTO {
-    private String tipo; // "INGREDIENTE" o "PRODUCTO"
+
+    private String tipo;
     private Long itemId;
     private String nombre;
     private String unidadMedida;

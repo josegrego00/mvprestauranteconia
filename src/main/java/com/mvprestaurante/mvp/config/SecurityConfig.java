@@ -74,8 +74,8 @@ public class SecurityConfig {
                                                 UsernamePasswordAuthenticationFilter.class)
                                 .authorizeHttpRequests(authz -> authz
 .requestMatchers("/", "/registro", "/empresa/guardar", "/empresa/espera-activacion", "/css/**",
-        "/js/**", "/error/**", "/salir")
-        .permitAll()
+                                "/js/**", "/error/**", "/salir", "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
+                                .permitAll()
                                                 .requestMatchers("/login").permitAll()
                                                 .requestMatchers("/superadmin/**").denyAll()
                                                 .anyRequest().authenticated())

@@ -1,15 +1,17 @@
 package com.mvprestaurante.mvp.DTO;
 
+import com.mvprestaurante.mvp.enums.UnidadMedida;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class IngredienteDTO {
 
@@ -18,14 +20,11 @@ public class IngredienteDTO {
     @NotBlank(message = "El nombre es obligatorio")
     private String nombre;
 
-    @PositiveOrZero(message = "El stock disponible no puede ser negativo")
     private Double stockDisponible;
 
-    @PositiveOrZero(message = "El precio de compra no puede ser negativo")
-    private Double precioCompra;
+    private BigDecimal precioCompra;
 
-    @NotBlank(message = "La unidad de medida es obligatoria")
-    private String unidadMedida;
+    private UnidadMedida unidadMedida;
 
     private Boolean estaActivo;
 

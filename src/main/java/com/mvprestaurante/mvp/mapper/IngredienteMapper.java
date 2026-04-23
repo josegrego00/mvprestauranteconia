@@ -10,6 +10,7 @@ import com.mvprestaurante.mvp.models.Ingrediente;
 public interface IngredienteMapper {
 
     @Mapping(target = "empresa", ignore = true)
+    @Mapping(target = "id", ignore = true)
     Ingrediente toEntity(IngredienteDTO dto);
 
     @Mapping(target = "empresaId", source = "empresa.id")

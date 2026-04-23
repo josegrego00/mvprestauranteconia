@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -88,7 +89,7 @@ public class ReporteService {
                         .id((Long) row[0])
                         .nombre((String) row[1])
                         .stock(((Number) row[2]).doubleValue())
-                        .precioVenta(((Number) row[3]).doubleValue())
+                        .precioVenta(BigDecimal.valueOf(((Number) row[3]).doubleValue()))
                         .build())
                 .collect(Collectors.toList());
     }
@@ -139,7 +140,7 @@ public class ReporteService {
             InventarioDTO dto = InventarioDTO.builder()
                     .ingredienteId(ing.getId())
                     .ingredienteNombre(ing.getNombre())
-                    .unidadMedida(ing.getUnidadMedida())
+                    .unidadMedida(ing.getUnidadMedida().name())
                     .stockActual(ing.getStockDisponible())
                     .build();
 

@@ -11,16 +11,13 @@ public interface ProductoMapper {
 
     @Mapping(target = "empresa", ignore = true)
     @Mapping(target = "receta", ignore = true)
+    @Mapping(target = "id", ignore = true)
     Producto toEntity(ProductoDTO dto);
 
     @Mapping(target = "empresaId", source = "empresa.id")
-    @Mapping(target = "recetaId", source = "receta.id")
-    @Mapping(target = "recetaNombre", source = "receta.nombre")
-    @Mapping(target = "precioBruto", source = "receta.precioBruto")
+    @Mapping(target = "recetaId", expression = "java(producto.getReceta() != null ? producto.getReceta().getId() : null)")
+    @Mapping(target = "recetaNombre", expression = "java(producto.getReceta() != null ? producto.getReceta().getNombre() : null)")
+    @Mapping(target = "precioBruto", expression = "java(producto.getReceta() != null ? producto.getReceta().getPrecioBruto() : null)")
     @Mapping(target = "stockEstimado", ignore = true)
     ProductoDTO toDTO(Producto producto);
-
-    default ProductoDTO toSimpleDTO(Producto producto) {
-        return toDTO(producto);
-    }
 }

@@ -1,9 +1,13 @@
 package com.mvprestaurante.mvp.config;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import com.mvprestaurante.mvp.enums.TipoItem;
+import com.mvprestaurante.mvp.enums.UnidadMedida;
 import com.mvprestaurante.mvp.models.DetalleReceta;
 import com.mvprestaurante.mvp.models.Empresa;
 import com.mvprestaurante.mvp.models.Ingrediente;
@@ -112,8 +116,8 @@ public class SuperAdminInitializer implements CommandLineRunner {
             Ingrediente ing = Ingrediente.builder()
                     .nombre(nombresIng[i])
                     .stockDisponible(50.0)
-                    .precioCompra(1000.0)
-                    .unidadMedida(unidades[i])
+                    .precioCompra(BigDecimal.valueOf(1000.0))
+                    .unidadMedida(UnidadMedida.valueOf(unidades[i].toUpperCase()))
                     .estaActivo(true)
                     .empresa(empresa)
                     .build();
@@ -152,8 +156,8 @@ public class SuperAdminInitializer implements CommandLineRunner {
             Producto prod = Producto.builder()
                     .nombre((String) data[0])
                     .descripcion((String) data[1])
-                    .precioVenta((Double) data[2])
-                    .precioCompra((Double) data[2] * 0.6)
+                    .precioVenta(BigDecimal.valueOf((Double) data[2]))
+                    .precioCompra(BigDecimal.valueOf((Double) data[2] * 0.6).setScale(2, RoundingMode.HALF_UP))
                     .tieneReceta((Boolean) data[3])
                     .estaActivo(true)
                     .stock(100.0)
@@ -186,7 +190,7 @@ public class SuperAdminInitializer implements CommandLineRunner {
                     Receta receta = Receta.builder()
                             .nombre("Receta de " + nombreReceta)
                             .descripcion("Preparación de " + nombreReceta)
-                            .precioBruto(5000.0)
+                            .precioBruto(BigDecimal.valueOf(5000.0))
                             .precioVenta(prod.getPrecioVenta())
                             .estaActiva(true)
                             .producto(prod)

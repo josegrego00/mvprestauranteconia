@@ -4,17 +4,17 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class RecetaDTO {
 
@@ -25,11 +25,9 @@ public class RecetaDTO {
 
     private String descripcion;
 
-    @PositiveOrZero(message = "El precio bruto no puede ser negativo")
-    private Double precioBruto;
+    private BigDecimal precioBruto;
 
-    @PositiveOrZero(message = "El precio de venta no puede ser negativo")
-    private Double precioVenta;
+    private BigDecimal precioVenta;
 
     @NotNull(message = "El estado es obligatorio")
     private Boolean estaActiva;

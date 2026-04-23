@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -81,7 +82,7 @@ public class IngredienteService {
             ingrediente.setStockDisponible(0.0);
         }
         if (ingrediente.getPrecioCompra() == null) {
-            ingrediente.setPrecioCompra(0.0);
+            ingrediente.setPrecioCompra(BigDecimal.ZERO);
         }
         ingrediente.setEmpresa(empresa);
         return ingredienteMapper.toDTO(ingredienteRepository.save(ingrediente));
@@ -101,14 +102,14 @@ public class IngredienteService {
 
         boolean precioCambio = !Objects.equals(
                 ingrediente.getPrecioCompra(),
-                ingredienteDTO.getPrecioCompra() != null ? ingredienteDTO.getPrecioCompra() : 0.0);
+                ingredienteDTO.getPrecioCompra() != null ? ingredienteDTO.getPrecioCompra() : BigDecimal.ZERO);
 
         ingrediente.setNombre(ingredienteDTO.getNombre().trim());
         ingrediente.setStockDisponible(
                 ingredienteDTO.getStockDisponible() != null ? ingredienteDTO.getStockDisponible() : 0.0);
         ingrediente.setPrecioCompra(
-                ingredienteDTO.getPrecioCompra() != null ? ingredienteDTO.getPrecioCompra() : 0.0);
-        ingrediente.setUnidadMedida(ingredienteDTO.getUnidadMedida().trim());
+                ingredienteDTO.getPrecioCompra() != null ? ingredienteDTO.getPrecioCompra() : BigDecimal.ZERO);
+        ingrediente.setUnidadMedida(ingredienteDTO.getUnidadMedida());
 
         Ingrediente ingredienteGuardado = ingredienteRepository.save(ingrediente);
 

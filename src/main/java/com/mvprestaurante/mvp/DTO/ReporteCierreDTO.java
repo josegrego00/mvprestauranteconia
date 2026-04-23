@@ -9,10 +9,11 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class ReporteCierreDTO {
+
     private LocalDate fecha;
     private String nombreEmpresa;
     private Double totalVentas;

@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.mvprestaurante.mvp.DTO.UsuarioDTORequest;
-import com.mvprestaurante.mvp.DTO.UsuarioDTOResponse;
+import com.mvprestaurante.mvp.DTO.UsuarioRequestDTO;
+import com.mvprestaurante.mvp.DTO.UsuarioResponseDTO;
 import com.mvprestaurante.mvp.services.UsuarioService;
 
 import jakarta.validation.Valid;
@@ -36,7 +36,7 @@ public class UsuarioController {
     @GetMapping("/nuevo")
     public String nuevoUsuario(Model model) {
         if (!model.containsAttribute("usuarioDTO")) {
-            model.addAttribute("usuarioDTO", new UsuarioDTORequest());
+            model.addAttribute("usuarioDTO", new UsuarioRequestDTO());
         }
         model.addAttribute("isEdit", false);
         return "usuario/formulario";
@@ -45,7 +45,7 @@ public class UsuarioController {
     @GetMapping("/editar/{id}")
     public String editarUsuario(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         try {
-            UsuarioDTOResponse usuario = usuarioService.buscarPorId(id);
+            UsuarioResponseDTO usuario = usuarioService.buscarPorId(id);
             model.addAttribute("usuarioDTO", usuario);
             model.addAttribute("isEdit", true);
             return "usuario/formulario";
@@ -58,7 +58,7 @@ public class UsuarioController {
     @GetMapping("/ver/{id}")
     public String verUsuario(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         try {
-            UsuarioDTOResponse usuario = usuarioService.buscarPorId(id);
+            UsuarioResponseDTO usuario = usuarioService.buscarPorId(id);
             model.addAttribute("usuarioDTO", usuario);
             return "usuario/ver";
         } catch (Exception e) {
@@ -68,7 +68,7 @@ public class UsuarioController {
     }
 
     @PostMapping("/guardar")
-    public String guardarUsuario(@Valid @ModelAttribute UsuarioDTORequest usuarioDTO,
+    public String guardarUsuario(@Valid @ModelAttribute UsuarioRequestDTO usuarioDTO,
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {
@@ -104,7 +104,7 @@ public class UsuarioController {
 
     @PostMapping("/actualizar/{id}")
     public String actualizarUsuario(@PathVariable Long id,
-            @ModelAttribute UsuarioDTORequest usuarioDTO,
+            @ModelAttribute UsuarioRequestDTO usuarioDTO,
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {

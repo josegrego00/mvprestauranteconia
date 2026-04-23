@@ -1,5 +1,7 @@
 package com.mvprestaurante.mvp.services;
 
+import java.math.BigDecimal;
+
 import com.mvprestaurante.mvp.DTO.DetalleRecetaDTO;
 import com.mvprestaurante.mvp.DTO.RecetaDTO;
 import com.mvprestaurante.mvp.exceptions.BusinessException;
@@ -148,14 +150,15 @@ public class RecetaService {
     }
 
     public void calcularPrecioBruto(Receta receta) {
-        double total = receta.getListaIngredientes().stream()
+        BigDecimal total = receta.getListaIngredientes().stream()
                 .mapToDouble(detalle -> {
                     if (detalle.getIngrediente() != null && detalle.getIngrediente().getPrecioCompra() != null) {
-                        return detalle.getIngrediente().getPrecioCompra() * detalle.getCantidadIngrediente();
+                        return detalle.getIngrediente().getPrecioCompra().doubleValue() * detalle.getCantidadIngrediente();
                     }
                     return 0.0;
                 })
-                .sum();
+                .mapToObj(BigDecimal::valueOf)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         receta.setPrecioBruto(total);
     }
 

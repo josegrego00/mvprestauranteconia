@@ -9,10 +9,11 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class ReporteDashboardDTO {
+
     private Double ventasHoy;
     private Double ventasSemana;
     private Double ventasMes;

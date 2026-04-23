@@ -11,6 +11,7 @@ public interface DetalleVentaMapper {
 
     @Mapping(target = "venta", ignore = true)
     @Mapping(target = "producto", ignore = true)
+    @Mapping(target = "id", ignore = true)
     DetalleVenta toEntity(DetalleVentaDTO dto);
 
     @Mapping(target = "productoId", source = "producto.id")

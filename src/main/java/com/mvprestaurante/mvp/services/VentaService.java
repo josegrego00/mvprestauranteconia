@@ -1,11 +1,31 @@
 package com.mvprestaurante.mvp.services;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.mvprestaurante.mvp.DTO.DetalleVentaDTO;
 import com.mvprestaurante.mvp.DTO.ProductoDTO;
 import com.mvprestaurante.mvp.DTO.ReporteCierreDTO;
 import com.mvprestaurante.mvp.DTO.VentaDTO;
+import com.mvprestaurante.mvp.enums.TipoCierre;
 import com.mvprestaurante.mvp.exceptions.BusinessException;
 import com.mvprestaurante.mvp.mapper.VentaMapper;
+import com.mvprestaurante.mvp.models.CierreDia;
 import com.mvprestaurante.mvp.models.Cliente;
 import com.mvprestaurante.mvp.models.DetalleReceta;
 import com.mvprestaurante.mvp.models.DetalleVenta;
@@ -14,7 +34,6 @@ import com.mvprestaurante.mvp.models.Ingrediente;
 import com.mvprestaurante.mvp.models.Producto;
 import com.mvprestaurante.mvp.models.Usuario;
 import com.mvprestaurante.mvp.models.Venta;
-import com.mvprestaurante.mvp.models.CierreDia;
 import com.mvprestaurante.mvp.multitenant.TenantContext;
 import com.mvprestaurante.mvp.repositories.CierreDiaRepository;
 import com.mvprestaurante.mvp.repositories.ClienteRepositorio;
@@ -29,25 +48,6 @@ import com.mvprestaurante.mvp.repositories.UsuarioRepositorio;
 import com.mvprestaurante.mvp.repositories.VentaRepository;
 
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-@Service
 @RequiredArgsConstructor
 public class VentaService {
 
@@ -412,7 +412,7 @@ public class VentaService {
                 if (productosMap.containsKey(productoId)) {
                     ReporteProductoAcumulado ac = productosMap.get(productoId);
                     ac.cantidadTotal += detalle.getCantidad();
-                    ac.montoTotal += detalle.getSubtotal();
+                    ac.montoTotal = ac.montoTotal.add(detalle.getSubtotal());
                 } else {
                     ReporteProductoAcumulado nuevo = new ReporteProductoAcumulado();
                     nuevo.productoId = productoId;
@@ -429,14 +429,16 @@ public class VentaService {
             productosVendidos.add(ProductoDTO.builder()
                     .id(ac.productoId)
                     .nombre(ac.productoNombre)
-                    .stock(ac.cantidadTotal.doubleValue())
+                    .stock(ac.cantidadTotal)
                     .precioVenta(ac.montoTotal)
                     .build());
         }
 
-        productosVendidos.sort((a, b) -> Double.compare(
-                b.getPrecioVenta() != null ? b.getPrecioVenta() : 0.0,
-                a.getPrecioVenta() != null ? a.getPrecioVenta() : 0.0));
+        productosVendidos.sort((a, b) -> {
+            BigDecimal precioA = a.getPrecioVenta() != null ? a.getPrecioVenta() : BigDecimal.ZERO;
+            BigDecimal precioB = b.getPrecioVenta() != null ? b.getPrecioVenta() : BigDecimal.ZERO;
+            return precioB.compareTo(precioA);
+        });
 
         return ReporteCierreDTO.builder()
                 .fecha(fecha.toLocalDate())
@@ -470,7 +472,7 @@ public class VentaService {
             throw new BusinessException("Debe cargar el inventario físico antes de generar el Reporte Z.");
         }
 
-        if (cierreDiaRepository.existsByEmpresaIdAndFechaAndTipo(empresaId, hoy, "Z")) {
+        if (cierreDiaRepository.existsByEmpresaIdAndFechaAndTipo(empresaId, hoy, TipoCierre.CIERRE_CAJA)) {
             throw new BusinessException("El día ya ha sido cerrado. No se puede generar otro Reporte Z.");
         }
 
@@ -478,12 +480,13 @@ public class VentaService {
 
         CierreDia cierreDia = CierreDia.builder()
                 .empresa(empresa)
-                .fecha(hoy)
-                .tipo("Z")
-                .totalVentas(reporte.getTotalVentas())
-                .totalCompras(reporte.getTotalCompras())
-                .balance(reporte.getBalance())
-                .fechaCierre(LocalDateTime.now())
+                .usuario(getUsuarioActual())
+                .fechaCierreDia(hoy)
+                .tipo(TipoCierre.CIERRE_CAJA)
+                .totalVentas(BigDecimal.valueOf(reporte.getTotalVentas()))
+                .totalCompras(BigDecimal.valueOf(reporte.getTotalCompras()))
+                .balance(BigDecimal.valueOf(reporte.getBalance()))
+                .fechaEjecucionCierre(LocalDateTime.now())
                 .build();
         cierreDiaRepository.save(cierreDia);
 
@@ -495,13 +498,13 @@ public class VentaService {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
         LocalDate hoy = LocalDate.now();
-        return cierreDiaRepository.existsByEmpresaIdAndFechaAndTipo(empresaId, hoy, "Z");
+        return cierreDiaRepository.existsByEmpresaIdAndFechaAndTipo(empresaId, hoy, TipoCierre.CIERRE_CAJA);
     }
 
     private static class ReporteProductoAcumulado {
         Long productoId;
         String productoNombre;
-        Integer cantidadTotal = 0;
-        Double montoTotal = 0.0;
+        Double cantidadTotal = 0.0;
+        BigDecimal montoTotal = BigDecimal.ZERO;
     }
 }

@@ -2,6 +2,7 @@ package com.mvprestaurante.mvp.services;
 
 import com.mvprestaurante.mvp.DTO.InventarioItemDTO;
 import com.mvprestaurante.mvp.DTO.InventarioReporteDTO;
+import com.mvprestaurante.mvp.enums.TipoItem;
 import com.mvprestaurante.mvp.exceptions.BusinessException;
 import com.mvprestaurante.mvp.models.*;
 import com.mvprestaurante.mvp.multitenant.TenantContext;
@@ -61,12 +62,12 @@ public class InventarioService {
                     .tipo("INGREDIENTE")
                     .itemId(ing.getId())
                     .nombre(ing.getNombre())
-                    .unidadMedida(ing.getUnidadMedida())
+                    .unidadMedida(ing.getUnidadMedida().name())
                     .stockSistema(ing.getStockDisponible() != null ? ing.getStockDisponible() : 0.0)
                     .stockFisico(0.0)
                     .diferenciaUnidad(0.0)
                     .diferenciaDinero(0.0)
-                    .precioUnitario(ing.getPrecioCompra() != null ? ing.getPrecioCompra() : 0.0)
+                    .precioUnitario(ing.getPrecioCompra() != null ? ing.getPrecioCompra().doubleValue() : 0.0)
                     .build();
             items.add(dto);
         }
@@ -83,7 +84,7 @@ public class InventarioService {
                     .stockFisico(0.0)
                     .diferenciaUnidad(0.0)
                     .diferenciaDinero(0.0)
-                    .precioUnitario(prod.getPrecioCompra() != null ? prod.getPrecioCompra() : 0.0)
+                    .precioUnitario(prod.getPrecioCompra() != null ? prod.getPrecioCompra().doubleValue() : 0.0)
                     .build();
             items.add(dto);
         }
@@ -150,12 +151,12 @@ public class InventarioService {
                 Ingrediente ing = ingOpt.get();
                 InventarioDetalle detalle = InventarioDetalle.builder()
                         .registro(registro)
-                        .tipo("INGREDIENTE")
+.tipo(TipoItem.INGREDIENTE)
                         .ingrediente(ing)
                         .nombre(ing.getNombre())
-                        .unidadMedida(ing.getUnidadMedida())
+                        .unidadMedida(ing.getUnidadMedida().name())
                         .stock(stockFisico)
-                        .precioUnitario(ing.getPrecioCompra() != null ? ing.getPrecioCompra() : 0.0)
+                        .precioUnitario(ing.getPrecioCompra() != null ? ing.getPrecioCompra().doubleValue() : 0.0)
                         .build();
                 registro.getDetalles().add(detalle);
 
@@ -170,12 +171,12 @@ public class InventarioService {
                 Producto prod = prodOpt.get();
                 InventarioDetalle detalle = InventarioDetalle.builder()
                         .registro(registro)
-                        .tipo("PRODUCTO")
+.tipo(TipoItem.PRODUCTO)
                         .producto(prod)
                         .nombre(prod.getNombre())
                         .unidadMedida("UND")
                         .stock(stockFisico)
-                        .precioUnitario(prod.getPrecioCompra() != null ? prod.getPrecioCompra() : 0.0)
+.precioUnitario(prod.getPrecioCompra() != null ? prod.getPrecioCompra().doubleValue() : 0.0)
                         .build();
                 registro.getDetalles().add(detalle);
 
@@ -240,7 +241,7 @@ public class InventarioService {
 
                 Long itemId = primerDetalle.getIngrediente() != null ? primerDetalle.getIngrediente().getId()
                         : primerDetalle.getProducto().getId();
-                String tipoItem = primerDetalle.getTipo();
+                String tipoItem = primerDetalle.getTipo().name();
 
                 LocalDateTime fechaInicioDateTime = fechaPrimerRegistro.atStartOfDay();
                 LocalDateTime fechaFinDateTime = fechaUltimoRegistro.atTime(LocalTime.MAX);
@@ -258,7 +259,7 @@ public class InventarioService {
 
                 InventarioReporteDTO dto = InventarioReporteDTO.builder()
                         .nombre(primerDetalle.getNombre())
-                        .tipo(primerDetalle.getTipo())
+                        .tipo(primerDetalle.getTipo().name())
                         .unidadMedida(primerDetalle.getUnidadMedida())
                         .fechaInicial(fechaPrimerRegistro)
                         .inventarioInicial(stockInicial)

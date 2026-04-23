@@ -1,6 +1,14 @@
 package com.mvprestaurante.mvp.services;
 
-import com.mvprestaurante.mvp.DTO.MovimientoStockDTO;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.mvprestaurante.mvp.enums.OrigenMovimiento;
+import com.mvprestaurante.mvp.enums.TipoItem;
+import com.mvprestaurante.mvp.enums.TipoMovimiento;
 import com.mvprestaurante.mvp.models.Compra;
 import com.mvprestaurante.mvp.models.Empresa;
 import com.mvprestaurante.mvp.models.Ingrediente;
@@ -9,11 +17,8 @@ import com.mvprestaurante.mvp.models.Producto;
 import com.mvprestaurante.mvp.models.Usuario;
 import com.mvprestaurante.mvp.models.Venta;
 import com.mvprestaurante.mvp.repositories.MovimientoStockRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -24,10 +29,10 @@ public class MovimientoStockService {
     @Transactional
     public void registrarMovimiento(
             Object item,
-            Double stockAnterior,
-            Double cantidad,
-            String tipoMovimiento,
-            String origen,
+            BigDecimal stockAnterior,
+            BigDecimal cantidad,
+            TipoMovimiento tipoMovimiento,
+            OrigenMovimiento origen,
             Object referencia,
             Empresa empresa,
             Usuario usuario) {
@@ -36,18 +41,18 @@ public class MovimientoStockService {
                 .fechaMovimiento(LocalDateTime.now())
                 .empresa(empresa)
                 .tipoMovimiento(tipoMovimiento)
-                .cantidad(cantidad != null ? cantidad.intValue() : 0)
-                .stockAnterior(stockAnterior)
-                .stockNuevo(stockAnterior + cantidad)
+                .cantidad(cantidad != null ? cantidad : BigDecimal.ZERO)
+                .stockAnterior(stockAnterior != null ? stockAnterior : BigDecimal.ZERO)
+                .stockNuevo(stockAnterior != null && cantidad != null ? stockAnterior.add(cantidad) : BigDecimal.ZERO)
                 .origen(origen)
                 .usuario(usuario);
 
         if (item instanceof Ingrediente) {
             builder.ingrediente((Ingrediente) item)
-                    .tipoItem("INGREDIENTE");
+                    .tipoItem(TipoItem.INGREDIENTE);
         } else if (item instanceof Producto) {
             builder.producto((Producto) item)
-                    .tipoItem("PRODUCTO");
+                    .tipoItem(TipoItem.PRODUCTO);
         }
 
         if (referencia instanceof Venta) {

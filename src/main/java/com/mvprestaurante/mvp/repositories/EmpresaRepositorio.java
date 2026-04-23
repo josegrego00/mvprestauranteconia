@@ -12,4 +12,6 @@ public interface EmpresaRepositorio extends JpaRepository<Empresa, Long> {
 
     boolean existsBySubdominio(String subdominio);
 
+    Optional<Empresa> findByNombreEmpresa(String lowerCase);
+
 }

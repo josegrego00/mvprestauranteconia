@@ -6,10 +6,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class InventarioDTO {
+
     private Long ingredienteId;
     private String ingredienteNombre;
     private String unidadMedida;

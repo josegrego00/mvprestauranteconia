@@ -2,15 +2,16 @@ package com.mvprestaurante.mvp.DTO;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class DetalleVentaDTO {
 
@@ -23,11 +24,8 @@ public class DetalleVentaDTO {
 
     @NotNull(message = "La cantidad es obligatoria")
     @Min(value = 1, message = "La cantidad debe ser mayor a 0")
-    private Integer cantidad;
+    private Double cantidad;
 
-    @PositiveOrZero(message = "El precio unitario no puede ser negativo")
-    private Double precioUnitario;
-
-    @PositiveOrZero(message = "El subtotal no puede ser negativo")
-    private Double subtotal;
+    private BigDecimal precioUnitario;
+    private BigDecimal subtotal;
 }

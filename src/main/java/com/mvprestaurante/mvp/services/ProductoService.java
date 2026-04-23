@@ -19,6 +19,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 @Service
@@ -164,7 +165,7 @@ public class ProductoService {
             productoExistente.setDescripcion(dto.getDescripcion().trim());
         }
         productoExistente.setPrecioCompra(dto.getPrecioCompra());
-        productoExistente.setPrecioVenta(dto.getPrecioVenta() != null ? dto.getPrecioVenta() : 0.0);
+        productoExistente.setPrecioVenta(dto.getPrecioVenta() != null ? dto.getPrecioVenta() : BigDecimal.ZERO);
 
         if (Boolean.TRUE.equals(dto.getTieneReceta())) {
             productoExistente.setStock(null);
@@ -264,7 +265,7 @@ public class ProductoService {
     }
 
     @Transactional
-    public void actualizarPrecioVenta(Long productoId, Double nuevoPrecio) {
+    public void actualizarPrecioVenta(Long productoId, BigDecimal nuevoPrecio) {
         validarTenant();
 
         Producto producto = productoRepository.findByIdAndEmpresaId(productoId, TenantContext.getTenantId())

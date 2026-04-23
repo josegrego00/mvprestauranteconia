@@ -6,8 +6,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.mvprestaurante.mvp.DTO.UsuarioDTORequest;
-import com.mvprestaurante.mvp.DTO.UsuarioDTOResponse;
+import com.mvprestaurante.mvp.DTO.UsuarioRequestDTO;
+import com.mvprestaurante.mvp.DTO.UsuarioResponseDTO;
 import com.mvprestaurante.mvp.exceptions.BusinessException;
 import com.mvprestaurante.mvp.mapper.UsuarioMapper;
 import com.mvprestaurante.mvp.models.Empresa;
@@ -45,7 +45,7 @@ public class UsuarioService {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'ADMINDEV')")
-    public List<UsuarioDTOResponse> listarUsuarios() {
+    public List<UsuarioResponseDTO> listarUsuarios() {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
         List<Usuario> usuarios = usuarioRepositorio.findByEmpresaId(empresaId);
@@ -55,7 +55,7 @@ public class UsuarioService {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'ADMINDEV')")
-    public UsuarioDTOResponse buscarPorId(Long id) {
+    public UsuarioResponseDTO buscarPorId(Long id) {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
         Usuario usuario = usuarioRepositorio.findByIdAndEmpresaId(id, empresaId)
@@ -65,7 +65,7 @@ public class UsuarioService {
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public UsuarioDTOResponse guardarUsuario(UsuarioDTORequest usuarioDTO) {
+    public UsuarioResponseDTO guardarUsuario(UsuarioRequestDTO usuarioDTO) {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
 
@@ -79,7 +79,7 @@ public class UsuarioService {
         String contraseñaEncriptada = passwordEncoder.encode(usuarioDTO.getContrasenna());
         usuarioDTO.setContrasenna(contraseñaEncriptada);
 
-        Usuario entidad = usuarioMapper.toEntityFromRequest(usuarioDTO);
+        Usuario entidad = usuarioMapper.toEntity(usuarioDTO);
         entidad.setEmpresa(empresa);
         entidad.setEsSuperadmin(false);
         entidad.setEstaActivo(true);
@@ -90,7 +90,7 @@ public class UsuarioService {
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public UsuarioDTOResponse actualizarUsuario(Long id, UsuarioDTORequest usuarioDTO) {
+    public UsuarioResponseDTO actualizarUsuario(Long id, UsuarioRequestDTO usuarioDTO) {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
 
@@ -112,7 +112,7 @@ public class UsuarioService {
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public UsuarioDTOResponse eliminarUsuario(Long id) {
+    public UsuarioResponseDTO eliminarUsuario(Long id) {
         validarTenant();
         Long empresaId = TenantContext.getTenantId();
 
@@ -130,7 +130,7 @@ public class UsuarioService {
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public UsuarioDTOResponse activarUsuario(Long id) {
+    public UsuarioResponseDTO activarUsuario(Long id) {
         validarTenant();
 
         Usuario usuario = usuarioRepositorio.findByIdAndEmpresaId(id, TenantContext.getTenantId())
@@ -166,5 +166,13 @@ public class UsuarioService {
                 .build();
 
         usuarioRepositorio.save(admin);
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('ADMINDEV')")
+    public void crearUsuarioAdmin(Long empresaId) {
+        Empresa empresa = empresaRepositorio.findById(empresaId)
+                .orElseThrow(() -> new BusinessException("Empresa no encontrada"));
+        crearUsuarioAdmin(empresa);
     }
 }
