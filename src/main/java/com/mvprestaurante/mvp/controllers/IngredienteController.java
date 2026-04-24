@@ -2,7 +2,6 @@ package com.mvprestaurante.mvp.controllers;
 
 import com.mvprestaurante.mvp.DTO.IngredienteDTO;
 import com.mvprestaurante.mvp.services.IngredienteService;
-import com.mvprestaurante.mvp.utils.AuditLogger;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -29,7 +28,6 @@ import java.util.Optional;
 public class IngredienteController {
 
     private final IngredienteService ingredienteService;
-    private final AuditLogger auditLogger;
 
     @GetMapping
     @Operation(summary = "API: Listar ingredientes", description = "Lista todos los ingredientes activos de la empresa")
@@ -51,7 +49,6 @@ public class IngredienteController {
             ingredientesPage = ingredienteService.listarActivos(pageable);
         }
 
-        auditLogger.logListar("Ingrediente", ingredientesPage.getContent().size());
         return ResponseEntity.ok(ingredientesPage);
     }
 
@@ -64,10 +61,7 @@ public class IngredienteController {
     public ResponseEntity<IngredienteDTO> buscarPorId(
             @Parameter(description = "ID del ingrediente") @PathVariable Long id) {
         Optional<IngredienteDTO> ingrediente = ingredienteService.obtenerPorId(id);
-        return ingrediente.map(i -> {
-            auditLogger.logBuscar("Ingrediente", id.toString());
-            return ResponseEntity.ok(i);
-        })
+        return ingrediente.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -79,8 +73,7 @@ public class IngredienteController {
     })
     public ResponseEntity<IngredienteDTO> guardar(@Valid @RequestBody IngredienteDTO ingredienteDTO) {
         IngredienteDTO guardado = ingredienteService.guardar(ingredienteDTO);
-        auditLogger.logCrear("Ingrediente", guardado.getId().toString());
-        return ResponseEntity.ok(guardado);
+        return ResponseEntity.status(201).body(guardado);
     }
 
     @PutMapping("/{id}")
@@ -93,11 +86,7 @@ public class IngredienteController {
             @Parameter(description = "ID del ingrediente") @PathVariable Long id,
             @Valid @RequestBody IngredienteDTO ingredienteDTO) {
         IngredienteDTO actualizado = ingredienteService.actualizar(id, ingredienteDTO);
-        if (actualizado != null) {
-            auditLogger.logActualizar("Ingrediente", id.toString());
-            return ResponseEntity.ok(actualizado);
-        }
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(actualizado);
     }
 
     @DeleteMapping("/{id}")
@@ -109,7 +98,6 @@ public class IngredienteController {
     public ResponseEntity<Void> eliminar(
             @Parameter(description = "ID del ingrediente") @PathVariable Long id) {
         ingredienteService.eliminar(id);
-        auditLogger.logDesactivar("Ingrediente", id.toString());
         return ResponseEntity.noContent().build();
     }
 }
