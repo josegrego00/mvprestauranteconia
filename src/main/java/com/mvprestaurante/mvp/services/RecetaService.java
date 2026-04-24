@@ -1,6 +1,9 @@
 package com.mvprestaurante.mvp.services;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.mvprestaurante.mvp.DTO.DetalleRecetaDTO;
 import com.mvprestaurante.mvp.DTO.RecetaDTO;
@@ -16,6 +19,7 @@ import com.mvprestaurante.mvp.repositories.DetalleRecetaRepository;
 import com.mvprestaurante.mvp.repositories.EmpresaRepositorio;
 import com.mvprestaurante.mvp.repositories.IngredienteRepository;
 import com.mvprestaurante.mvp.repositories.RecetaRepository;
+import com.mvprestaurante.mvp.utils.AuditLogger;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,10 +28,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +39,7 @@ public class RecetaService {
     private final DetalleRecetaMapper detalleRecetaMapper;
     private final EmpresaRepositorio empresaRepositorio;
     private final IngredienteRepository ingredienteRepository;
+    private final AuditLogger auditLogger;
 
     private void validarTenant() {
         Long empresaId = TenantContext.getTenantId();
@@ -51,6 +52,7 @@ public class RecetaService {
     public Page<RecetaDTO> listarActivas(Pageable pageable) {
         validarTenant();
         Page<Receta> recetas = recetaRepository.findByEstaActivaTrue(TenantContext.getTenantId(), pageable);
+        auditLogger.logListar("Receta", recetas.getContent().size());
         return recetas.map(recetaMapper::toDTO);
     }
 
@@ -58,14 +60,15 @@ public class RecetaService {
     public Page<RecetaDTO> listarSinProducto(Pageable pageable) {
         validarTenant();
         Page<Receta> recetas = recetaRepository.findBySinProducto(TenantContext.getTenantId(), pageable);
+        auditLogger.logListar("Receta", recetas.getContent().size());
         return recetas.map(recetaMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
     public Page<RecetaDTO> listarDisponiblesParaProducto(Long productoId, Pageable pageable) {
         validarTenant();
-        Page<Receta> recetas = recetaRepository.findDisponiblesParaProducto(TenantContext.getTenantId(), productoId,
-                pageable);
+        Page<Receta> recetas = recetaRepository.findDisponiblesParaProducto(TenantContext.getTenantId(), productoId, pageable);
+        auditLogger.logListar("Receta", recetas.getContent().size());
         return recetas.map(recetaMapper::toDTO);
     }
 
@@ -74,6 +77,7 @@ public class RecetaService {
         validarTenant();
         Page<Receta> recetas = recetaRepository.findByNombreContainingIgnoreCaseAndEstaActivaTrue(
                 TenantContext.getTenantId(), nombre, pageable);
+        auditLogger.logListar("Receta", recetas.getContent().size());
         return recetas.map(recetaMapper::toDTO);
     }
 
@@ -82,12 +86,13 @@ public class RecetaService {
         validarTenant();
         Receta receta = recetaRepository.findByIdAndEmpresaId(id, TenantContext.getTenantId())
                 .orElseThrow(() -> new BusinessException("Receta no encontrada"));
+        auditLogger.logBuscar("Receta", String.valueOf(id));
         return recetaMapper.toDTO(receta);
     }
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public RecetaDTO crear(RecetaDTO dto, Long[] ingredientesIds, Double[] cantidades) {
+    public RecetaDTO crear(RecetaDTO dto, Long[] ingredientesIds, BigDecimal[] cantidades) {
         validarTenant();
 
         if (ingredientesIds == null || cantidades == null || ingredientesIds.length == 0) {
@@ -122,10 +127,11 @@ public class RecetaService {
         calcularPrecioBruto(receta);
 
         Receta guardada = recetaRepository.save(receta);
+        auditLogger.logCrear("Receta", String.valueOf(guardada.getId()));
         return recetaMapper.toDTO(guardada);
     }
 
-    private void validarIngredientesEnFormulario(Long[] ingredientesIds, Double[] cantidades) {
+    private void validarIngredientesEnFormulario(Long[] ingredientesIds, BigDecimal[] cantidades) {
         if (ingredientesIds == null || cantidades == null || ingredientesIds.length != cantidades.length) {
             throw new BusinessException("Los datos de ingredientes no son válidos");
         }
@@ -144,27 +150,28 @@ public class RecetaService {
         recetaRepository.findByIdAndEmpresaId(recetaId, TenantContext.getTenantId())
                 .orElseThrow(() -> new BusinessException("Receta no encontrada"));
 
-        Page<DetalleReceta> detalles = detalleRecetaRepository.findByRecetaId(TenantContext.getTenantId(), recetaId,
-                pageable);
+        Page<DetalleReceta> detalles = detalleRecetaRepository.findByRecetaId(TenantContext.getTenantId(), recetaId, pageable);
+        auditLogger.logListar("DetalleReceta", detalles.getContent().size());
         return detalles.map(detalleRecetaMapper::toDTO);
     }
 
     public void calcularPrecioBruto(Receta receta) {
-        BigDecimal total = receta.getListaIngredientes().stream()
-                .mapToDouble(detalle -> {
-                    if (detalle.getIngrediente() != null && detalle.getIngrediente().getPrecioCompra() != null) {
-                        return detalle.getIngrediente().getPrecioCompra().doubleValue() * detalle.getCantidadIngrediente();
-                    }
-                    return 0.0;
-                })
-                .mapToObj(BigDecimal::valueOf)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal total = BigDecimal.ZERO;
+        for (DetalleReceta detalle : receta.getListaIngredientes()) {
+            if (detalle.getIngrediente() != null && detalle.getIngrediente().getPrecioCompra() != null) {
+                BigDecimal precio = detalle.getIngrediente().getPrecioCompra();
+                BigDecimal cantidad = detalle.getCantidadIngrediente();
+                if (precio != null && cantidad != null) {
+                    total = total.add(precio.multiply(cantidad));
+                }
+            }
+        }
         receta.setPrecioBruto(total);
     }
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public RecetaDTO actualizar(Long id, RecetaDTO dto, Long[] ingredientesIds, Double[] cantidades) {
+    public RecetaDTO actualizar(Long id, RecetaDTO dto, Long[] ingredientesIds, BigDecimal[] cantidades) {
         validarTenant();
 
         Receta recetaExistente = recetaRepository.findByIdAndEmpresaId(id, TenantContext.getTenantId())
@@ -198,16 +205,17 @@ public class RecetaService {
         calcularPrecioBruto(recetaExistente);
 
         Receta guardada = recetaRepository.save(recetaExistente);
+        auditLogger.logActualizar("Receta", String.valueOf(id));
         return recetaMapper.toDTO(guardada);
     }
 
-    private List<DetalleReceta> construirDetalles(Receta receta, Long[] ingredientesIds, Double[] cantidades) {
+    private List<DetalleReceta> construirDetalles(Receta receta, Long[] ingredientesIds, BigDecimal[] cantidades) {
         List<DetalleReceta> detalles = new ArrayList<>();
         for (int i = 0; i < ingredientesIds.length; i++) {
             Long idIngrediente = ingredientesIds[i];
-            Double cantidadIngrediente = cantidades[i];
+            BigDecimal cantidadIngrediente = cantidades[i];
 
-            if (idIngrediente != null && cantidadIngrediente != null && cantidadIngrediente > 0) {
+            if (idIngrediente != null && cantidadIngrediente != null && cantidadIngrediente.compareTo(BigDecimal.ZERO) > 0) {
                 Ingrediente ingrediente = ingredienteRepository
                         .findByIdAndEmpresaId(idIngrediente, TenantContext.getTenantId())
                         .orElseThrow(() -> new BusinessException("Ingrediente no encontrado: " + idIngrediente));
@@ -224,27 +232,33 @@ public class RecetaService {
     }
 
     @Transactional(readOnly = true)
-    public Double calcularStockDisponible(Long recetaId) {
+    public BigDecimal calcularStockDisponible(Long recetaId) {
         validarTenant();
 
         Receta receta = recetaRepository.findByIdAndEmpresaId(recetaId, TenantContext.getTenantId())
                 .orElseThrow(() -> new BusinessException("Receta no encontrada"));
 
         if (receta.getListaIngredientes() == null || receta.getListaIngredientes().isEmpty()) {
-            return 0.0;
+            return BigDecimal.ZERO;
         }
 
-        return receta.getListaIngredientes().stream()
-                .mapToDouble(detalle -> {
-                    Double stock = detalle.getIngrediente().getStockDisponible();
-                    Double cantidad = detalle.getCantidadIngrediente();
-                    if (stock == null || cantidad == null || cantidad == 0) {
-                        return Double.MAX_VALUE;
-                    }
-                    return stock / cantidad;
-                })
-                .min()
-                .orElse(0.0);
+        BigDecimal stockMinimo = BigDecimal.valueOf(Double.MAX_VALUE);
+
+        for (DetalleReceta detalle : receta.getListaIngredientes()) {
+            BigDecimal stock = BigDecimal.valueOf(detalle.getIngrediente().getStockDisponible());
+            BigDecimal cantidad = detalle.getCantidadIngrediente();
+
+            if (stock == null || cantidad == null || cantidad.compareTo(BigDecimal.ZERO) <= 0) {
+                return BigDecimal.ZERO;
+            }
+
+            BigDecimal disponibles = stock.divide(cantidad, 2, RoundingMode.HALF_DOWN);
+            if (disponibles.compareTo(stockMinimo) < 0) {
+                stockMinimo = disponibles;
+            }
+        }
+
+        return stockMinimo;
     }
 
     @Transactional
@@ -261,6 +275,29 @@ public class RecetaService {
 
         receta.setEstaActiva(false);
         recetaRepository.save(receta);
+        auditLogger.logDesactivar("Receta", String.valueOf(id));
         return true;
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public boolean activar(Long id) {
+        validarTenant();
+
+        Receta receta = recetaRepository.findByIdAndEmpresaId(id, TenantContext.getTenantId())
+                .orElseThrow(() -> new BusinessException("Receta no encontrada"));
+
+        receta.setEstaActiva(true);
+        recetaRepository.save(receta);
+        auditLogger.logActivar("Receta", String.valueOf(id));
+        return true;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RecetaDTO> listar(Pageable pageable) {
+        validarTenant();
+        Page<Receta> recetas = recetaRepository.findByEstaActivaTrue(TenantContext.getTenantId(), pageable);
+        auditLogger.logListar("Receta", recetas.getContent().size());
+        return recetas.map(recetaMapper::toDTO);
     }
 }

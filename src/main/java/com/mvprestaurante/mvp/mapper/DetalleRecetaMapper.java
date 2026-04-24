@@ -6,7 +6,7 @@ import org.mapstruct.Mapping;
 import com.mvprestaurante.mvp.DTO.DetalleRecetaDTO;
 import com.mvprestaurante.mvp.models.DetalleReceta;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {})
 public interface DetalleRecetaMapper {
 
     @Mapping(target = "receta", ignore = true)

@@ -19,6 +19,9 @@ public interface DetalleRecetaRepository extends JpaRepository<DetalleReceta, Lo
     @Query("SELECT dr FROM DetalleReceta dr WHERE dr.id = :id AND dr.receta.empresa.id = :tenantId")
     Optional<DetalleReceta> findByIdAndRecetaEmpresaId(@Param("id") Long id, @Param("tenantId") Long tenantId);
 
+    @Query("SELECT dr FROM DetalleReceta dr WHERE dr.receta.empresa.id = :tenantId")
+    Page<DetalleReceta> findByRecetaEmpresaId(@Param("tenantId") Long tenantId, Pageable pageable);
+
     @Query("SELECT dr FROM DetalleReceta dr WHERE dr.receta.id = :recetaId " +
             "AND dr.receta.empresa.id = :tenantId")
     Page<DetalleReceta> findByRecetaId(@Param("tenantId") Long tenantId,

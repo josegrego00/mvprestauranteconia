@@ -11,6 +11,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -24,14 +26,14 @@ public class DetalleReceta {
 
     private String nombre;
 
-    @ManyToOne // esto por defecto es LAZY, pero lo pongo explícito para que se entienda mejor.
+    @ManyToOne
     @JoinColumn(name = "receta_id", nullable = false)
     private Receta receta;
 
-    @ManyToOne // esto por defecto es LAZY, pero lo pongo explícito para que se entienda mejor.
+    @ManyToOne
     @JoinColumn(name = "ingrediente_id", nullable = false)
     private Ingrediente ingrediente;
 
-    private Double cantidadIngrediente;
+    private BigDecimal cantidadIngrediente;
 
 }

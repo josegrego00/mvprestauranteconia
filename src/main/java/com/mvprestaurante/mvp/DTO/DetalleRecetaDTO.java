@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -24,11 +26,11 @@ public class DetalleRecetaDTO {
 
     private String ingredienteNombre;
     private String ingredienteUnidadMedida;
-    private Double ingredienteStockDisponible;
+    private BigDecimal ingredienteStockDisponible;
 
     @NotNull(message = "La cantidad es obligatoria")
     @Positive(message = "La cantidad debe ser mayor a cero")
-    private Double cantidadIngrediente;
+    private BigDecimal cantidadIngrediente;
 
     private Long recetaId;
 }
