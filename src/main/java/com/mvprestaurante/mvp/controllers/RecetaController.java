@@ -107,13 +107,9 @@ public class RecetaController {
         @ApiResponse(responseCode = "404", description = "Receta no encontrada", content = @Content)
     })
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
-        try {
-            recetaService.eliminar(id);
-            auditLogger.logDesactivar("Receta", String.valueOf(id));
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+        recetaService.eliminar(id);
+        auditLogger.logDesactivar("Receta", String.valueOf(id));
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{id}/activar")
@@ -123,13 +119,9 @@ public class RecetaController {
         @ApiResponse(responseCode = "404", description = "Receta no encontrada", content = @Content)
     })
     public ResponseEntity<Void> activar(@PathVariable Long id) {
-        try {
-            recetaService.activar(id);
-            auditLogger.logActivar("Receta", String.valueOf(id));
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+        recetaService.activar(id);
+        auditLogger.logActivar("Receta", String.valueOf(id));
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{id}/stock")
