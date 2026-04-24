@@ -29,10 +29,10 @@ import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 
-@Controller
-@RequestMapping("/recetas/{recetaId}/ingredientes")
+@RestController
+@RequestMapping("/api/v1/recetas/{recetaId}/ingredientes")
 @RequiredArgsConstructor
-@Tag(name = "DetalleReceta", description = "Gestión de ingredientes en recetas")
+@Tag(name = "DetalleReceta", description = "Gestión de ingredientes en recetas - API REST")
 public class DetalleRecetaController {
 
     private final DetalleRecetaService detalleRecetaService;

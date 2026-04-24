@@ -274,11 +274,11 @@ public class ProductoService {
         return producto.getReceta().getListaIngredientes().stream()
                 .mapToDouble(detalle -> {
                     Double stock = detalle.getIngrediente().getStockDisponible();
-                    Double cantidad = detalle.getCantidadIngrediente();
-                    if (stock == null || cantidad == null || cantidad == 0) {
+                    BigDecimal cantidad = detalle.getCantidadIngrediente();
+                    if (stock == null || cantidad == null || cantidad.compareTo(BigDecimal.ZERO) == 0) {
                         return Double.MAX_VALUE;
                     }
-                    return stock / cantidad;
+                    return stock / cantidad.doubleValue();
                 })
                 .min()
                 .orElse(0.0);
