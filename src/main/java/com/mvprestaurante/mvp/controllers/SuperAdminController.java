@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.mvprestaurante.mvp.DTO.EmpresaDTO;
+import com.mvprestaurante.mvp.mapper.EmpresaMapperImpl;
+import com.mvprestaurante.mvp.models.Empresa;
 import com.mvprestaurante.mvp.models.Usuario;
 import com.mvprestaurante.mvp.repositories.UsuarioRepositorio;
 import com.mvprestaurante.mvp.services.EmpresaService;
@@ -25,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SuperAdminController {
 
+    private final EmpresaMapperImpl empresaMapperImpl;
     private final EmpresaService empresaService;
     private final UsuarioRepositorio usuarioRepositorio;
     private final UsuarioService usuarioService;
@@ -115,12 +118,10 @@ public class SuperAdminController {
     @GetMapping("/empresas/activar/{id}")
     public String activarEmpresa(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
+            empresaService.actualizarEstadoActivo(id, true);
             EmpresaDTO empresaDTO = empresaService.buscarPorId(id);
-            empresaDTO.setActiva(true);
-            empresaService.actualizar(id, empresaDTO);
-
-            usuarioService.crearUsuarioAdmin(id);
-
+            Empresa empresa = Empresa.builder().id(id).nombreEmpresa(empresaDTO.getNombreEmpresa()).build();
+            usuarioService.crearUsuarioAdmin(empresa);
             redirectAttributes.addFlashAttribute("success", "Empresa activada! Se ha creado el usuario admin.");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Error: " + e.getMessage());
@@ -131,9 +132,7 @@ public class SuperAdminController {
     @GetMapping("/empresas/desactivar/{id}")
     public String desactivarEmpresa(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
-            EmpresaDTO empresaDTO = empresaService.buscarPorId(id);
-            empresaDTO.setActiva(false);
-            empresaService.actualizar(id, empresaDTO);
+            empresaService.actualizarEstadoActivo(id, false);
             redirectAttributes.addFlashAttribute("success", "Empresa desactivada!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Error: " + e.getMessage());

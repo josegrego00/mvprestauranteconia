@@ -20,7 +20,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-
 import java.util.Optional;
 
 @RestController
@@ -35,8 +34,8 @@ public class IngredienteController {
     @GetMapping
     @Operation(summary = "API: Listar ingredientes", description = "Lista todos los ingredientes activos de la empresa")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Lista obtenida exitosamente"),
-        @ApiResponse(responseCode = "400", description = "Bad request", content = @Content)
+            @ApiResponse(responseCode = "200", description = "Lista obtenida exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Bad request", content = @Content)
     })
     public ResponseEntity<Page<IngredienteDTO>> listar(
             @RequestParam(defaultValue = "0") int page,
@@ -59,24 +58,24 @@ public class IngredienteController {
     @GetMapping("/{id}")
     @Operation(summary = "API: Buscar ingrediente por ID", description = "Busca un ingrediente por su ID")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Ingrediente encontrado"),
-        @ApiResponse(responseCode = "404", description = "Ingrediente no encontrado", content = @Content)
+            @ApiResponse(responseCode = "200", description = "Ingrediente encontrado"),
+            @ApiResponse(responseCode = "404", description = "Ingrediente no encontrado", content = @Content)
     })
     public ResponseEntity<IngredienteDTO> buscarPorId(
             @Parameter(description = "ID del ingrediente") @PathVariable Long id) {
         Optional<IngredienteDTO> ingrediente = ingredienteService.obtenerPorId(id);
         return ingrediente.map(i -> {
-                auditLogger.logBuscar("Ingrediente", id.toString());
-                return ResponseEntity.ok(i);
-            })
-            .orElse(ResponseEntity.notFound().build());
+            auditLogger.logBuscar("Ingrediente", id.toString());
+            return ResponseEntity.ok(i);
+        })
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
     @Operation(summary = "API: Guardar ingrediente", description = "Crea un nuevo ingrediente")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Ingrediente creado exitosamente"),
-        @ApiResponse(responseCode = "400", description = "Datos inválidos", content = @Content)
+            @ApiResponse(responseCode = "201", description = "Ingrediente creado exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos", content = @Content)
     })
     public ResponseEntity<IngredienteDTO> guardar(@Valid @RequestBody IngredienteDTO ingredienteDTO) {
         IngredienteDTO guardado = ingredienteService.guardar(ingredienteDTO);
@@ -87,8 +86,8 @@ public class IngredienteController {
     @PutMapping("/{id}")
     @Operation(summary = "API: Actualizar ingrediente", description = "Actualiza un ingrediente existente")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Ingrediente actualizado"),
-        @ApiResponse(responseCode = "404", description = "Ingrediente no encontrado", content = @Content)
+            @ApiResponse(responseCode = "200", description = "Ingrediente actualizado"),
+            @ApiResponse(responseCode = "404", description = "Ingrediente no encontrado", content = @Content)
     })
     public ResponseEntity<IngredienteDTO> actualizar(
             @Parameter(description = "ID del ingrediente") @PathVariable Long id,
@@ -104,8 +103,8 @@ public class IngredienteController {
     @DeleteMapping("/{id}")
     @Operation(summary = "API: Eliminar ingrediente", description = "Desactiva un ingrediente (eliminación lógica)")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "204", description = "Ingrediente desactivado"),
-        @ApiResponse(responseCode = "404", description = "Ingrediente no encontrado", content = @Content)
+            @ApiResponse(responseCode = "204", description = "Ingrediente desactivado"),
+            @ApiResponse(responseCode = "404", description = "Ingrediente no encontrado", content = @Content)
     })
     public ResponseEntity<Void> eliminar(
             @Parameter(description = "ID del ingrediente") @PathVariable Long id) {

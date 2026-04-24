@@ -14,6 +14,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 @Controller
@@ -27,7 +28,7 @@ public class AjustePreciosController {
     public String listar(@RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false, defaultValue = "30") Double porcentajeGanancia,
+            @RequestParam(required = false, defaultValue = "30") BigDecimal porcentajeGanancia,
             @RequestParam(required = false, defaultValue = "all") String tipoProducto,
             Model model) {
 
@@ -58,7 +59,7 @@ public class AjustePreciosController {
 
     @PostMapping("/guardar")
     public String guardar(@RequestParam MultiValueMap<String, String> formParams,
-                         @RequestParam(required = false, defaultValue = "0") Double porcentajeGanancia,
+                         @RequestParam(required = false, defaultValue = "0") BigDecimal porcentajeGanancia,
                          RedirectAttributes ra) {
 
         try {
@@ -68,7 +69,7 @@ public class AjustePreciosController {
                     Long productoId = Long.parseLong(key.replace("precio_", ""));
                     String valor = entry.getValue().get(0);
                     if (valor != null && !valor.isEmpty()) {
-                        Double nuevoPrecio = Double.parseDouble(valor);
+                        BigDecimal nuevoPrecio = new BigDecimal(valor);
                         productoService.actualizarPrecioVenta(productoId, nuevoPrecio);
                     }
                 }
