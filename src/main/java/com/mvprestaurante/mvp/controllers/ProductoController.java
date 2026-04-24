@@ -112,13 +112,9 @@ public class ProductoController {
     })
     public ResponseEntity<Void> eliminar(
             @Parameter(description = "ID del producto") @PathVariable Long id) {
-        try {
-            productoService.eliminar(id);
-            auditLogger.logDesactivar("Producto", id.toString());
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+        productoService.eliminar(id);
+        auditLogger.logDesactivar("Producto", id.toString());
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/estimado")

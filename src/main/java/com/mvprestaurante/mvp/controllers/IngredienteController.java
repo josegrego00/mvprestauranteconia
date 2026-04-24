@@ -109,12 +109,8 @@ public class IngredienteController {
     })
     public ResponseEntity<Void> eliminar(
             @Parameter(description = "ID del ingrediente") @PathVariable Long id) {
-        try {
-            ingredienteService.eliminar(id);
-            auditLogger.logDesactivar("Ingrediente", id.toString());
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        ingredienteService.eliminar(id);
+        auditLogger.logDesactivar("Ingrediente", id.toString());
+        return ResponseEntity.noContent().build();
     }
 }
